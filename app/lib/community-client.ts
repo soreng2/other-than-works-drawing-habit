@@ -57,6 +57,15 @@ export async function updatePresence(identity: DeviceIdentity, running: boolean,
   }));
 }
 
+export async function updateSharedMessage(identity: DeviceIdentity, message: string): Promise<Profile> {
+  const payload = await responseJson<{ profile: Profile }>(await fetch("/api/message", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ...identity, message }),
+  }));
+  return payload.profile;
+}
+
 export function sendPresenceStop(identity: DeviceIdentity, category: CategoryKey) {
   const body = JSON.stringify({ ...identity, running: false, category });
   if (navigator.sendBeacon) navigator.sendBeacon("/api/presence", new Blob([body], { type: "application/json" }));

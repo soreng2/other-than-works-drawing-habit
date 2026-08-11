@@ -4,6 +4,7 @@ export type Profile = {
   id?: string;
   name: string;
   characterDataUrl?: string;
+  message?: string;
 };
 
 export type WorkSession = {
@@ -21,6 +22,7 @@ export type SharedFriend = {
   characterDataUrl?: string;
   category: CategoryKey;
   startedAt: number;
+  message: string;
 };
 
 export type SharedArtwork = WorkSession & {

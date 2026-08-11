@@ -43,7 +43,7 @@ function mediaUrl(request: Request, key: string | null | undefined) {
 }
 
 function mapProfile(request: Request, row: ProfileRow): Profile {
-  return { id: row.id, name: row.name, characterDataUrl: mediaUrl(request, row.character_key) };
+  return { id: row.id, name: row.name, characterDataUrl: mediaUrl(request, row.character_key), message: row.message };
 }
 
 function mapSession(request: Request, row: SessionRow): WorkSession {
@@ -88,7 +88,7 @@ async function handleProfile(request: Request, database: D1Database, uploads: R2
     VALUES (?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET name = excluded.name, character_key = COALESCE(excluded.character_key, profiles.character_key), updated_at = excluded.updated_at`)
     .bind(profileId, hash, name, characterKey, now, now).run();
-  const row = await database.prepare("SELECT id, name, character_key FROM profiles WHERE id = ?").bind(profileId).first<ProfileRow>();
+  const row = await database.prepare("SELECT id, name, character_key, message FROM profiles WHERE id = ?").bind(profileId).first<ProfileRow>();
   if (!row) throw new Error("invalid_profile");
   return Response.json({ profile: mapProfile(request, row) });
 }
@@ -98,8 +98,8 @@ async function handleCommunity(request: Request, database: D1Database) {
   const profileId = new URL(request.url).searchParams.get("profileId") ?? "";
   validIdentity(profileId);
   const [profile, activeResult, galleryResult, sessionsResult] = await Promise.all([
-    database.prepare("SELECT id, name, character_key FROM profiles WHERE id = ?").bind(profileId).first<ProfileRow>(),
-    database.prepare(`SELECT p.id, p.name, p.character_key, pr.category, pr.started_at
+    database.prepare("SELECT id, name, character_key, message FROM profiles WHERE id = ?").bind(profileId).first<ProfileRow>(),
+    database.prepare(`SELECT p.id, p.name, p.character_key, p.message, pr.category, pr.started_at
       FROM presence pr JOIN profiles p ON p.id = pr.profile_id
       WHERE pr.updated_at >= ? ORDER BY pr.started_at ASC LIMIT 60`).bind(Date.now() - 90_000).all<PresenceRow>(),
     database.prepare(`SELECT s.id, s.profile_id, s.seconds, s.category, s.artwork_key, s.note, s.completed_at, p.name AS artist, p.character_key
@@ -114,6 +114,7 @@ async function handleCommunity(request: Request, database: D1Database) {
     characterDataUrl: mediaUrl(request, row.character_key),
     category: row.category as CategoryKey,
     startedAt: row.started_at,
+    message: row.message,
   }));
   const gallery: SharedArtwork[] = galleryResult.results.map((row) => ({
     ...mapSession(request, row),
@@ -126,6 +127,19 @@ async function handleCommunity(request: Request, database: D1Database) {
     gallery,
     sessions: sessionsResult.results.map((row) => mapSession(request, row)),
   }, { headers: { "cache-control": "no-store" } });
+}
+
+async function handleMessage(request: Request, database: D1Database) {
+  if (request.method !== "POST") return Response.json({ error: "method_not_allowed" }, { status: 405 });
+  const body = await request.json() as { profileId?: string; ownerToken?: string; message?: string };
+  const profileId = body.profileId ?? "";
+  const ownerToken = body.ownerToken ?? "";
+  await requireOwner(database, profileId, ownerToken);
+  const message = String(body.message ?? "").trim().slice(0, 60);
+  await database.prepare("UPDATE profiles SET message = ?, updated_at = ? WHERE id = ?").bind(message, Date.now(), profileId).run();
+  const row = await database.prepare("SELECT id, name, character_key, message FROM profiles WHERE id = ?").bind(profileId).first<ProfileRow>();
+  if (!row) throw new Error("profile_not_found");
+  return Response.json({ profile: mapProfile(request, row) });
 }
 
 async function handlePresence(request: Request, database: D1Database) {
@@ -200,6 +214,7 @@ export async function handleCommunityApi(request: Request, env: CommunityEnv) {
     if (pathname === "/api/profile") return handleProfile(request, env.DB, env.UPLOADS);
     if (pathname === "/api/community") return handleCommunity(request, env.DB);
     if (pathname === "/api/presence") return handlePresence(request, env.DB);
+    if (pathname === "/api/message") return handleMessage(request, env.DB);
     if (pathname === "/api/sessions") return handleSession(request, env.DB, env.UPLOADS);
     if (pathname.startsWith("/api/media/")) return handleMedia(request, env.UPLOADS);
     return new Response("Not found", { status: 404 });

@@ -4,6 +4,7 @@ export const SCHEMA_STATEMENTS = [
     owner_token_hash TEXT NOT NULL,
     name TEXT NOT NULL,
     character_key TEXT,
+    message TEXT NOT NULL DEFAULT '',
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
   )`,
@@ -28,10 +29,13 @@ export const SCHEMA_STATEMENTS = [
   `CREATE INDEX IF NOT EXISTS idx_work_sessions_completed ON work_sessions(completed_at DESC)`,
 ] as const;
 
+export const PROFILE_MESSAGE_MIGRATION = "ALTER TABLE profiles ADD COLUMN message TEXT NOT NULL DEFAULT ''";
+
 export type ProfileRow = {
   id: string;
   name: string;
   character_key: string | null;
+  message: string;
 };
 
 export type PresenceRow = ProfileRow & {

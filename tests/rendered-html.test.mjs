@@ -34,7 +34,7 @@ test("server-renders the finished drawing studio shell", async () => {
 });
 
 test("includes the complete shared MVP and installable web app assets", async () => {
-  const [page, layout, styles, manifest, serviceWorker, packageJson, communityClient, worker, hosting, migration] = await Promise.all([
+  const [page, layout, styles, manifest, serviceWorker, packageJson, communityClient, worker, hosting, migration, messageMigration] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
@@ -45,6 +45,7 @@ test("includes the complete shared MVP and installable web app assets", async ()
     readFile(new URL("../worker/index.ts", import.meta.url), "utf8"),
     readFile(new URL("../.openai/hosting.json", import.meta.url), "utf8"),
     readFile(new URL("../drizzle/0000_shared_studio.sql", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/0001_profile_message.sql", import.meta.url), "utf8"),
   ]);
 
   assert.match(page, /visibilitychange/);
@@ -64,12 +65,17 @@ test("includes the complete shared MVP and installable web app assets", async ()
   assert.match(communityClient, /fetchCommunity/);
   assert.match(communityClient, /updatePresence/);
   assert.match(communityClient, /saveCloudSession/);
+  assert.match(communityClient, /updateSharedMessage/);
   assert.match(worker, /handleCommunityApi/);
   assert.match(hosting, /"d1": "DB"/);
   assert.match(hosting, /"r2": "UPLOADS"/);
   assert.match(migration, /CREATE TABLE `profiles`/);
   assert.match(migration, /CREATE TABLE `presence`/);
   assert.match(migration, /CREATE TABLE `work_sessions`/);
+  assert.match(messageMigration, /ADD `message`/);
+  assert.match(page, /예시 캐릭터/);
+  assert.match(page, /desk-scene/);
+  assert.match(page, /내 캐릭터 위 메시지/);
   assert.doesNotMatch(page, /friendSeed|gallerySeed/);
 
   await access(new URL("../public/brand-character.png", import.meta.url));

@@ -15,6 +15,7 @@ import {
   saveCloudSession,
   sendPresenceStop,
   updatePresence,
+  updateSharedMessage,
 } from "./lib/community-client";
 import type {
   CategoryKey,
@@ -269,9 +270,10 @@ function Onboarding({ onComplete }: { onComplete: (profile: Profile) => Promise<
       <section className="onboarding-card" aria-label="작업친구 만들기">
         <div className="onboarding-character-stage">
           {character ? <img src={character} className="character-image onboarding" alt="업로드한 작업친구" /> : <DefaultCharacter />}
+          <span className="character-nameplate">{name.trim() || "예시 캐릭터"}</span>
         </div>
-        <h2>{character ? "내가 그린 작업친구" : "아더댄웍스 폴더 친구"}</h2>
-        <p className="subtle">내 캐릭터를 불러오거나, 공식 폴더 친구와 먼저 시작해도 괜찮아요.</p>
+        <h2>내 작업친구를 소개해요</h2>
+        <p className="subtle">예시 캐릭터로 시작하거나, 직접 그린 캐릭터를 불러올 수 있어요.</p>
 
         <label className="field-label" htmlFor="friend-name">작업친구 이름</label>
         <input
@@ -362,6 +364,7 @@ function ProfileEditor({ profile, onClose, onSave }: { profile: Profile; onClose
         <h2 id="profile-title">내 캐릭터 바꾸기</h2>
         <div className="profile-character-stage">
           {character ? <img src={character} className="character-image onboarding" alt="내 작업친구" /> : <DefaultCharacter />}
+          <span className="character-nameplate">{name.trim() || "예시 캐릭터"}</span>
         </div>
         <label className="field-label" htmlFor="profile-name">작업친구 이름</label>
         <input id="profile-name" className="text-input" value={name} maxLength={12} onChange={(event) => setName(event.target.value)} />
@@ -403,6 +406,7 @@ function StudioScene({ profile, totalMinutes }: { profile: Profile; totalMinutes
       <div className="scene-desk"><span /><i /><i /></div>
       <div className="character-shadow" />
       <div className="scene-character"><Character profile={profile} /></div>
+      <span className="scene-nameplate">{profile.name}</span>
       <div className="scene-plant"><span>♧</span></div>
     </section>
   );
@@ -487,9 +491,27 @@ function HomePanel({
   );
 }
 
-function TogetherPanel({ profile, activeFriends, running, elapsed, category, clock }: { profile: Profile; activeFriends: SharedFriend[]; running: boolean; elapsed: number; category: CategoryKey; clock: number }) {
+function DeskFriend({ profile, message, status, mine = false }: { profile: Profile; message: string; status: string; mine?: boolean }) {
+  return (
+    <article className={`friend-card${mine ? " mine" : ""}`}>
+      {mine ? <span className="mine-label">나</span> : <span className="online-dot" />}
+      <div className={`friend-message${message ? "" : " empty"}`}>{message || (mine ? "내 메시지를 남겨보세요" : "조용히 작업 중")}</div>
+      <div className="desk-scene" aria-label={`${profile.name}가 아이패드 책상에서 작업 중`}>
+        <div className="desk-character"><Character profile={profile} /></div>
+        <div className="desk-tablet"><span /><i /></div>
+        <div className="desk-furniture"><span /><i /><i /><b>{profile.name}</b></div>
+      </div>
+      <div className="friend-status"><h3>{profile.name}</h3><b>{status}</b></div>
+    </article>
+  );
+}
+
+function TogetherPanel({ profile, activeFriends, running, elapsed, category, clock, onMessage }: { profile: Profile; activeFriends: SharedFriend[]; running: boolean; elapsed: number; category: CategoryKey; clock: number; onMessage: (message: string) => Promise<void> }) {
   const friends = activeFriends.filter((friend) => friend.id !== profile.id);
   const count = friends.length + (running ? 1 : 0);
+  const [message, setMessage] = useState(profile.message ?? "");
+  const [messageSaving, setMessageSaving] = useState(false);
+  const [messageError, setMessageError] = useState("");
   return (
     <div className="panel-stack section-panel">
       <header className="section-header">
@@ -497,18 +519,29 @@ function TogetherPanel({ profile, activeFriends, running, elapsed, category, clo
         <span className="live-orbit"><i /></span>
       </header>
       <p className="section-description">말을 걸지 않아도, 각자 작업하는 기척만 나누는 조용한 공동 작업실이에요.</p>
+      <form className="paper-card message-composer" onSubmit={async (event) => {
+        event.preventDefault();
+        try {
+          setMessageSaving(true);
+          setMessageError("");
+          await onMessage(message.trim());
+        } catch (saveError) {
+          setMessageError(saveError instanceof Error ? saveError.message : "메시지를 저장하지 못했어요.");
+        } finally {
+          setMessageSaving(false);
+        }
+      }}>
+        <label htmlFor="work-message"><b>내 캐릭터 위 메시지</b><span>{message.length} / 60</span></label>
+        <div><input id="work-message" className="text-input" value={message} maxLength={60} onChange={(event) => setMessage(event.target.value)} placeholder="예: 오늘은 채색하는 날!" /><button className="primary-button" type="submit" disabled={messageSaving}>{messageSaving ? "저장 중" : "등록"}</button></div>
+        {messageError && <p className="error-message" role="alert">{messageError}</p>}
+        <small>등록한 메시지는 함께 작업 중인 수강생에게 보여요.</small>
+      </form>
       <div className="friend-grid">
         {running && (
-          <article className="friend-card mine">
-            <div className="friend-avatar"><Character profile={profile} compact /></div><span className="mine-label">나</span>
-            <h3>{profile.name}</h3><b>{categoryTitle(category)} · {Math.floor(elapsed / 60)}분째</b><p>오늘의 10분을 만드는 중</p>
-          </article>
+          <DeskFriend profile={{ ...profile, message }} message={message} status={`${categoryTitle(category)} · ${Math.floor(elapsed / 60)}분째`} mine />
         )}
         {friends.map((friend) => (
-          <article className="friend-card" key={friend.id}>
-            <div className="friend-avatar"><Character profile={{ name: friend.name, characterDataUrl: friend.characterDataUrl }} compact /></div><span className="online-dot" />
-            <h3>{friend.name}</h3><b>{categoryTitle(friend.category)} · {Math.max(0, Math.floor((clock - friend.startedAt) / 60000))}분째</b><p>자기 작업실에서 집중하는 중</p>
-          </article>
+          <DeskFriend key={friend.id} profile={{ name: friend.name, characterDataUrl: friend.characterDataUrl }} message={friend.message} status={`${categoryTitle(friend.category)} · ${Math.max(0, Math.floor((clock - friend.startedAt) / 60000))}분째`} />
         ))}
       </div>
       {count === 0 && <div className="empty-state together-empty"><span>♧</span><b>지금은 작업실이 조용해요</b><p>내가 시작하면 다른 수강생 화면에 캐릭터가 나타나요.</p></div>}
@@ -775,6 +808,14 @@ export default function Home() {
     await refreshCommunity();
   }
 
+  async function saveMessage(message: string) {
+    const identity = identityRef.current;
+    if (!identity) throw new Error("공동 작업실에 연결하지 못했어요.");
+    const saved = await updateSharedMessage(identity, message);
+    persist(saved, sessions);
+    await refreshCommunity();
+  }
+
   if (!ready) return <main className="app-loading"><DefaultCharacter /><p>작업실 문을 여는 중…</p></main>;
   if (!profile) return <Onboarding onComplete={saveProfile} />;
 
@@ -787,7 +828,7 @@ export default function Home() {
       {connectionMessage && <div className="connection-banner">{connectionMessage}</div>}
       <div className="app-content">
         {tab === "home" && <HomePanel profile={profile} sessions={sessions} elapsed={elapsed} running={running} category={category} pauseNotice={pauseNotice} onCategory={setCategory} onToggle={toggleTimer} onFinish={openFinish} />}
-        {tab === "together" && <TogetherPanel profile={profile} activeFriends={activeFriends} running={running} elapsed={elapsed} category={category} clock={clock} />}
+        {tab === "together" && <TogetherPanel profile={profile} activeFriends={activeFriends} running={running} elapsed={elapsed} category={category} clock={clock} onMessage={saveMessage} />}
         {tab === "records" && <RecordsPanel sessions={sessions} />}
         {tab === "gallery" && <GalleryPanel profile={profile} sessions={sessions} sharedGallery={sharedGallery} />}
         {tab === "mission" && <MissionPanel sessions={sessions} />}
