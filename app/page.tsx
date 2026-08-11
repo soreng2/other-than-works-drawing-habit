@@ -234,14 +234,11 @@ function isThisWeek(date: Date) {
 
 function DefaultCharacter({ compact = false }: { compact?: boolean }) {
   return (
-    <div className={`folder-friend${compact ? " compact" : ""}`} aria-label="기본 폴더 친구">
-      <span className="folder-tab" />
-      <span className="folder-eye left" />
-      <span className="folder-eye right" />
-      <span className="folder-mouth" />
-      <span className="folder-leg left" />
-      <span className="folder-leg right" />
-    </div>
+    <img
+      className={`character-image official${compact ? " compact" : ""}`}
+      src="/brand-character.png"
+      alt="아더댄웍스 공식 폴더 캐릭터"
+    />
   );
 }
 
@@ -286,8 +283,8 @@ function Onboarding({ onComplete }: { onComplete: (profile: Profile) => void }) 
         <div className="onboarding-character-stage">
           {character ? <img src={character} className="character-image onboarding" alt="업로드한 작업친구" /> : <DefaultCharacter />}
         </div>
-        <h2>{character ? "내가 그린 작업친구" : "기본 폴더 친구"}</h2>
-        <p className="subtle">직접 그린 캐릭터가 없다면 기본 친구로 시작해도 괜찮아요.</p>
+        <h2>{character ? "내가 그린 작업친구" : "아더댄웍스 폴더 친구"}</h2>
+        <p className="subtle">내 캐릭터를 불러오거나, 공식 폴더 친구와 먼저 시작해도 괜찮아요.</p>
 
         <label className="field-label" htmlFor="friend-name">작업친구 이름</label>
         <input
