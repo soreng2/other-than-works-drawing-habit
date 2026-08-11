@@ -12,6 +12,7 @@ const profileIdPattern = /^[0-9a-f-]{36}$/i;
 const ADMIN_KEY = "admin_user_hash";
 const CLASS_CODE_KEY = "class_code_hash";
 const TEACHER_NOTE_KEY = "teacher_note";
+const HOST_MEMBER_LABEL = "선생님";
 
 function errorResponse(error: unknown) {
   const code = error instanceof Error ? error.message : "unexpected_error";
@@ -86,6 +87,27 @@ async function memberFor(database: D1Database, auth: RequestUser): Promise<Membe
   return member as Member;
 }
 
+function hostNickname(auth: RequestUser) {
+  const displayName = auth.displayName.trim();
+  return displayName && !displayName.includes("@") ? displayName.slice(0, 12) : HOST_MEMBER_LABEL;
+}
+
+async function ensureAdminMember(database: D1Database, auth: RequestUser): Promise<Member> {
+  const existing = await database.prepare("SELECT id, legal_name, nickname, auth_user_hash, profile_id FROM students WHERE auth_user_hash = ?")
+    .bind(auth.userHash).first<StudentRow>();
+  if (existing?.profile_id) return existing as Member;
+  const now = Date.now();
+  await database.prepare(`INSERT OR IGNORE INTO students
+    (id, legal_name, normalized_name, nickname, auth_user_hash, profile_id, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).bind(
+    crypto.randomUUID(), HOST_MEMBER_LABEL, "__host__", hostNickname(auth), auth.userHash, auth.profileId, now, now,
+  ).run();
+  const member = await database.prepare("SELECT id, legal_name, nickname, auth_user_hash, profile_id FROM students WHERE auth_user_hash = ?")
+    .bind(auth.userHash).first<StudentRow>();
+  if (!member?.profile_id) throw new Error("invalid_roster");
+  return member as Member;
+}
+
 async function rosterState(database: D1Database, auth: RequestUser, classCode = "") {
   const [adminHash, codeHash, member] = await Promise.all([
     setting(database, ADMIN_KEY),
@@ -95,15 +117,16 @@ async function rosterState(database: D1Database, auth: RequestUser, classCode = 
   ]);
   const isAdmin = adminHash === auth.userHash;
   const needsSetup = !adminHash;
+  const resolvedMember = isAdmin && !member ? await ensureAdminMember(database, auth) : member;
   let codeMatches = false;
   if (classCode.trim() && codeHash) codeMatches = await hashSecret(classCode) === codeHash;
   let students: Array<{ id: string; legalName: string }> = [];
-  if (!member && (isAdmin || codeMatches)) {
+  if (!resolvedMember && (isAdmin || codeMatches)) {
     const result = await database.prepare("SELECT id, legal_name FROM students WHERE auth_user_hash IS NULL ORDER BY normalized_name ASC LIMIT 200")
       .all<{ id: string; legal_name: string }>();
     students = result.results.map((student) => ({ id: student.id, legalName: student.legal_name }));
   }
-  return { needsSetup, isAdmin, linked: Boolean(member), nickname: member?.nickname || undefined, students };
+  return { needsSetup, isAdmin, linked: Boolean(resolvedMember), nickname: resolvedMember?.nickname || undefined, students };
 }
 
 async function handleRoster(request: Request, database: D1Database, auth: RequestUser) {
@@ -133,6 +156,11 @@ async function handleRoster(request: Request, database: D1Database, auth: Reques
     const statements = [
       database.prepare("INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)").bind(ADMIN_KEY, auth.userHash, now),
       database.prepare("INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)").bind(CLASS_CODE_KEY, await hashSecret(classCode), now),
+      database.prepare(`INSERT INTO students
+        (id, legal_name, normalized_name, nickname, auth_user_hash, profile_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).bind(
+        crypto.randomUUID(), HOST_MEMBER_LABEL, "__host__", hostNickname(auth), auth.userHash, auth.profileId, now, now,
+      ),
       ...names.map((name) => database.prepare("INSERT INTO students (id, legal_name, normalized_name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)")
         .bind(crypto.randomUUID(), name, normalizeName(name), now, now)),
     ];

@@ -96,6 +96,8 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(communityClient, /claimRoster/);
   assert.match(communityClient, /updateTeacherNote/);
   assert.match(communityApi, /admin_user_hash/);
+  assert.match(communityApi, /ensureAdminMember/);
+  assert.match(communityApi, /INSERT OR IGNORE INTO students/);
   assert.match(communityApi, /student_already_claimed/);
   assert.match(communityApi, /teacher_note/);
   assert.match(requestAuth, /oai-authenticated-user-id/);
@@ -113,6 +115,7 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(styles, /studio-room\.jpg/);
   assert.match(styles, /timer-presets/);
   assert.match(studio, /예시 캐릭터/);
+  assert.match(studio, /명단 저장하고 내 작업실 열기/);
   assert.match(studio, /together-map/);
   assert.match(studio, /floating-name/);
   assert.match(studio, /map-chair/);

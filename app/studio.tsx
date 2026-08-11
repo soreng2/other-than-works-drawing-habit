@@ -313,6 +313,7 @@ function Enrollment({ snapshot, onComplete }: { snapshot: RosterSnapshot; onComp
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const visibleStudents = roster.students.filter((student) => normalizedSearch(student.legalName).includes(normalizedSearch(query)));
+  const setupNames = names.split(/\r?\n/).map((name) => name.trim()).filter(Boolean);
 
   async function loadNames() {
     try {
@@ -340,19 +341,22 @@ function Enrollment({ snapshot, onComplete }: { snapshot: RosterSnapshot; onComp
           <textarea id="student-list" value={names} onChange={(event) => setNames(event.target.value)} placeholder={"소랭\n은지\n세은\n밍쵸"} />
           <label className="field-label" htmlFor="class-code">수강생에게 알려줄 반 코드</label>
           <input id="class-code" className="text-input" value={classCode} maxLength={20} onChange={(event) => setClassCode(event.target.value)} placeholder="4자 이상" />
+          <p className="setup-requirements">수강생 이름 1명 이상 · 반 코드 4자 이상</p>
           {error && <p className="error-message" role="alert">{error}</p>}
-          <button className="primary-button wide" type="button" disabled={saving || classCode.trim().length < 4 || !names.trim()} onClick={async () => {
+          <button className="primary-button wide" type="button" disabled={saving} onClick={async () => {
             try {
               setSaving(true);
               setError("");
-              await setupRoster(names.split(/\r?\n/), classCode);
+              if (!setupNames.length) throw new Error("수강생 이름을 한 줄에 한 명 이상 적어주세요.");
+              if (classCode.trim().length < 4) throw new Error("반 코드는 네 글자 이상 적어주세요.");
+              await setupRoster(setupNames, classCode.trim());
               onComplete();
             } catch (setupError) {
               setError(setupError instanceof Error ? setupError.message : "명단을 저장하지 못했어요.");
             } finally {
               setSaving(false);
             }
-          }}>{saving ? "작업실을 준비하는 중…" : "명단 저장하고 시작"}</button>
+          }}>{saving ? "작업실을 준비하는 중…" : "명단 저장하고 내 작업실 열기"}</button>
           <a className="signout-link" href="/signout-with-chatgpt?return_to=%2F">다른 계정으로 로그인</a>
         </section>
       </main>
