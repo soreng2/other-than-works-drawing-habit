@@ -63,6 +63,8 @@ export async function saveCloudProfile(identity: DeviceIdentity, profile: Profil
   form.set("profileId", identity.profileId);
   form.set("ownerToken", identity.ownerToken);
   form.set("name", profile.name);
+  form.set("characterPreset", profile.characterPreset ?? "sky");
+  if (!profile.characterDataUrl) form.set("removeCharacter", "1");
   if (profile.characterDataUrl?.startsWith("data:")) {
     form.set("character", await dataUrlFile(profile.characterDataUrl, "my-character.png"));
   }

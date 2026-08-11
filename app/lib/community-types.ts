@@ -1,9 +1,11 @@
 export type CategoryKey = "sketch" | "line" | "color" | "emoticon" | "free";
+export type CharacterPresetKey = "sky" | "moss" | "apricot" | "rose" | "violet" | "lemon";
 
 export type Profile = {
   id?: string;
   name: string;
   nickname?: string;
+  characterPreset?: CharacterPresetKey;
   characterDataUrl?: string;
   message?: string;
 };
@@ -21,6 +23,7 @@ export type SharedFriend = {
   id: string;
   name: string;
   nickname?: string;
+  characterPreset?: CharacterPresetKey;
   characterDataUrl?: string;
   mode: "working" | "idle";
   category: CategoryKey;

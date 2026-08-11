@@ -4,6 +4,7 @@ export const SCHEMA_STATEMENTS = [
     owner_token_hash TEXT NOT NULL,
     name TEXT NOT NULL,
     nickname TEXT NOT NULL DEFAULT '',
+    character_preset TEXT NOT NULL DEFAULT 'sky',
     character_key TEXT,
     message TEXT NOT NULL DEFAULT '',
     created_at INTEGER NOT NULL,
@@ -50,11 +51,13 @@ export const SCHEMA_STATEMENTS = [
 export const PROFILE_MESSAGE_MIGRATION = "ALTER TABLE profiles ADD COLUMN message TEXT NOT NULL DEFAULT ''";
 export const PROFILE_NICKNAME_MIGRATION = "ALTER TABLE profiles ADD COLUMN nickname TEXT NOT NULL DEFAULT ''";
 export const PRESENCE_MODE_MIGRATION = "ALTER TABLE presence ADD COLUMN mode TEXT NOT NULL DEFAULT 'idle'";
+export const CHARACTER_PRESET_MIGRATION = "ALTER TABLE profiles ADD COLUMN character_preset TEXT NOT NULL DEFAULT 'sky'";
 
 export type ProfileRow = {
   id: string;
   name: string;
   nickname: string;
+  character_preset: string;
   character_key: string | null;
   message: string;
 };

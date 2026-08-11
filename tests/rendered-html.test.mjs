@@ -47,7 +47,7 @@ test("server-renders the studio loader for a signed-in account", async () => {
 });
 
 test("includes the complete shared MVP, roster, host controls and map assets", async () => {
-  const [page, studio, layout, styles, manifest, serviceWorker, packageJson, communityClient, communityApi, requestAuth, worker, hosting, migration, messageMigration, accountMigration] = await Promise.all([
+  const [page, studio, layout, styles, manifest, serviceWorker, packageJson, communityClient, communityApi, requestAuth, worker, hosting, migration, messageMigration, accountMigration, presetMigration] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/studio.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
@@ -63,12 +63,15 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
     readFile(new URL("../drizzle/0000_shared_studio.sql", import.meta.url), "utf8"),
     readFile(new URL("../drizzle/0001_profile_message.sql", import.meta.url), "utf8"),
     readFile(new URL("../drizzle/0002_accounts_roster_map.sql", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/0003_character_presets.sql", import.meta.url), "utf8"),
   ]);
 
   assert.match(page, /getChatGPTUser/);
   assert.match(page, /chatGPTSignInPath/);
   assert.match(studio, /visibilitychange/);
   assert.match(studio, /validateCharacter/);
+  assert.match(studio, /PresetPicker/);
+  assert.match(studio, /canvas\.toDataURL\("image\/png"\)/);
   assert.match(studio, /1024 × 1024px/);
   assert.match(studio, /IndexedDB|indexedDB/);
   assert.match(studio, /CompletionModal/);
@@ -101,6 +104,8 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(messageMigration, /ADD `message`/);
   assert.match(accountMigration, /CREATE TABLE `students`/);
   assert.match(accountMigration, /CREATE TABLE `app_settings`/);
+  assert.match(presetMigration, /character_preset/);
+  assert.match(styles, /preset-grid/);
   assert.match(studio, /예시 캐릭터/);
   assert.match(studio, /together-map/);
   assert.match(studio, /floating-name/);

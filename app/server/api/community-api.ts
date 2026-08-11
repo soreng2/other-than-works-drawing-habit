@@ -1,4 +1,4 @@
-import type { CategoryKey, Profile, SharedArtwork, SharedFriend, WorkSession } from "../../lib/community-types";
+import type { CategoryKey, CharacterPresetKey, Profile, SharedArtwork, SharedFriend, WorkSession } from "../../lib/community-types";
 import type { PresenceRow, ProfileRow, SessionRow, StudentRow } from "../../../db/schema";
 import { requireRequestUser, hashSecret, type RequestUser } from "../auth/request-auth";
 import { ensureDatabase } from "../db/runtime";
@@ -7,6 +7,7 @@ type CommunityEnv = { DB?: D1Database; UPLOADS?: R2Bucket };
 type Member = StudentRow & { profile_id: string };
 
 const categories = new Set<CategoryKey>(["sketch", "line", "color", "emoticon", "free"]);
+const characterPresets = new Set<CharacterPresetKey>(["sky", "moss", "apricot", "rose", "violet", "lemon"]);
 const profileIdPattern = /^[0-9a-f-]{36}$/i;
 const ADMIN_KEY = "admin_user_hash";
 const CLASS_CODE_KEY = "class_code_hash";
@@ -36,6 +37,10 @@ function validCategory(value: string): value is CategoryKey {
   return categories.has(value as CategoryKey);
 }
 
+function validCharacterPreset(value: string): value is CharacterPresetKey {
+  return characterPresets.has(value as CharacterPresetKey);
+}
+
 function normalizeName(value: string) {
   return value.normalize("NFKC").replace(/\s+/g, "").toLocaleLowerCase("ko-KR");
 }
@@ -49,7 +54,14 @@ function mediaUrl(request: Request, key: string | null | undefined) {
 }
 
 function mapProfile(request: Request, row: ProfileRow): Profile {
-  return { id: row.id, name: row.name, nickname: row.nickname, characterDataUrl: mediaUrl(request, row.character_key), message: row.message };
+  return {
+    id: row.id,
+    name: row.name,
+    nickname: row.nickname,
+    characterPreset: validCharacterPreset(row.character_preset) ? row.character_preset : "sky",
+    characterDataUrl: mediaUrl(request, row.character_key),
+    message: row.message,
+  };
 }
 
 function mapSession(request: Request, row: SessionRow): WorkSession {
@@ -149,12 +161,12 @@ async function handleRoster(request: Request, database: D1Database, auth: Reques
 
 async function migrateLegacyProfile(database: D1Database, auth: RequestUser, member: Member, legacyId: string, ownerToken: string) {
   if (legacyId === member.profile_id || !profileIdPattern.test(legacyId) || ownerToken.length < 30) return null;
-  const legacy = await database.prepare(`SELECT id, owner_token_hash, name, nickname, character_key, message, created_at
+  const legacy = await database.prepare(`SELECT id, owner_token_hash, name, nickname, character_preset, character_key, message, created_at
     FROM profiles WHERE id = ?`).bind(legacyId).first<ProfileRow & { owner_token_hash: string; created_at: number }>();
   if (!legacy || legacy.owner_token_hash !== await tokenHash(ownerToken)) return null;
   const now = Date.now();
-  await database.prepare(`INSERT INTO profiles (id, owner_token_hash, name, nickname, character_key, message, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).bind(member.profile_id, auth.userHash, legacy.name, member.nickname, legacy.character_key, legacy.message, legacy.created_at, now).run();
+  await database.prepare(`INSERT INTO profiles (id, owner_token_hash, name, nickname, character_preset, character_key, message, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(member.profile_id, auth.userHash, legacy.name, member.nickname, legacy.character_preset, legacy.character_key, legacy.message, legacy.created_at, now).run();
   await database.prepare("DELETE FROM presence WHERE profile_id = ?").bind(legacyId).run();
   await database.prepare("UPDATE work_sessions SET profile_id = ? WHERE profile_id = ?").bind(member.profile_id, legacyId).run();
   await database.prepare("DELETE FROM profiles WHERE id = ?").bind(legacyId).run();
@@ -165,6 +177,9 @@ async function handleProfile(request: Request, database: D1Database, uploads: R2
   if (request.method !== "POST") return Response.json({ error: "method_not_allowed" }, { status: 405 });
   const form = await request.formData();
   const name = String(form.get("name") ?? "").trim().slice(0, 12);
+  const requestedPreset = String(form.get("characterPreset") ?? "sky");
+  const characterPreset: CharacterPresetKey = validCharacterPreset(requestedPreset) ? requestedPreset : "sky";
+  const removeCharacter = form.get("removeCharacter") === "1";
   const legacyId = String(form.get("profileId") ?? "");
   const ownerToken = String(form.get("ownerToken") ?? "");
   if (!name) throw new Error("invalid_profile");
@@ -183,12 +198,14 @@ async function handleProfile(request: Request, database: D1Database, uploads: R2
     await uploads.put(characterKey, character.stream(), { httpMetadata: { contentType: "image/png" } });
   }
   const now = Date.now();
-  await database.prepare(`INSERT INTO profiles (id, owner_token_hash, name, nickname, character_key, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+  await database.prepare(`INSERT INTO profiles (id, owner_token_hash, name, nickname, character_preset, character_key, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET name = excluded.name, nickname = excluded.nickname,
-      character_key = COALESCE(excluded.character_key, profiles.character_key), updated_at = excluded.updated_at`)
-    .bind(member.profile_id, auth.userHash, name, member.nickname, characterKey, now, now).run();
-  const row = await database.prepare("SELECT id, name, nickname, character_key, message FROM profiles WHERE id = ?")
+      character_preset = excluded.character_preset,
+      character_key = CASE WHEN ? = 1 THEN NULL ELSE COALESCE(excluded.character_key, profiles.character_key) END,
+      updated_at = excluded.updated_at`)
+    .bind(member.profile_id, auth.userHash, name, member.nickname, characterPreset, characterKey, now, now, removeCharacter ? 1 : 0).run();
+  const row = await database.prepare("SELECT id, name, nickname, character_preset, character_key, message FROM profiles WHERE id = ?")
     .bind(member.profile_id).first<ProfileRow>();
   if (!row) throw new Error("invalid_profile");
   return Response.json({ profile: mapProfile(request, row), migrated: Boolean(existing) });
@@ -197,8 +214,8 @@ async function handleProfile(request: Request, database: D1Database, uploads: R2
 async function handleCommunity(request: Request, database: D1Database, member: Member) {
   if (request.method !== "GET") return Response.json({ error: "method_not_allowed" }, { status: 405 });
   const [profile, activeResult, galleryResult, sessionsResult, teacherNote] = await Promise.all([
-    database.prepare("SELECT id, name, nickname, character_key, message FROM profiles WHERE id = ?").bind(member.profile_id).first<ProfileRow>(),
-    database.prepare(`SELECT p.id, p.name, p.nickname, p.character_key, p.message, pr.mode, pr.category, pr.started_at
+    database.prepare("SELECT id, name, nickname, character_preset, character_key, message FROM profiles WHERE id = ?").bind(member.profile_id).first<ProfileRow>(),
+    database.prepare(`SELECT p.id, p.name, p.nickname, p.character_preset, p.character_key, p.message, pr.mode, pr.category, pr.started_at
       FROM presence pr JOIN profiles p ON p.id = pr.profile_id
       WHERE pr.updated_at >= ? ORDER BY pr.mode DESC, pr.started_at ASC LIMIT 100`).bind(Date.now() - 90_000).all<PresenceRow>(),
     database.prepare(`SELECT s.id, s.profile_id, s.seconds, s.category, s.artwork_key, s.note, s.completed_at,
@@ -212,6 +229,7 @@ async function handleCommunity(request: Request, database: D1Database, member: M
     id: row.id,
     name: row.name,
     nickname: row.nickname,
+    characterPreset: validCharacterPreset(row.character_preset) ? row.character_preset : "sky",
     characterDataUrl: mediaUrl(request, row.character_key),
     mode: row.mode === "working" ? "working" : "idle",
     category: row.category as CategoryKey,
@@ -250,7 +268,7 @@ async function handleMessage(request: Request, database: D1Database, member: Mem
   const body = await request.json() as { message?: string };
   const message = String(body.message ?? "").trim().slice(0, 60);
   await database.prepare("UPDATE profiles SET message = ?, updated_at = ? WHERE id = ?").bind(message, Date.now(), member.profile_id).run();
-  const row = await database.prepare("SELECT id, name, nickname, character_key, message FROM profiles WHERE id = ?").bind(member.profile_id).first<ProfileRow>();
+  const row = await database.prepare("SELECT id, name, nickname, character_preset, character_key, message FROM profiles WHERE id = ?").bind(member.profile_id).first<ProfileRow>();
   if (!row) throw new Error("profile_not_found");
   return Response.json({ profile: mapProfile(request, row) });
 }

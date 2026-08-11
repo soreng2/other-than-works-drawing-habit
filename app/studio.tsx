@@ -24,6 +24,7 @@ import {
 } from "./lib/community-client";
 import type {
   CategoryKey,
+  CharacterPresetKey,
   DeviceIdentity,
   Profile,
   RosterSnapshot,
@@ -49,6 +50,15 @@ const categories: Array<{
   { key: "color", title: "채색", icon: "◒" },
   { key: "emoticon", title: "이모티콘", icon: "☺" },
   { key: "free", title: "자유 작업", icon: "✦" },
+];
+
+const characterPresets: Array<{ key: CharacterPresetKey; name: string }> = [
+  { key: "sky", name: "하늘 폴더" },
+  { key: "moss", name: "이끼 폴더" },
+  { key: "apricot", name: "살구 폴더" },
+  { key: "rose", name: "장미 폴더" },
+  { key: "violet", name: "보라 폴더" },
+  { key: "lemon", name: "레몬 폴더" },
 ];
 
 const milestones = [
@@ -123,18 +133,16 @@ async function validateCharacter(file: File): Promise<string> {
   }
   const dataUrl = await readFile(file);
   const image = await loadImage(dataUrl);
-  if (image.naturalWidth !== 1024 || image.naturalHeight !== 1024) {
-    throw new Error("캐릭터 이미지는 정확히 1024 × 1024px이어야 해요.");
-  }
-  const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 1024;
-  const context = canvas.getContext("2d", { willReadFrequently: true });
-  if (!context) throw new Error("이미지를 확인하지 못했어요.");
-  context.drawImage(image, 0, 0);
-  const pixels = context.getImageData(0, 0, 1024, 1024).data;
+  const sourceCanvas = document.createElement("canvas");
+  sourceCanvas.width = image.naturalWidth;
+  sourceCanvas.height = image.naturalHeight;
+  const sourceContext = sourceCanvas.getContext("2d", { willReadFrequently: true });
+  if (!sourceContext) throw new Error("이미지를 확인하지 못했어요.");
+  sourceContext.drawImage(image, 0, 0);
+  const pixels = sourceContext.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height).data;
   let transparentPixelFound = false;
-  for (let index = 3; index < pixels.length; index += 64) {
+  const sampleStep = Math.max(4, Math.floor(pixels.length / 200_000 / 4) * 4);
+  for (let index = 3; index < pixels.length; index += sampleStep) {
     if (pixels[index] < 250) {
       transparentPixelFound = true;
       break;
@@ -143,7 +151,16 @@ async function validateCharacter(file: File): Promise<string> {
   if (!transparentPixelFound) {
     throw new Error("배경이 투명한 PNG로 저장해 주세요.");
   }
-  return dataUrl;
+  const canvas = document.createElement("canvas");
+  canvas.width = 1024;
+  canvas.height = 1024;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("이미지를 확인하지 못했어요.");
+  const scale = 900 / Math.max(image.naturalWidth, image.naturalHeight);
+  const width = image.naturalWidth * scale;
+  const height = image.naturalHeight * scale;
+  context.drawImage(image, (1024 - width) / 2, (1024 - height) / 2, width, height);
+  return canvas.toDataURL("image/png");
 }
 
 async function prepareArtwork(file: File): Promise<string> {
@@ -225,10 +242,10 @@ function isThisWeek(date: Date) {
   return date >= start && date < end;
 }
 
-function DefaultCharacter({ compact = false }: { compact?: boolean }) {
+function DefaultCharacter({ compact = false, preset = "sky" }: { compact?: boolean; preset?: CharacterPresetKey }) {
   return (
     <img
-      className={`character-image official${compact ? " compact" : ""}`}
+      className={`character-image official preset-${preset}${compact ? " compact" : ""}`}
       src="/brand-character.png"
       alt="아더댄웍스 공식 폴더 캐릭터"
     />
@@ -239,7 +256,23 @@ function Character({ profile, compact = false }: { profile: Profile; compact?: b
   if (profile.characterDataUrl) {
     return <img className={`character-image${compact ? " compact" : ""}`} src={profile.characterDataUrl} alt={`${profile.name} 캐릭터`} />;
   }
-  return <DefaultCharacter compact={compact} />;
+  return <DefaultCharacter compact={compact} preset={profile.characterPreset ?? "sky"} />;
+}
+
+function PresetPicker({ selected, custom, onSelect }: { selected: CharacterPresetKey; custom: boolean; onSelect: (preset: CharacterPresetKey) => void }) {
+  return (
+    <div className="preset-section">
+      <div className="preset-heading"><b>폴더 친구 고르기</b><span>{custom ? "내 PNG 사용 중" : "언제든 바꿀 수 있어요"}</span></div>
+      <div className="preset-grid">
+        {characterPresets.map((preset) => (
+          <button className={!custom && selected === preset.key ? "selected" : ""} type="button" key={preset.key} onClick={() => onSelect(preset.key)}>
+            <DefaultCharacter compact preset={preset.key} />
+            <span>{preset.name}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function normalizedSearch(value: string) {
@@ -343,6 +376,7 @@ function Enrollment({ snapshot, onComplete }: { snapshot: RosterSnapshot; onComp
 
 function Onboarding({ onComplete }: { onComplete: (profile: Profile) => Promise<void> }) {
   const [name, setName] = useState("");
+  const [preset, setPreset] = useState<CharacterPresetKey>("sky");
   const [character, setCharacter] = useState<string>();
   const [error, setError] = useState("");
   const [guideOpen, setGuideOpen] = useState(false);
@@ -374,11 +408,13 @@ function Onboarding({ onComplete }: { onComplete: (profile: Profile) => Promise<
 
       <section className="onboarding-card" aria-label="작업친구 만들기">
         <div className="onboarding-character-stage">
-          {character ? <img src={character} className="character-image onboarding" alt="업로드한 작업친구" /> : <DefaultCharacter />}
+          {character ? <img src={character} className="character-image onboarding" alt="업로드한 작업친구" /> : <DefaultCharacter preset={preset} />}
           <span className="character-nameplate">{name.trim() || "예시 캐릭터"}</span>
         </div>
         <h2>내 작업친구를 소개해요</h2>
-        <p className="subtle">예시 캐릭터로 시작하거나, 직접 그린 캐릭터를 불러올 수 있어요.</p>
+        <p className="subtle">폴더 친구를 고르거나, 직접 그린 투명 PNG를 불러올 수 있어요.</p>
+
+        <PresetPicker selected={preset} custom={Boolean(character)} onSelect={(nextPreset) => { setPreset(nextPreset); setCharacter(undefined); setError(""); }} />
 
         <label className="field-label" htmlFor="friend-name">작업친구 이름</label>
         <input
@@ -393,7 +429,7 @@ function Onboarding({ onComplete }: { onComplete: (profile: Profile) => Promise<
 
         <div className="onboarding-actions">
           <label className="secondary-button file-button">
-            <span>PNG 불러오기</span>
+            <span>{character ? "내 PNG 바꾸기" : "내 PNG 불러오기"}</span>
             <input type="file" accept="image/png" onChange={handleCharacter} />
           </label>
           <button className="secondary-button" type="button" onClick={() => setGuideOpen(true)}>그리기 가이드</button>
@@ -407,7 +443,7 @@ function Onboarding({ onComplete }: { onComplete: (profile: Profile) => Promise<
             try {
               setSaving(true);
               setError("");
-              await onComplete({ name: name.trim(), characterDataUrl: character });
+              await onComplete({ name: name.trim(), characterPreset: preset, characterDataUrl: character });
             } catch (saveError) {
               setError(saveError instanceof Error ? saveError.message : "공동 작업실에 연결하지 못했어요.");
             } finally {
@@ -446,6 +482,7 @@ function Onboarding({ onComplete }: { onComplete: (profile: Profile) => Promise<
 
 function ProfileEditor({ profile, onClose, onSave }: { profile: Profile; onClose: () => void; onSave: (profile: Profile) => Promise<void> }) {
   const [name, setName] = useState(profile.name);
+  const [preset, setPreset] = useState<CharacterPresetKey>(profile.characterPreset ?? "sky");
   const [character, setCharacter] = useState(profile.characterDataUrl);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -468,13 +505,14 @@ function ProfileEditor({ profile, onClose, onSave }: { profile: Profile; onClose
         <p className="eyebrow">MY WORK FRIEND</p>
         <h2 id="profile-title">내 캐릭터 바꾸기</h2>
         <div className="profile-character-stage">
-          {character ? <img src={character} className="character-image onboarding" alt="내 작업친구" /> : <DefaultCharacter />}
+          {character ? <img src={character} className="character-image onboarding" alt="내 작업친구" /> : <DefaultCharacter preset={preset} />}
           <span className="character-nameplate">{name.trim() || "예시 캐릭터"}</span>
         </div>
         <label className="field-label" htmlFor="profile-name">작업친구 이름</label>
         <input id="profile-name" className="text-input" value={name} maxLength={12} onChange={(event) => setName(event.target.value)} />
+        <PresetPicker selected={preset} custom={Boolean(character)} onSelect={(nextPreset) => { setPreset(nextPreset); setCharacter(undefined); setError(""); }} />
         <label className="secondary-button file-button profile-file-button">
-          <span>1024px 투명 PNG 불러오기</span>
+          <span>{character ? "내 투명 PNG 바꾸기" : "내 투명 PNG 불러오기"}</span>
           <input type="file" accept="image/png" onChange={handleCharacter} />
         </label>
         {error && <p className="error-message" role="alert">{error}</p>}
@@ -486,7 +524,7 @@ function ProfileEditor({ profile, onClose, onSave }: { profile: Profile; onClose
             try {
               setSaving(true);
               setError("");
-              await onSave({ ...profile, name: name.trim(), characterDataUrl: character });
+              await onSave({ ...profile, name: name.trim(), characterPreset: preset, characterDataUrl: character });
               onClose();
             } catch (saveError) {
               setError(saveError instanceof Error ? saveError.message : "프로필을 저장하지 못했어요.");
@@ -622,7 +660,7 @@ function MapFriend({ friend, clock }: { friend: MapMember; clock: number }) {
     <article className={`map-friend${working ? " working" : ""}${friend.mine ? " mine" : ""}`}>
       <span className="floating-name">{friend.nickname || friend.name}{friend.mine ? " · 나" : ""}</span>
       <span className={`map-speech${friend.message ? " personal" : ""}`}>{friend.message || fallback}</span>
-      <div className="map-avatar"><Character profile={{ name: friend.name, nickname: friend.nickname, characterDataUrl: friend.characterDataUrl }} /></div>
+      <div className="map-avatar"><Character profile={{ name: friend.name, nickname: friend.nickname, characterPreset: friend.characterPreset, characterDataUrl: friend.characterDataUrl }} /></div>
       {working && <div className="map-chair"><span /><i /></div>}
       {working && <div className="map-desk"><span /><i /><i /><b>{friend.name}</b></div>}
     </article>
@@ -647,6 +685,7 @@ function TogetherPanel({ profile, activeFriends, running, elapsed, category, clo
     id: profile.id ?? "mine",
     name: profile.name,
     nickname: profile.nickname,
+    characterPreset: profile.characterPreset,
     characterDataUrl: profile.characterDataUrl,
     mode: running ? "working" : "idle",
     category,
