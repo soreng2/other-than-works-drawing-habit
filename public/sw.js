@@ -1,5 +1,5 @@
-const CACHE = "otw-static-v4";
-const APP_SHELL = ["/manifest.webmanifest", "/brand-character.png"];
+const CACHE = "otw-static-v5";
+const APP_SHELL = ["/manifest.webmanifest", "/brand-character.png", "/studio-room.jpg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(APP_SHELL)));

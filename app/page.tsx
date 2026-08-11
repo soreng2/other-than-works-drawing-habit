@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export default async function Page() {
   const user = await getChatGPTUser();
-  if (user) return <Studio />;
+  if (user || process.env.NODE_ENV === "development") return <Studio />;
 
   return (
     <main className="signin-shell">

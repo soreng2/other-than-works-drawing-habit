@@ -69,6 +69,10 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(page, /getChatGPTUser/);
   assert.match(page, /chatGPTSignInPath/);
   assert.match(studio, /visibilitychange/);
+  assert.match(studio, /seconds: 300/);
+  assert.match(studio, /자유 집중/);
+  assert.match(studio, /timerTargets/);
+  assert.match(studio, /분 바로 시작/);
   assert.match(studio, /validateCharacter/);
   assert.match(studio, /PresetPicker/);
   assert.match(studio, /canvas\.toDataURL\("image\/png"\)/);
@@ -79,7 +83,7 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(studio, /RecordsPanel/);
   assert.match(studio, /GalleryPanel/);
   assert.match(studio, /MissionPanel/);
-  assert.match(layout, /brand-character\.png/);
+  assert.match(layout, /og\.jpg/);
   assert.match(styles, /prefers-reduced-motion/);
   assert.match(manifest, /"display": "standalone"/);
   assert.match(serviceWorker, /caches\.open/);
@@ -106,6 +110,8 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(accountMigration, /CREATE TABLE `app_settings`/);
   assert.match(presetMigration, /character_preset/);
   assert.match(styles, /preset-grid/);
+  assert.match(styles, /studio-room\.jpg/);
+  assert.match(styles, /timer-presets/);
   assert.match(studio, /예시 캐릭터/);
   assert.match(studio, /together-map/);
   assert.match(studio, /floating-name/);
@@ -116,6 +122,8 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.doesNotMatch(studio, /friendSeed|gallerySeed/);
 
   await access(new URL("../public/brand-character.png", import.meta.url));
+  await access(new URL("../public/studio-room.jpg", import.meta.url));
+  await access(new URL("../public/og.jpg", import.meta.url));
   await assert.rejects(access(new URL("../app/_sites-preview/SkeletonPreview.tsx", import.meta.url)));
   await access(new URL(".openai/hosting.json", root));
 });

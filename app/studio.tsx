@@ -39,6 +39,7 @@ type PersistedState = {
 };
 
 type TabKey = "home" | "together" | "records" | "gallery" | "mission";
+type TimerTarget = 0 | 300 | 600 | 1200 | 1800;
 
 const categories: Array<{
   key: CategoryKey;
@@ -62,12 +63,29 @@ const characterPresets: Array<{ key: CharacterPresetKey; name: string }> = [
 ];
 
 const milestones = [
-  { minutes: 0, title: "작은 책상", detail: "나만의 작업실이 생겼어요.", icon: "▰" },
-  { minutes: 60, title: "햇살 창문", detail: "누적 1시간, 창문이 열려요.", icon: "▦" },
-  { minutes: 180, title: "재료 선반", detail: "누적 3시간, 도구 자리가 생겨요.", icon: "▥" },
-  { minutes: 360, title: "작은 테라스", detail: "누적 6시간, 바깥 공기가 들어와요.", icon: "♧" },
-  { minutes: 600, title: "밤의 전시실", detail: "누적 10시간, 비밀 전시실이 열려요.", icon: "☾" },
+  { minutes: 0, title: "작은 책상", detail: "나만의 작업실이 생겼어요.", icon: "1" },
+  { minutes: 10, title: "파란 스탠드", detail: "첫 10분, 책상에 불이 켜져요.", icon: "2" },
+  { minutes: 30, title: "햇살 창문", detail: "누적 30분, 창가가 환해져요.", icon: "3" },
+  { minutes: 60, title: "재료 선반", detail: "누적 1시간, 도구 자리가 생겨요.", icon: "4" },
+  { minutes: 180, title: "영감의 벽", detail: "누적 3시간, 스케치가 걸려요.", icon: "5" },
+  { minutes: 360, title: "밤의 작업실", detail: "누적 6시간, 늦은 밤의 불빛이 열려요.", icon: "6" },
 ];
+
+const timerTargets: Array<{ seconds: TimerTarget; label: string }> = [
+  { seconds: 300, label: "5분" },
+  { seconds: 600, label: "10분" },
+  { seconds: 1200, label: "20분" },
+  { seconds: 1800, label: "30분" },
+  { seconds: 0, label: "자유" },
+];
+
+const starterPrompts: Record<CategoryKey, string[]> = {
+  sketch: ["가장 가까운 물건을 선 20개로 그려보기", "손을 보지 않고 1분 윤곽선 그리기", "동그라미 세 개에서 캐릭터 시작하기"],
+  line: ["좋아하는 그림의 선 굵기 세 가지 따라 해보기", "지우개 없이 한 번에 외곽선 이어보기", "짧은 선과 긴 선만으로 물건 하나 그리기"],
+  color: ["오늘 눈에 들어온 색 세 개만 써보기", "명암 없이 색면만으로 채워보기", "평소 안 쓰는 색 하나를 주인공으로 만들기"],
+  emoticon: ["같은 얼굴로 감정 세 가지 바꿔보기", "말풍선 없이 상황이 보이게 그려보기", "손동작 하나로 기분 표현하기"],
+  free: ["완성하지 않아도 되는 첫 선 하나 긋기", "지금 가장 그리고 싶은 조각부터 시작하기", "어제 그림에서 마음에 든 부분만 이어보기"],
+};
 
 const DB_NAME = "other-than-works-mvp";
 const STORE_NAME = "app-state";
@@ -225,6 +243,12 @@ function formatTimer(seconds: number) {
   const minutes = Math.floor(seconds / 60).toString().padStart(2, "0");
   const remainder = Math.floor(seconds % 60).toString().padStart(2, "0");
   return `${minutes}:${remainder}`;
+}
+
+function timerDisplay(elapsed: number, target: TimerTarget) {
+  if (target === 0) return formatTimer(elapsed);
+  if (elapsed <= target) return formatTimer(target - elapsed);
+  return `+${formatTimer(elapsed - target)}`;
 }
 
 function isSameDay(left: Date, right: Date) {
@@ -541,17 +565,14 @@ function ProfileEditor({ profile, onClose, onSave }: { profile: Profile; onClose
 }
 
 function StudioScene({ profile, totalMinutes }: { profile: Profile; totalMinutes: number }) {
+  const lit = totalMinutes >= 10;
   return (
-    <section className="studio-scene" aria-label={`${profile.name}의 개인 작업실`}>
+    <section className={`studio-scene${lit ? " is-lit" : ""}`} aria-label={`${profile.name}의 개인 작업실`}>
       <span className="scene-label">{profile.name}의 작업실</span>
-      {totalMinutes >= 60 && <div className="scene-window"><i /><i /></div>}
-      {totalMinutes >= 180 && <div className="scene-shelf"><i /><i /><i /></div>}
-      {totalMinutes >= 360 && <div className="scene-plant tall"><span>♧</span></div>}
-      <div className="scene-desk"><span /><i /><i /></div>
+      {lit && <span className="lamp-glow" aria-hidden="true" />}
       <div className="character-shadow" />
       <div className="scene-character"><Character profile={profile} /></div>
       <span className="scene-nameplate">{profile.name}</span>
-      <div className="scene-plant"><span>♧</span></div>
     </section>
   );
 }
@@ -560,22 +581,30 @@ function HomePanel({
   profile,
   sessions,
   elapsed,
+  timerTarget,
+  clock,
   running,
   category,
   pauseNotice,
   onCategory,
+  onTimerTarget,
   onToggle,
   onFinish,
+  onReset,
 }: {
   profile: Profile;
   sessions: WorkSession[];
   elapsed: number;
+  timerTarget: TimerTarget;
+  clock: number;
   running: boolean;
   category: CategoryKey;
   pauseNotice: string;
   onCategory: (key: CategoryKey) => void;
+  onTimerTarget: (target: TimerTarget) => void;
   onToggle: () => void;
   onFinish: () => void;
+  onReset: () => void;
 }) {
   const totalMinutes = sessions.reduce((sum, session) => sum + minutesFor(session.seconds), 0);
   const todayMinutes = sessions.filter((session) => isSameDay(new Date(session.completedAt), new Date())).reduce((sum, session) => sum + minutesFor(session.seconds), 0);
@@ -584,52 +613,59 @@ function HomePanel({
   const milestoneProgress = nextMilestone
     ? Math.max(0, Math.min(1, (totalMinutes - currentMilestone.minutes) / (nextMilestone.minutes - currentMilestone.minutes)))
     : 1;
-  const timerProgress = Math.min(1, elapsed / 600);
+  const timerProgress = timerTarget === 0 ? Math.min(1, elapsed / 600) : Math.min(1, elapsed / timerTarget);
   const timerStyle = { "--timer-progress": `${timerProgress * 360}deg` } as CSSProperties;
+  const promptList = starterPrompts[category];
+  const dailyPrompt = promptList[Math.floor(clock / 86_400_000) % promptList.length];
+  const targetReached = timerTarget > 0 && elapsed >= timerTarget;
 
   return (
     <div className="panel-stack home-panel">
       <header className="home-greeting">
         <div>
           <p className="eyebrow">{new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "long" }).format(new Date())}</p>
-          <h2>{profile.name}가 기다리고 있어요</h2>
+          <h2>오늘도 가볍게 시작해요</h2>
         </div>
         <div className="today-count"><span>오늘</span><b>{todayMinutes}분</b></div>
       </header>
 
       <StudioScene profile={profile} totalMinutes={totalMinutes} />
 
-      <section className="paper-card milestone-card">
-        <div className="card-title-row"><b>{currentMilestone.icon} {currentMilestone.title}</b><span>누적 {totalMinutes}분</span></div>
+      <section className="room-progress" aria-label="작업실 성장 진행">
+        <div className="room-progress-head"><div><b>{currentMilestone.title}</b><span>누적 {totalMinutes}분</span></div><button type="button" onClick={onToggle}>{running ? "잠시 멈춤" : elapsed > 0 ? "이어서 하기" : timerTarget === 0 ? "자유 집중 시작" : `${timerTarget / 60}분 바로 시작`}</button></div>
         <div className="progress-track"><i style={{ width: `${milestoneProgress * 100}%` }} /></div>
         <p>{nextMilestone ? `${nextMilestone.title}까지 ${Math.max(0, nextMilestone.minutes - totalMinutes)}분` : "작업실의 모든 공간을 발견했어요."}</p>
       </section>
 
       <section className="work-choice">
-        <p className="eyebrow">TODAY&apos;S WORK</p>
+        <p className="eyebrow">오늘의 작업</p>
         <h3>무슨 작업을 할까요?</h3>
         <div className="pill-scroll">
           {categories.map((item) => (
             <button type="button" key={item.key} onClick={() => onCategory(item.key)} className={`category-pill${category === item.key ? " active" : ""}`}>
-              <span>{item.icon}</span>{item.title}
+              {item.title}
             </button>
           ))}
         </div>
       </section>
 
       <section className="paper-card timer-card">
-        <div className="card-title-row"><b>{categoryTitle(category)}</b><span>{elapsed >= 600 ? "오늘의 10분 완료" : "목표 10분"}</span></div>
+        <div className="timer-heading"><div><b>{categoryTitle(category)}</b><span>{dailyPrompt}</span></div><i>{targetReached ? "목표 완료" : timerTarget === 0 ? "자유 집중" : `${timerTarget / 60}분 타이머`}</i></div>
+        <div className="timer-presets" aria-label="집중 시간 선택">
+          {timerTargets.map((target) => <button type="button" key={target.seconds} disabled={running || elapsed > 0} className={timerTarget === target.seconds ? "active" : ""} onClick={() => onTimerTarget(target.seconds)}>{target.label}</button>)}
+        </div>
         <div className="timer-ring" style={timerStyle}>
           <div className="timer-inner">
-            <strong>{formatTimer(elapsed)}</strong>
-            <span>{running ? "집중하는 중" : elapsed === 0 ? "준비되면 시작" : "잠시 멈춤"}</span>
+            <strong>{timerDisplay(elapsed, timerTarget)}</strong>
+            <span>{running ? (targetReached ? "조금 더 이어가는 중" : "집중하는 중") : elapsed === 0 ? (timerTarget === 0 ? "시간을 재며 시작" : "남은 시간") : targetReached ? "오늘의 목표 완료" : "잠시 멈춤"}</span>
           </div>
         </div>
         {pauseNotice && <p className="pause-notice">Ⅱ {pauseNotice}</p>}
         <div className="timer-actions">
-          <button className="primary-button" type="button" onClick={onToggle}>{running ? "잠시 멈추기" : elapsed === 0 ? "10분 시작" : "이어서 하기"}</button>
-          {elapsed > 0 && <button className="finish-button" type="button" onClick={onFinish} aria-label="작업 끝내기">✓</button>}
+          <button className="primary-button" type="button" onClick={onToggle}>{running ? "잠시 멈추기" : elapsed === 0 ? (timerTarget === 0 ? "자유 집중 시작" : `${timerTarget / 60}분 시작`) : "이어서 하기"}</button>
+          {elapsed > 0 && <button className="finish-button" type="button" onClick={onFinish}>기록</button>}
         </div>
+        {!running && elapsed > 0 && <button className="timer-reset" type="button" onClick={onReset}>이번 타이머 지우기</button>}
       </section>
     </div>
   );
@@ -662,7 +698,7 @@ function MapFriend({ friend, clock }: { friend: MapMember; clock: number }) {
       <span className={`map-speech${friend.message ? " personal" : ""}`}>{friend.message || fallback}</span>
       <div className="map-avatar"><Character profile={{ name: friend.name, nickname: friend.nickname, characterPreset: friend.characterPreset, characterDataUrl: friend.characterDataUrl }} /></div>
       {working && <div className="map-chair"><span /><i /></div>}
-      {working && <div className="map-desk"><span /><i /><i /><b>{friend.name}</b></div>}
+      {working && <div className="map-desk"><span /><i /><i /></div>}
     </article>
   );
 }
@@ -701,10 +737,10 @@ function TogetherPanel({ profile, activeFriends, running, elapsed, category, clo
   return (
     <div className="panel-stack section-panel">
       <header className="section-header">
-        <div><p className="eyebrow">TOGETHER NOW</p><h2>지금 {members.length}명이 함께 있어요</h2></div>
+        <div><p className="eyebrow">함께 있는 작업실</p><h2>지금 {members.length}명이 함께 있어요</h2></div>
         <span className="live-orbit"><i /></span>
       </header>
-      <p className="section-description">{workingCount}명은 작업 중이에요. 쉬는 친구들은 전시를 보거나 작업실 곳곳에 머물러요.</p>
+      <p className="section-description">{workingCount}명은 작업 중이에요. 쉬는 친구들은 전시와 작업실 곳곳에서 조용히 시간을 보내요.</p>
       <form className="paper-card message-composer" onSubmit={async (event) => {
         event.preventDefault();
         try {
@@ -733,6 +769,7 @@ function TogetherPanel({ profile, activeFriends, running, elapsed, category, clo
           />
         ))}
       </div>
+      <p className="map-strip-hint">옆으로 넘기면 다른 공간도 볼 수 있어요.</p>
       <section className="paper-card quiet-rule"><b>♥ 이 공간에는 순위가 없어요</b><p>오래 한 사람보다 오늘 시작한 사람을 반겨요. 집중을 끝내면 캐릭터도 조용히 자기 작업실로 돌아갑니다.</p></section>
     </div>
   );
@@ -753,12 +790,16 @@ function RecordsPanel({ sessions }: { sessions: WorkSession[] }) {
   const now = new Date();
   const cells = monthCells(now);
   const thisWeekMinutes = sessions.filter((session) => isThisWeek(new Date(session.completedAt))).reduce((sum, session) => sum + minutesFor(session.seconds), 0);
-  const dayCount = new Set(sessions.map((session) => new Date(session.completedAt).toDateString())).size;
+  const thisWeekCount = sessions.filter((session) => isThisWeek(new Date(session.completedAt))).length;
+  const dayCount = new Set(sessions.filter((session) => {
+    const date = new Date(session.completedAt);
+    return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+  }).map((session) => new Date(session.completedAt).toDateString())).size;
   return (
     <div className="panel-stack section-panel">
       <section className="paper-card news-card">
-        <p className="eyebrow">WEEKLY STUDIO NEWS</p><h2>이번 주 작업실 소식</h2>
-        <div className="award-row"><span>{thisWeekMinutes ? "◆" : "♧"}</span><div><b>{thisWeekMinutes ? "이번 주의 시작 수집가" : "첫 작업을 기다리는 중"}</b><p>{thisWeekMinutes ? `이번 주 ${thisWeekMinutes}분 동안 작업실 불을 켰어요.` : "10분을 시작하면 첫 번째 상장이 도착해요."}</p></div></div>
+        <p className="eyebrow">이번 주 기록</p><h2>작업실 소식</h2>
+        <div className="award-row"><span>{thisWeekMinutes ? "◆" : "○"}</span><div><b>{thisWeekMinutes ? `${thisWeekCount}번의 시작을 모았어요` : "언제든 다시 시작할 수 있어요"}</b><p>{thisWeekMinutes ? `이번 주 ${thisWeekMinutes}분 동안 작업실 불을 켰어요.` : "쉬었던 날의 기록도 그대로예요. 오늘 5분부터 시작해봐요."}</p></div></div>
       </section>
       <section className="paper-card calendar-card">
         <div className="card-title-row"><b>{now.getFullYear()}년 {now.getMonth() + 1}월</b><span>작업한 날 {dayCount}일</span></div>
@@ -771,14 +812,14 @@ function RecordsPanel({ sessions }: { sessions: WorkSession[] }) {
         </div>
       </section>
       <section className="record-section">
-        <p className="eyebrow">DRAWING LOG</p><h2>최근 작업</h2>
+        <p className="eyebrow">그림 기록</p><h2>최근 작업</h2>
         {sessions.length === 0 ? (
           <div className="empty-state"><span>▧</span><b>아직 남긴 그림이 없어요</b><p>작업실에서 타이머를 시작하고 오늘의 그림 한 장을 남겨보세요.</p></div>
         ) : sessions.map((session) => (
           <article className="session-row" key={session.id}>
             <img src={session.artworkDataUrl} alt={session.note || `${categoryTitle(session.category)} 작업`} />
             <div><b>{categoryTitle(session.category)}</b><span>{minutesFor(session.seconds)}분 · {new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", hour: "numeric", minute: "numeric" }).format(new Date(session.completedAt))}</span>{session.note && <p>{session.note}</p>}</div>
-            {session.seconds >= 600 && <i>✓</i>}
+            {session.seconds >= 300 && <i>✓</i>}
           </article>
         ))}
       </section>
@@ -790,9 +831,9 @@ function GalleryPanel({ profile, sessions, sharedGallery }: { profile: Profile; 
   const friendsGallery = sharedGallery.filter((piece) => piece.artist !== profile.name || !sessions.some((session) => session.id === piece.id));
   return (
     <div className="panel-stack section-panel gallery-panel">
-      <section className="gallery-hero"><p className="eyebrow">WEEKLY EXHIBITION</p><h2>이번 주 우리가<br />시작한 그림들</h2><span>완성도 대신 남긴 흔적을 전시합니다.</span></section>
-      {sessions.length > 0 && <section><p className="eyebrow">MY WALL</p><h2>내 그림</h2><div className="my-wall">{sessions.slice(0, 6).map((session) => <article key={session.id}><img src={session.artworkDataUrl} alt={session.note || "내 작업 그림"} /><b>{categoryTitle(session.category)}</b><span>{minutesFor(session.seconds)}분의 그림</span></article>)}</div></section>}
-      <section><div className="card-title-row heading-row"><div><p className="eyebrow">OTHER THAN WORKS</p><h2>친구들의 그림</h2></div><span>최근 기록</span></div>
+      <section className="gallery-hero"><p className="eyebrow">이번 주 전시</p><h2>우리가 시작한<br />그림들</h2><span>완성도 대신 남긴 흔적을 전시해요.</span></section>
+      {sessions.length > 0 && <section><p className="eyebrow">내 벽</p><h2>내 그림</h2><div className="my-wall">{sessions.slice(0, 6).map((session) => <article key={session.id}><img src={session.artworkDataUrl} alt={session.note || "내 작업 그림"} /><b>{categoryTitle(session.category)}</b><span>{minutesFor(session.seconds)}분의 그림</span></article>)}</div></section>}
+      <section><div className="card-title-row heading-row"><div><p className="eyebrow">함께 남긴 그림</p><h2>친구들의 그림</h2></div><span>최근 기록</span></div>
         {friendsGallery.length > 0 ? <div className="gallery-grid">{friendsGallery.map((piece) => <article key={piece.id}><img className="shared-artwork" src={piece.artworkDataUrl} alt={piece.note || `${piece.artist}의 그림`} /><b>{piece.note || categoryTitle(piece.category)}</b><p>{piece.artist} · {categoryTitle(piece.category)} · {minutesFor(piece.seconds)}분</p></article>)}</div> : <div className="empty-state gallery-empty"><span>▧</span><b>첫 전시를 기다리는 중</b><p>누군가 작업을 완료하고 그림을 올리면 이곳에 함께 걸려요.</p></div>}
       </section>
       {sessions.length === 0 && <p className="gallery-invite">첫 기록을 남기면 {profile.name}의 그림도 이 전시장에 걸려요.</p>}
@@ -810,7 +851,7 @@ function MissionPanel({ sessions, teacherNote, isHost, onTeacherNote }: { sessio
   return (
     <div className="panel-stack section-panel mission-panel">
       <section className="paper-card mission-card">
-        <div className="card-title-row"><span className="eyebrow">WEEK 01</span><i>스케치</i></div>
+        <div className="card-title-row"><span className="eyebrow">이번 주 미션</span><i>스케치</i></div>
         <h2>못생긴 첫 스케치 3번</h2><p>완성하려고 애쓰지 말고, 10분 동안 손을 멈추지 않는 스케치를 세 번 남겨보세요.</p>
         <div className="progress-track orange"><i style={{ width: `${Math.min(100, progress / 3 * 100)}%` }} /></div>
         <div className="card-title-row"><span>이번 주 진행</span><b>{Math.min(progress, 3)} / 3</b></div>
@@ -835,16 +876,17 @@ function MissionPanel({ sessions, teacherNote, isHost, onTeacherNote }: { sessio
           }}>{noteSaving ? "등록 중…" : "등록"}</button></div>
         </> : <><p>“{teacherNote}”</p>{isHost && <button className="teacher-edit-button" type="button" onClick={() => setEditingNote(true)}>한마디 수정</button>}</>}</div>
       </section>
-      <section className="paper-card journey-card"><p className="eyebrow">STUDIO JOURNEY</p><h2>열리는 작업실</h2>{milestones.map((milestone, index) => { const open = milestone.minutes <= totalMinutes; return <div className={`journey-row${open ? " open" : ""}`} key={milestone.title}><span>{milestone.icon}</span><div><b>{milestone.title}</b><p>{milestone.detail}</p></div><i>{milestone.minutes === 0 ? "기본" : `${milestone.minutes}분`}</i>{index < milestones.length - 1 && <em />}</div>; })}</section>
+      <section className="paper-card journey-card"><p className="eyebrow">작업실 성장</p><h2>조금씩 열리는 공간</h2>{milestones.map((milestone, index) => { const open = milestone.minutes <= totalMinutes; return <div className={`journey-row${open ? " open" : ""}`} key={milestone.title}><span>{milestone.icon}</span><div><b>{milestone.title}</b><p>{milestone.detail}</p></div><i>{milestone.minutes === 0 ? "기본" : `${milestone.minutes}분`}</i>{index < milestones.length - 1 && <em />}</div>; })}</section>
     </div>
   );
 }
 
-function CompletionModal({ seconds, category, onClose, onSave }: { seconds: number; category: CategoryKey; onClose: () => void; onSave: (artwork: string, note: string) => Promise<void> }) {
+function CompletionModal({ seconds, goalSeconds, category, onClose, onSave }: { seconds: number; goalSeconds: TimerTarget; category: CategoryKey; onClose: () => void; onSave: (artwork: string, note: string) => Promise<void> }) {
   const [artwork, setArtwork] = useState("");
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const achieved = goalSeconds === 0 ? seconds > 0 : seconds >= goalSeconds;
   async function handleArtwork(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -853,7 +895,7 @@ function CompletionModal({ seconds, category, onClose, onSave }: { seconds: numb
   return (
     <div className="modal-backdrop"><section className="modal completion-modal" role="dialog" aria-modal="true" aria-labelledby="completion-title">
       <button className="close-button" type="button" onClick={onClose} aria-label="돌아가기">×</button>
-      <span className="completion-seal">{seconds >= 600 ? "◆" : "✎"}</span><h2 id="completion-title">{seconds >= 600 ? "오늘의 10분을 해냈어요" : "오늘의 흔적을 남겨요"}</h2><p>{Math.floor(seconds / 60)}분 {seconds % 60}초 · {categoryTitle(category)}</p>
+      <span className="completion-seal">{achieved ? "◆" : "✎"}</span><h2 id="completion-title">{achieved ? (goalSeconds === 0 ? "오늘의 집중을 남겨요" : `오늘의 ${goalSeconds / 60}분을 해냈어요`) : "오늘의 흔적을 남겨요"}</h2><p>{Math.floor(seconds / 60)}분 {seconds % 60}초 · {categoryTitle(category)}</p>
       <label className={`artwork-picker${artwork ? " has-image" : ""}`}>{artwork ? <img src={artwork} alt="선택한 오늘의 그림" /> : <span><b>{loading ? "그림 불러오는 중…" : "오늘 그린 그림 1장 올리기"}</b><small>완성작이 아니어도 괜찮아요</small></span>}<input type="file" accept="image/*" onChange={handleArtwork} /></label>
       <textarea value={note} maxLength={100} onChange={(event) => setNote(event.target.value)} placeholder="오늘 작업에 한마디 (선택)" />
       {error && <p className="error-message">{error}</p>}
@@ -881,6 +923,7 @@ export default function Home() {
   const [sharedGallery, setSharedGallery] = useState<SharedArtwork[]>([]);
   const [tab, setTab] = useState<TabKey>("home");
   const [category, setCategory] = useState<CategoryKey>("sketch");
+  const [timerTarget, setTimerTarget] = useState<TimerTarget>(600);
   const [elapsed, setElapsed] = useState(0);
   const [running, setRunning] = useState(false);
   const [pauseNotice, setPauseNotice] = useState("");
@@ -891,8 +934,10 @@ export default function Home() {
   const [bootKey, setBootKey] = useState(0);
   const [clock, setClock] = useState(() => Date.now());
   const identityRef = useRef<DeviceIdentity | null>(null);
+  const demoMode = useRef(false);
   const runStartedAt = useRef<number | null>(null);
   const elapsedBeforeRun = useRef(0);
+  const goalReached = useRef(false);
 
   const persist = useCallback((nextProfile: Profile | null, nextSessions: WorkSession[]) => {
     setProfile(nextProfile);
@@ -915,6 +960,26 @@ export default function Home() {
     let cancelled = false;
     async function initialize() {
       setReady(false);
+      if (window.location.hostname === "localhost" && new URLSearchParams(window.location.search).has("demo")) {
+        demoMode.current = true;
+        const demoProfile: Profile = { id: "demo-moru", name: "모루", nickname: "소랭", characterPreset: "sky", message: "오늘은 선을 가볍게!" };
+        const demoSessions: WorkSession[] = [
+          { id: "demo-1", completedAt: new Date().toISOString(), seconds: 720, category: "sketch", artworkDataUrl: "/studio-room.jpg", note: "창가의 작은 작업실" },
+          { id: "demo-2", completedAt: new Date(Date.now() - 86_400_000 * 2).toISOString(), seconds: 1240, category: "color", artworkDataUrl: "/brand-character.png", note: "파란 폴더 친구 색연습" },
+        ];
+        setRoster({ needsSetup: false, isAdmin: true, linked: true, nickname: "소랭", students: [] });
+        setProfile(demoProfile);
+        setSessions(demoSessions);
+        setActiveFriends([
+          { id: "demo-eunji", name: "구름", nickname: "은지", characterPreset: "moss", mode: "working", category: "color", startedAt: Date.now() - 11 * 60_000, message: "빛 연습하는 중" },
+          { id: "demo-seeun", name: "콩이", nickname: "세은", characterPreset: "apricot", mode: "idle", category: "free", startedAt: Date.now(), message: "전시 구경 왔어요" },
+          { id: "demo-ming", name: "토리", nickname: "밍쵸", characterPreset: "violet", mode: "idle", category: "emoticon", startedAt: Date.now(), message: "표정 세 개 그릴 예정" },
+        ]);
+        setSharedGallery([{ ...demoSessions[1], artist: "세은" }]);
+        setTeacherNote("완성하려 애쓰기보다 오늘 마음에 든 선 하나를 찾아봐요.");
+        setReady(true);
+        return;
+      }
       const identity = getDeviceIdentity();
       identityRef.current = identity;
       const cached = await loadPersistedState().catch(() => null);
@@ -974,6 +1039,13 @@ export default function Home() {
   }, [category]);
 
   useEffect(() => {
+    if (!running || timerTarget === 0 || elapsed < timerTarget || goalReached.current) return;
+    goalReached.current = true;
+    pauseTimer();
+    setFinishOpen(true);
+  }, [elapsed, pauseTimer, running, timerTarget]);
+
+  useEffect(() => {
     if (!profile) return;
     const announce = () => {
       if (document.visibilityState !== "visible") return;
@@ -1013,11 +1085,28 @@ export default function Home() {
 
   function toggleTimer() {
     if (running) { pauseTimer(); return; }
+    if (timerTarget > 0 && elapsed >= timerTarget) goalReached.current = true;
     setPauseNotice(""); elapsedBeforeRun.current = elapsed; runStartedAt.current = Date.now(); setRunning(true);
+  }
+
+  function resetTimer() {
+    pauseTimer();
+    setElapsed(0);
+    elapsedBeforeRun.current = 0;
+    runStartedAt.current = null;
+    goalReached.current = false;
+    setPauseNotice("");
   }
 
   function openFinish() { pauseTimer(); setFinishOpen(true); }
   async function saveSession(artwork: string, note: string) {
+    if (demoMode.current) {
+      const saved: WorkSession = { id: crypto.randomUUID(), completedAt: new Date().toISOString(), seconds: elapsed, category, artworkDataUrl: artwork, note };
+      persist(profile, [saved, ...sessions]);
+      resetTimer();
+      setFinishOpen(false);
+      return;
+    }
     const identity = identityRef.current;
     if (!identity) throw new Error("공동 작업실에 연결하지 못했어요.");
     const next: WorkSession = { id: crypto.randomUUID(), completedAt: new Date().toISOString(), seconds: elapsed, category, artworkDataUrl: artwork, note };
@@ -1027,11 +1116,13 @@ export default function Home() {
     elapsedBeforeRun.current = 0;
     runStartedAt.current = null;
     setPauseNotice("");
+    goalReached.current = false;
     setFinishOpen(false);
     await refreshCommunity();
   }
 
   async function saveProfile(nextProfile: Profile) {
+    if (demoMode.current) { persist(nextProfile, sessions); return; }
     const identity = identityRef.current;
     if (!identity) throw new Error("공동 작업실에 연결하지 못했어요.");
     const saved = await saveCloudProfile(identity, nextProfile);
@@ -1040,6 +1131,7 @@ export default function Home() {
   }
 
   async function saveMessage(message: string) {
+    if (demoMode.current) { persist({ ...profile!, message }, sessions); return; }
     const identity = identityRef.current;
     if (!identity) throw new Error("공동 작업실에 연결하지 못했어요.");
     const saved = await updateSharedMessage(identity, message);
@@ -1048,6 +1140,7 @@ export default function Home() {
   }
 
   async function saveTeacherNote(note: string) {
+    if (demoMode.current) { setTeacherNote(note); return; }
     setTeacherNote(await updateTeacherNote(note));
   }
 
@@ -1063,7 +1156,7 @@ export default function Home() {
       </header>
       {connectionMessage && <div className="connection-banner">{connectionMessage}</div>}
       <div className="app-content">
-        {tab === "home" && <HomePanel profile={profile} sessions={sessions} elapsed={elapsed} running={running} category={category} pauseNotice={pauseNotice} onCategory={setCategory} onToggle={toggleTimer} onFinish={openFinish} />}
+        {tab === "home" && <HomePanel profile={profile} sessions={sessions} elapsed={elapsed} timerTarget={timerTarget} clock={clock} running={running} category={category} pauseNotice={pauseNotice} onCategory={setCategory} onTimerTarget={(target) => { if (!running && elapsed === 0) { setTimerTarget(target); goalReached.current = false; } }} onToggle={toggleTimer} onFinish={openFinish} onReset={resetTimer} />}
         {tab === "together" && <TogetherPanel profile={profile} activeFriends={activeFriends} running={running} elapsed={elapsed} category={category} clock={clock} onMessage={saveMessage} />}
         {tab === "records" && <RecordsPanel sessions={sessions} />}
         {tab === "gallery" && <GalleryPanel profile={profile} sessions={sessions} sharedGallery={sharedGallery} />}
@@ -1071,10 +1164,10 @@ export default function Home() {
       </div>
       <nav className="bottom-nav" aria-label="주요 메뉴">
         {([
-          ["home", "⌂", "작업실"], ["together", "♧", "함께"], ["records", "▦", "기록"], ["gallery", "▧", "전시"], ["mission", "⚑", "미션"],
-        ] as Array<[TabKey, string, string]>).map(([key, icon, label]) => <button type="button" key={key} className={tab === key ? "active" : ""} onClick={() => setTab(key)}><span>{icon}</span>{label}</button>)}
+          ["home", "작업실"], ["together", "함께"], ["records", "기록"], ["gallery", "전시"], ["mission", "미션"],
+        ] as Array<[TabKey, string]>).map(([key, label]) => <button type="button" key={key} className={tab === key ? "active" : ""} onClick={() => setTab(key)}><span aria-hidden="true" />{label}</button>)}
       </nav>
-      {finishOpen && <CompletionModal seconds={elapsed} category={category} onClose={() => setFinishOpen(false)} onSave={saveSession} />}
+      {finishOpen && <CompletionModal seconds={elapsed} goalSeconds={timerTarget} category={category} onClose={() => setFinishOpen(false)} onSave={saveSession} />}
       {profileOpen && <ProfileEditor profile={profile} onClose={() => setProfileOpen(false)} onSave={saveProfile} />}
     </main>
   );
