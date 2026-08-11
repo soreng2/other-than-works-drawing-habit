@@ -33,14 +33,18 @@ test("server-renders the finished drawing studio shell", async () => {
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/);
 });
 
-test("includes the complete MVP and installable web app assets", async () => {
-  const [page, layout, styles, manifest, serviceWorker, packageJson] = await Promise.all([
+test("includes the complete shared MVP and installable web app assets", async () => {
+  const [page, layout, styles, manifest, serviceWorker, packageJson, communityClient, worker, hosting, migration] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../public/manifest.webmanifest", import.meta.url), "utf8"),
     readFile(new URL("../public/sw.js", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/community-client.ts", import.meta.url), "utf8"),
+    readFile(new URL("../worker/index.ts", import.meta.url), "utf8"),
+    readFile(new URL("../.openai/hosting.json", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/0000_shared_studio.sql", import.meta.url), "utf8"),
   ]);
 
   assert.match(page, /visibilitychange/);
@@ -52,14 +56,23 @@ test("includes the complete MVP and installable web app assets", async () => {
   assert.match(page, /RecordsPanel/);
   assert.match(page, /GalleryPanel/);
   assert.match(page, /MissionPanel/);
-  assert.match(layout, /og\.png/);
+  assert.match(layout, /brand-character\.png/);
   assert.match(styles, /prefers-reduced-motion/);
   assert.match(manifest, /"display": "standalone"/);
   assert.match(serviceWorker, /caches\.open/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
+  assert.match(communityClient, /fetchCommunity/);
+  assert.match(communityClient, /updatePresence/);
+  assert.match(communityClient, /saveCloudSession/);
+  assert.match(worker, /handleCommunityApi/);
+  assert.match(hosting, /"d1": "DB"/);
+  assert.match(hosting, /"r2": "UPLOADS"/);
+  assert.match(migration, /CREATE TABLE `profiles`/);
+  assert.match(migration, /CREATE TABLE `presence`/);
+  assert.match(migration, /CREATE TABLE `work_sessions`/);
+  assert.doesNotMatch(page, /friendSeed|gallerySeed/);
 
-  await access(new URL("../public/icon-512.png", import.meta.url));
-  await access(new URL("../public/og.png", import.meta.url));
+  await access(new URL("../public/brand-character.png", import.meta.url));
   await assert.rejects(access(new URL("../app/_sites-preview/SkeletonPreview.tsx", import.meta.url)));
   await access(new URL(".openai/hosting.json", root));
 });

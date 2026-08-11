@@ -3,28 +3,27 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type ChangeEvent,
   type CSSProperties,
 } from "react";
-
-type CategoryKey = "sketch" | "line" | "color" | "emoticon" | "free";
-
-type Profile = {
-  name: string;
-  characterDataUrl?: string;
-};
-
-type WorkSession = {
-  id: string;
-  completedAt: string;
-  seconds: number;
-  category: CategoryKey;
-  artworkDataUrl: string;
-  note: string;
-};
+import {
+  fetchCommunity,
+  getDeviceIdentity,
+  saveCloudProfile,
+  saveCloudSession,
+  sendPresenceStop,
+  updatePresence,
+} from "./lib/community-client";
+import type {
+  CategoryKey,
+  DeviceIdentity,
+  Profile,
+  SharedArtwork,
+  SharedFriend,
+  WorkSession,
+} from "./lib/community-types";
 
 type PersistedState = {
   profile: Profile | null;
@@ -51,19 +50,6 @@ const milestones = [
   { minutes: 180, title: "재료 선반", detail: "누적 3시간, 도구 자리가 생겨요.", icon: "▥" },
   { minutes: 360, title: "작은 테라스", detail: "누적 6시간, 바깥 공기가 들어와요.", icon: "♧" },
   { minutes: 600, title: "밤의 전시실", detail: "누적 10시간, 비밀 전시실이 열려요.", icon: "☾" },
-];
-
-const friendSeed = [
-  { id: "eunji", name: "은지", character: "🫐", category: "color" as CategoryKey, offset: 24, message: "파란 밤을 칠하는 중" },
-  { id: "seeun", name: "세은", character: "🌵", category: "sketch" as CategoryKey, offset: 11, message: "오늘은 손부터 가볍게" },
-  { id: "mingcho", name: "밍쵸", character: "🍞", category: "emoticon" as CategoryKey, offset: 38, message: "표정 세 개만 더!" },
-];
-
-const gallerySeed = [
-  { id: "night", artist: "은지", character: "🫐", title: "비 오는 밤의 산책", category: "채색", palette: "blue" },
-  { id: "monday", artist: "밍쵸", character: "🍞", title: "조금 느린 월요일", category: "이모티콘", palette: "sand" },
-  { id: "green", artist: "세은", character: "🌵", title: "창가의 초록 친구", category: "스케치", palette: "green" },
-  { id: "cloud", artist: "소랭", character: "☁️", title: "구름 수집 일지", category: "자유 작업", palette: "pink" },
 ];
 
 const DB_NAME = "other-than-works-mvp";
@@ -249,11 +235,12 @@ function Character({ profile, compact = false }: { profile: Profile; compact?: b
   return <DefaultCharacter compact={compact} />;
 }
 
-function Onboarding({ onComplete }: { onComplete: (profile: Profile) => void }) {
+function Onboarding({ onComplete }: { onComplete: (profile: Profile) => Promise<void> }) {
   const [name, setName] = useState("");
   const [character, setCharacter] = useState<string>();
   const [error, setError] = useState("");
   const [guideOpen, setGuideOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   async function handleCharacter(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -308,10 +295,20 @@ function Onboarding({ onComplete }: { onComplete: (profile: Profile) => void }) 
         <button
           className="primary-button wide"
           type="button"
-          disabled={!name.trim()}
-          onClick={() => onComplete({ name: name.trim(), characterDataUrl: character })}
-        >내 작업실 시작하기</button>
-        <p className="device-note">내 캐릭터와 그림 기록은 이 기기에만 안전하게 저장됩니다.</p>
+          disabled={!name.trim() || saving}
+          onClick={async () => {
+            try {
+              setSaving(true);
+              setError("");
+              await onComplete({ name: name.trim(), characterDataUrl: character });
+            } catch (saveError) {
+              setError(saveError instanceof Error ? saveError.message : "공동 작업실에 연결하지 못했어요.");
+            } finally {
+              setSaving(false);
+            }
+          }}
+        >{saving ? "공동 작업실에 입주하는 중…" : "내 작업실 시작하기"}</button>
+        <p className="device-note">이름·캐릭터·완료 그림은 이 링크를 함께 쓰는 수강생에게 보여요.</p>
       </section>
 
       {guideOpen && (
@@ -337,6 +334,62 @@ function Onboarding({ onComplete }: { onComplete: (profile: Profile) => void }) 
         </div>
       )}
     </main>
+  );
+}
+
+function ProfileEditor({ profile, onClose, onSave }: { profile: Profile; onClose: () => void; onSave: (profile: Profile) => Promise<void> }) {
+  const [name, setName] = useState(profile.name);
+  const [character, setCharacter] = useState(profile.characterDataUrl);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function handleCharacter(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      setError("");
+      setCharacter(await validateCharacter(file));
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : "이미지를 확인하지 못했어요.");
+    }
+  }
+
+  return (
+    <div className="modal-backdrop">
+      <section className="modal profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+        <button className="close-button" type="button" onClick={onClose} aria-label="닫기">×</button>
+        <p className="eyebrow">MY WORK FRIEND</p>
+        <h2 id="profile-title">내 캐릭터 바꾸기</h2>
+        <div className="profile-character-stage">
+          {character ? <img src={character} className="character-image onboarding" alt="내 작업친구" /> : <DefaultCharacter />}
+        </div>
+        <label className="field-label" htmlFor="profile-name">작업친구 이름</label>
+        <input id="profile-name" className="text-input" value={name} maxLength={12} onChange={(event) => setName(event.target.value)} />
+        <label className="secondary-button file-button profile-file-button">
+          <span>1024px 투명 PNG 불러오기</span>
+          <input type="file" accept="image/png" onChange={handleCharacter} />
+        </label>
+        {error && <p className="error-message" role="alert">{error}</p>}
+        <button
+          className="primary-button wide"
+          type="button"
+          disabled={!name.trim() || saving}
+          onClick={async () => {
+            try {
+              setSaving(true);
+              setError("");
+              await onSave({ ...profile, name: name.trim(), characterDataUrl: character });
+              onClose();
+            } catch (saveError) {
+              setError(saveError instanceof Error ? saveError.message : "프로필을 저장하지 못했어요.");
+            } finally {
+              setSaving(false);
+            }
+          }}
+        >{saving ? "친구들에게 알리는 중…" : "공동 작업실에 저장"}</button>
+        <p className="device-note">저장하면 다른 수강생 화면의 캐릭터도 함께 바뀝니다.</p>
+      </section>
+    </div>
   );
 }
 
@@ -434,11 +487,13 @@ function HomePanel({
   );
 }
 
-function TogetherPanel({ profile, running, elapsed, category, clock }: { profile: Profile; running: boolean; elapsed: number; category: CategoryKey; clock: number }) {
+function TogetherPanel({ profile, activeFriends, running, elapsed, category, clock }: { profile: Profile; activeFriends: SharedFriend[]; running: boolean; elapsed: number; category: CategoryKey; clock: number }) {
+  const friends = activeFriends.filter((friend) => friend.id !== profile.id);
+  const count = friends.length + (running ? 1 : 0);
   return (
     <div className="panel-stack section-panel">
       <header className="section-header">
-        <div><p className="eyebrow">TOGETHER NOW</p><h2>지금 {friendSeed.length + (running ? 1 : 0)}명이 작업 중</h2></div>
+        <div><p className="eyebrow">TOGETHER NOW</p><h2>지금 {count}명이 작업 중</h2></div>
         <span className="live-orbit"><i /></span>
       </header>
       <p className="section-description">말을 걸지 않아도, 각자 작업하는 기척만 나누는 조용한 공동 작업실이에요.</p>
@@ -449,13 +504,14 @@ function TogetherPanel({ profile, running, elapsed, category, clock }: { profile
             <h3>{profile.name}</h3><b>{categoryTitle(category)} · {Math.floor(elapsed / 60)}분째</b><p>오늘의 10분을 만드는 중</p>
           </article>
         )}
-        {friendSeed.map((friend) => (
+        {friends.map((friend) => (
           <article className="friend-card" key={friend.id}>
-            <div className="friend-avatar emoji">{friend.character}</div><span className="online-dot" />
-            <h3>{friend.name}</h3><b>{categoryTitle(friend.category)} · {friend.offset + Math.floor(clock / 60000) % 4}분째</b><p>{friend.message}</p>
+            <div className="friend-avatar"><Character profile={{ name: friend.name, characterDataUrl: friend.characterDataUrl }} compact /></div><span className="online-dot" />
+            <h3>{friend.name}</h3><b>{categoryTitle(friend.category)} · {Math.max(0, Math.floor((clock - friend.startedAt) / 60000))}분째</b><p>자기 작업실에서 집중하는 중</p>
           </article>
         ))}
       </div>
+      {count === 0 && <div className="empty-state together-empty"><span>♧</span><b>지금은 작업실이 조용해요</b><p>내가 시작하면 다른 수강생 화면에 캐릭터가 나타나요.</p></div>}
       <section className="paper-card quiet-rule"><b>♥ 이 공간에는 순위가 없어요</b><p>오래 한 사람보다 오늘 시작한 사람을 반겨요. 집중을 끝내면 캐릭터도 조용히 자기 작업실로 돌아갑니다.</p></section>
     </div>
   );
@@ -472,9 +528,9 @@ function monthCells(date: Date) {
   return cells;
 }
 
-function RecordsPanel({ sessions, onSample }: { sessions: WorkSession[]; onSample: () => void }) {
+function RecordsPanel({ sessions }: { sessions: WorkSession[] }) {
   const now = new Date();
-  const cells = useMemo(() => monthCells(now), []);
+  const cells = monthCells(now);
   const thisWeekMinutes = sessions.filter((session) => isThisWeek(new Date(session.completedAt))).reduce((sum, session) => sum + minutesFor(session.seconds), 0);
   const dayCount = new Set(sessions.map((session) => new Date(session.completedAt).toDateString())).size;
   return (
@@ -496,7 +552,7 @@ function RecordsPanel({ sessions, onSample }: { sessions: WorkSession[]; onSampl
       <section className="record-section">
         <p className="eyebrow">DRAWING LOG</p><h2>최근 작업</h2>
         {sessions.length === 0 ? (
-          <div className="empty-state"><span>▧</span><b>아직 남긴 그림이 없어요</b><p>작업실에서 타이머를 시작하고 오늘의 그림 한 장을 남겨보세요.</p><button type="button" onClick={onSample}>MVP 체험용 10분 기록 추가</button></div>
+          <div className="empty-state"><span>▧</span><b>아직 남긴 그림이 없어요</b><p>작업실에서 타이머를 시작하고 오늘의 그림 한 장을 남겨보세요.</p></div>
         ) : sessions.map((session) => (
           <article className="session-row" key={session.id}>
             <img src={session.artworkDataUrl} alt={session.note || `${categoryTitle(session.category)} 작업`} />
@@ -509,12 +565,15 @@ function RecordsPanel({ sessions, onSample }: { sessions: WorkSession[]; onSampl
   );
 }
 
-function GalleryPanel({ profile, sessions }: { profile: Profile; sessions: WorkSession[] }) {
+function GalleryPanel({ profile, sessions, sharedGallery }: { profile: Profile; sessions: WorkSession[]; sharedGallery: SharedArtwork[] }) {
+  const friendsGallery = sharedGallery.filter((piece) => piece.artist !== profile.name || !sessions.some((session) => session.id === piece.id));
   return (
     <div className="panel-stack section-panel gallery-panel">
       <section className="gallery-hero"><p className="eyebrow">WEEKLY EXHIBITION</p><h2>이번 주 우리가<br />시작한 그림들</h2><span>완성도 대신 남긴 흔적을 전시합니다.</span></section>
       {sessions.length > 0 && <section><p className="eyebrow">MY WALL</p><h2>내 그림</h2><div className="my-wall">{sessions.slice(0, 6).map((session) => <article key={session.id}><img src={session.artworkDataUrl} alt={session.note || "내 작업 그림"} /><b>{categoryTitle(session.category)}</b><span>{minutesFor(session.seconds)}분의 그림</span></article>)}</div></section>}
-      <section><div className="card-title-row heading-row"><div><p className="eyebrow">OTHER THAN WORKS</p><h2>친구들의 그림</h2></div><span>이번 주</span></div><div className="gallery-grid">{gallerySeed.map((piece) => <article key={piece.id}><div className={`sample-art ${piece.palette}`}><span>{piece.character}</span><i /></div><b>{piece.title}</b><p>{piece.artist} · {piece.category}</p></article>)}</div></section>
+      <section><div className="card-title-row heading-row"><div><p className="eyebrow">OTHER THAN WORKS</p><h2>친구들의 그림</h2></div><span>최근 기록</span></div>
+        {friendsGallery.length > 0 ? <div className="gallery-grid">{friendsGallery.map((piece) => <article key={piece.id}><img className="shared-artwork" src={piece.artworkDataUrl} alt={piece.note || `${piece.artist}의 그림`} /><b>{piece.note || categoryTitle(piece.category)}</b><p>{piece.artist} · {categoryTitle(piece.category)} · {minutesFor(piece.seconds)}분</p></article>)}</div> : <div className="empty-state gallery-empty"><span>▧</span><b>첫 전시를 기다리는 중</b><p>누군가 작업을 완료하고 그림을 올리면 이곳에 함께 걸려요.</p></div>}
+      </section>
       {sessions.length === 0 && <p className="gallery-invite">첫 기록을 남기면 {profile.name}의 그림도 이 전시장에 걸려요.</p>}
     </div>
   );
@@ -538,7 +597,7 @@ function MissionPanel({ sessions }: { sessions: WorkSession[] }) {
   );
 }
 
-function CompletionModal({ seconds, category, onClose, onSave }: { seconds: number; category: CategoryKey; onClose: () => void; onSave: (artwork: string, note: string) => void }) {
+function CompletionModal({ seconds, category, onClose, onSave }: { seconds: number; category: CategoryKey; onClose: () => void; onSave: (artwork: string, note: string) => Promise<void> }) {
   const [artwork, setArtwork] = useState("");
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
@@ -555,7 +614,17 @@ function CompletionModal({ seconds, category, onClose, onSave }: { seconds: numb
       <label className={`artwork-picker${artwork ? " has-image" : ""}`}>{artwork ? <img src={artwork} alt="선택한 오늘의 그림" /> : <span><b>{loading ? "그림 불러오는 중…" : "오늘 그린 그림 1장 올리기"}</b><small>완성작이 아니어도 괜찮아요</small></span>}<input type="file" accept="image/*" onChange={handleArtwork} /></label>
       <textarea value={note} maxLength={100} onChange={(event) => setNote(event.target.value)} placeholder="오늘 작업에 한마디 (선택)" />
       {error && <p className="error-message">{error}</p>}
-      <button className="primary-button wide" disabled={!artwork || loading} type="button" onClick={() => onSave(artwork, note.trim())}>작업 기록 저장</button>
+      <button className="primary-button wide" disabled={!artwork || loading} type="button" onClick={async () => {
+        try {
+          setLoading(true);
+          setError("");
+          await onSave(artwork, note.trim());
+        } catch (saveError) {
+          setError(saveError instanceof Error ? saveError.message : "작업 기록을 저장하지 못했어요.");
+        } finally {
+          setLoading(false);
+        }
+      }}>{loading ? "공동 전시장에 거는 중…" : "작업 기록 저장"}</button>
     </section></div>
   );
 }
@@ -564,25 +633,72 @@ export default function Home() {
   const [ready, setReady] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [sessions, setSessions] = useState<WorkSession[]>([]);
+  const [activeFriends, setActiveFriends] = useState<SharedFriend[]>([]);
+  const [sharedGallery, setSharedGallery] = useState<SharedArtwork[]>([]);
   const [tab, setTab] = useState<TabKey>("home");
   const [category, setCategory] = useState<CategoryKey>("sketch");
   const [elapsed, setElapsed] = useState(0);
   const [running, setRunning] = useState(false);
   const [pauseNotice, setPauseNotice] = useState("");
   const [finishOpen, setFinishOpen] = useState(false);
-  const [clock, setClock] = useState(0);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [connectionMessage, setConnectionMessage] = useState("");
+  const [clock, setClock] = useState(() => Date.now());
+  const identityRef = useRef<DeviceIdentity | null>(null);
   const runStartedAt = useRef<number | null>(null);
   const elapsedBeforeRun = useRef(0);
 
-  useEffect(() => {
-    loadPersistedState().then((state) => {
-      if (state) { setProfile(state.profile); setSessions(state.sessions); }
-    }).catch(() => undefined).finally(() => setReady(true));
-    setClock(Date.now());
-    const clockTimer = window.setInterval(() => setClock(Date.now()), 30000);
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => undefined);
-    return () => window.clearInterval(clockTimer);
+  const persist = useCallback((nextProfile: Profile | null, nextSessions: WorkSession[]) => {
+    setProfile(nextProfile);
+    setSessions(nextSessions);
+    savePersistedState({ profile: nextProfile, sessions: nextSessions }).catch(() => undefined);
   }, []);
+
+  const refreshCommunity = useCallback(async () => {
+    const identity = identityRef.current;
+    if (!identity) return;
+    const snapshot = await fetchCommunity(identity);
+    if (snapshot.profile) persist(snapshot.profile, snapshot.sessions);
+    setActiveFriends(snapshot.active);
+    setSharedGallery(snapshot.gallery);
+    setConnectionMessage("");
+  }, [persist]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function initialize() {
+      const identity = getDeviceIdentity();
+      identityRef.current = identity;
+      const cached = await loadPersistedState().catch(() => null);
+      try {
+        let snapshot = await fetchCommunity(identity);
+        if (!snapshot.profile && cached?.profile) {
+          await saveCloudProfile(identity, cached.profile);
+          snapshot = await fetchCommunity(identity);
+        }
+        if (cancelled) return;
+        persist(snapshot.profile, snapshot.sessions);
+        setActiveFriends(snapshot.active);
+        setSharedGallery(snapshot.gallery);
+      } catch {
+        if (cancelled) return;
+        if (cached) persist(cached.profile, cached.sessions);
+        setConnectionMessage("공동 작업실 연결을 다시 확인하고 있어요.");
+      } finally {
+        if (!cancelled) setReady(true);
+      }
+    }
+    initialize();
+    const clockTimer = window.setInterval(() => setClock(Date.now()), 1000);
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    return () => { cancelled = true; window.clearInterval(clockTimer); };
+  }, [persist]);
+
+  useEffect(() => {
+    if (!profile) return;
+    const timer = window.setInterval(() => refreshCommunity().catch(() => setConnectionMessage("공동 작업실 연결을 다시 확인하고 있어요.")), 15000);
+    return () => window.clearInterval(timer);
+  }, [profile, refreshCommunity]);
 
   useEffect(() => {
     if (!running) return;
@@ -600,7 +716,24 @@ export default function Home() {
     }
     runStartedAt.current = null;
     setRunning(false);
-  }, []);
+    const identity = identityRef.current;
+    if (identity) sendPresenceStop(identity, category);
+  }, [category]);
+
+  useEffect(() => {
+    if (!running || !profile) return;
+    const announce = () => {
+      const identity = identityRef.current;
+      if (!identity) return;
+      const startedAt = (runStartedAt.current ?? Date.now()) - elapsedBeforeRun.current * 1000;
+      updatePresence(identity, true, category, startedAt)
+        .then(() => refreshCommunity())
+        .catch(() => setConnectionMessage("공동 작업실 연결을 다시 확인하고 있어요."));
+    };
+    announce();
+    const timer = window.setInterval(announce, 20000);
+    return () => window.clearInterval(timer);
+  }, [category, profile, refreshCommunity, running]);
 
   useEffect(() => {
     function handleVisibility() {
@@ -614,38 +747,49 @@ export default function Home() {
     return () => { document.removeEventListener("visibilitychange", handleVisibility); window.removeEventListener("pagehide", handleVisibility); };
   }, [pauseTimer, running]);
 
-  const persist = useCallback((nextProfile: Profile | null, nextSessions: WorkSession[]) => {
-    setProfile(nextProfile); setSessions(nextSessions); savePersistedState({ profile: nextProfile, sessions: nextSessions }).catch(() => undefined);
-  }, []);
-
   function toggleTimer() {
     if (running) { pauseTimer(); return; }
     setPauseNotice(""); elapsedBeforeRun.current = elapsed; runStartedAt.current = Date.now(); setRunning(true);
   }
 
   function openFinish() { pauseTimer(); setFinishOpen(true); }
-  function saveSession(artwork: string, note: string) {
+  async function saveSession(artwork: string, note: string) {
+    const identity = identityRef.current;
+    if (!identity) throw new Error("공동 작업실에 연결하지 못했어요.");
     const next: WorkSession = { id: crypto.randomUUID(), completedAt: new Date().toISOString(), seconds: elapsed, category, artworkDataUrl: artwork, note };
-    persist(profile, [next, ...sessions]); setElapsed(0); elapsedBeforeRun.current = 0; runStartedAt.current = null; setPauseNotice(""); setFinishOpen(false);
+    const saved = await saveCloudSession(identity, next);
+    persist(profile, [saved, ...sessions]);
+    setElapsed(0);
+    elapsedBeforeRun.current = 0;
+    runStartedAt.current = null;
+    setPauseNotice("");
+    setFinishOpen(false);
+    await refreshCommunity();
   }
-  function addSample() {
-    const canvas = document.createElement("canvas"); canvas.width = 600; canvas.height = 600; const context = canvas.getContext("2d"); if (!context) return;
-    context.fillStyle = "#eadcc5"; context.fillRect(0, 0, 600, 600); context.strokeStyle = "#506c5d"; context.lineWidth = 18; context.beginPath(); context.moveTo(100, 420); context.bezierCurveTo(210, 120, 390, 520, 510, 210); context.stroke();
-    const next: WorkSession = { id: crypto.randomUUID(), completedAt: new Date().toISOString(), seconds: 600, category, artworkDataUrl: canvas.toDataURL("image/jpeg", .85), note: "첫 10분을 가볍게 시작했어요." };
-    persist(profile, [next, ...sessions]);
+
+  async function saveProfile(nextProfile: Profile) {
+    const identity = identityRef.current;
+    if (!identity) throw new Error("공동 작업실에 연결하지 못했어요.");
+    const saved = await saveCloudProfile(identity, nextProfile);
+    persist(saved, sessions);
+    await refreshCommunity();
   }
 
   if (!ready) return <main className="app-loading"><DefaultCharacter /><p>작업실 문을 여는 중…</p></main>;
-  if (!profile) return <Onboarding onComplete={(nextProfile) => persist(nextProfile, sessions)} />;
+  if (!profile) return <Onboarding onComplete={saveProfile} />;
 
   return (
     <main className="app-shell">
-      <header className="brand-bar"><button type="button" onClick={() => setTab("home")} aria-label="작업실 홈"><span className="brand-mark">O</span><span>OTHER THAN<br /><b>WORKS</b></span></button><p>그림을 시작하는 작은 작업실</p></header>
+      <header className="brand-bar">
+        <button type="button" onClick={() => setTab("home")} aria-label="작업실 홈"><span className="brand-mark">O</span><span>OTHER THAN<br /><b>WORKS</b></span></button>
+        <button className="profile-chip" type="button" onClick={() => setProfileOpen(true)} aria-label="내 캐릭터 바꾸기"><Character profile={profile} compact /><span><b>{profile.name}</b><small>캐릭터 바꾸기</small></span></button>
+      </header>
+      {connectionMessage && <div className="connection-banner">{connectionMessage}</div>}
       <div className="app-content">
         {tab === "home" && <HomePanel profile={profile} sessions={sessions} elapsed={elapsed} running={running} category={category} pauseNotice={pauseNotice} onCategory={setCategory} onToggle={toggleTimer} onFinish={openFinish} />}
-        {tab === "together" && <TogetherPanel profile={profile} running={running} elapsed={elapsed} category={category} clock={clock} />}
-        {tab === "records" && <RecordsPanel sessions={sessions} onSample={addSample} />}
-        {tab === "gallery" && <GalleryPanel profile={profile} sessions={sessions} />}
+        {tab === "together" && <TogetherPanel profile={profile} activeFriends={activeFriends} running={running} elapsed={elapsed} category={category} clock={clock} />}
+        {tab === "records" && <RecordsPanel sessions={sessions} />}
+        {tab === "gallery" && <GalleryPanel profile={profile} sessions={sessions} sharedGallery={sharedGallery} />}
         {tab === "mission" && <MissionPanel sessions={sessions} />}
       </div>
       <nav className="bottom-nav" aria-label="주요 메뉴">
@@ -654,6 +798,7 @@ export default function Home() {
         ] as Array<[TabKey, string, string]>).map(([key, icon, label]) => <button type="button" key={key} className={tab === key ? "active" : ""} onClick={() => setTab(key)}><span>{icon}</span>{label}</button>)}
       </nav>
       {finishOpen && <CompletionModal seconds={elapsed} category={category} onClose={() => setFinishOpen(false)} onSave={saveSession} />}
+      {profileOpen && <ProfileEditor profile={profile} onClose={() => setProfileOpen(false)} onSave={saveProfile} />}
     </main>
   );
 }
