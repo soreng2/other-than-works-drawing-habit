@@ -3,6 +3,7 @@ import type {
   CommunitySnapshot,
   DeviceIdentity,
   Profile,
+  RosterSnapshot,
   WorkSession,
 } from "./community-types";
 
@@ -36,6 +37,27 @@ export async function fetchCommunity(identity: DeviceIdentity): Promise<Communit
   return responseJson<CommunitySnapshot>(await fetch(`/api/community?${query}`, { cache: "no-store" }));
 }
 
+export async function fetchRoster(classCode = ""): Promise<RosterSnapshot> {
+  const query = classCode ? `?${new URLSearchParams({ classCode })}` : "";
+  return responseJson<RosterSnapshot>(await fetch(`/api/roster${query}`, { cache: "no-store" }));
+}
+
+export async function setupRoster(names: string[], classCode: string): Promise<RosterSnapshot> {
+  return responseJson<RosterSnapshot>(await fetch("/api/roster", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "setup", names, classCode }),
+  }));
+}
+
+export async function claimRoster(studentId: string, nickname: string, classCode: string): Promise<RosterSnapshot> {
+  return responseJson<RosterSnapshot>(await fetch("/api/roster", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "claim", studentId, nickname, classCode }),
+  }));
+}
+
 export async function saveCloudProfile(identity: DeviceIdentity, profile: Profile): Promise<Profile> {
   const form = new FormData();
   form.set("profileId", identity.profileId);
@@ -52,7 +74,7 @@ export async function updatePresence(identity: DeviceIdentity, running: boolean,
   await responseJson<{ ok: true }>(await fetch("/api/presence", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ ...identity, running, category, startedAt }),
+    body: JSON.stringify({ ...identity, online: true, running, category, startedAt }),
     keepalive: true,
   }));
 }
@@ -66,8 +88,23 @@ export async function updateSharedMessage(identity: DeviceIdentity, message: str
   return payload.profile;
 }
 
+export async function updateTeacherNote(note: string): Promise<string> {
+  const payload = await responseJson<{ teacherNote: string }>(await fetch("/api/teacher-note", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ note }),
+  }));
+  return payload.teacherNote;
+}
+
 export function sendPresenceStop(identity: DeviceIdentity, category: CategoryKey) {
-  const body = JSON.stringify({ ...identity, running: false, category });
+  const body = JSON.stringify({ ...identity, online: true, running: false, category });
+  if (navigator.sendBeacon) navigator.sendBeacon("/api/presence", new Blob([body], { type: "application/json" }));
+  else fetch("/api/presence", { method: "POST", headers: { "content-type": "application/json" }, body, keepalive: true }).catch(() => undefined);
+}
+
+export function sendPresenceOffline(identity: DeviceIdentity) {
+  const body = JSON.stringify({ ...identity, online: false });
   if (navigator.sendBeacon) navigator.sendBeacon("/api/presence", new Blob([body], { type: "application/json" }));
   else fetch("/api/presence", { method: "POST", headers: { "content-type": "application/json" }, body, keepalive: true }).catch(() => undefined);
 }

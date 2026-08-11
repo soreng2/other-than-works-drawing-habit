@@ -3,6 +3,7 @@ export type CategoryKey = "sketch" | "line" | "color" | "emoticon" | "free";
 export type Profile = {
   id?: string;
   name: string;
+  nickname?: string;
   characterDataUrl?: string;
   message?: string;
 };
@@ -19,7 +20,9 @@ export type WorkSession = {
 export type SharedFriend = {
   id: string;
   name: string;
+  nickname?: string;
   characterDataUrl?: string;
+  mode: "working" | "idle";
   category: CategoryKey;
   startedAt: number;
   message: string;
@@ -35,9 +38,23 @@ export type CommunitySnapshot = {
   active: SharedFriend[];
   gallery: SharedArtwork[];
   sessions: WorkSession[];
+  teacherNote: string;
 };
 
 export type DeviceIdentity = {
   profileId: string;
   ownerToken: string;
+};
+
+export type RosterStudent = {
+  id: string;
+  legalName: string;
+};
+
+export type RosterSnapshot = {
+  needsSetup: boolean;
+  isAdmin: boolean;
+  linked: boolean;
+  nickname?: string;
+  students: RosterStudent[];
 };

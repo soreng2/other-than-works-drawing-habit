@@ -3,6 +3,7 @@ export const SCHEMA_STATEMENTS = [
     id TEXT PRIMARY KEY NOT NULL,
     owner_token_hash TEXT NOT NULL,
     name TEXT NOT NULL,
+    nickname TEXT NOT NULL DEFAULT '',
     character_key TEXT,
     message TEXT NOT NULL DEFAULT '',
     created_at INTEGER NOT NULL,
@@ -10,6 +11,7 @@ export const SCHEMA_STATEMENTS = [
   )`,
   `CREATE TABLE IF NOT EXISTS presence (
     profile_id TEXT PRIMARY KEY NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    mode TEXT NOT NULL DEFAULT 'idle',
     category TEXT NOT NULL,
     started_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
@@ -27,20 +29,48 @@ export const SCHEMA_STATEMENTS = [
   )`,
   `CREATE INDEX IF NOT EXISTS idx_work_sessions_profile_completed ON work_sessions(profile_id, completed_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_work_sessions_completed ON work_sessions(completed_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS app_settings (
+    key TEXT PRIMARY KEY NOT NULL,
+    value TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS students (
+    id TEXT PRIMARY KEY NOT NULL,
+    legal_name TEXT NOT NULL,
+    normalized_name TEXT NOT NULL,
+    nickname TEXT NOT NULL DEFAULT '',
+    auth_user_hash TEXT UNIQUE,
+    profile_id TEXT UNIQUE,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_students_normalized_name ON students(normalized_name)`,
 ] as const;
 
 export const PROFILE_MESSAGE_MIGRATION = "ALTER TABLE profiles ADD COLUMN message TEXT NOT NULL DEFAULT ''";
+export const PROFILE_NICKNAME_MIGRATION = "ALTER TABLE profiles ADD COLUMN nickname TEXT NOT NULL DEFAULT ''";
+export const PRESENCE_MODE_MIGRATION = "ALTER TABLE presence ADD COLUMN mode TEXT NOT NULL DEFAULT 'idle'";
 
 export type ProfileRow = {
   id: string;
   name: string;
+  nickname: string;
   character_key: string | null;
   message: string;
 };
 
 export type PresenceRow = ProfileRow & {
+  mode: string;
   category: string;
   started_at: number;
+};
+
+export type StudentRow = {
+  id: string;
+  legal_name: string;
+  nickname: string;
+  auth_user_hash: string | null;
+  profile_id: string | null;
 };
 
 export type SessionRow = {

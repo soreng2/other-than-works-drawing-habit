@@ -4,14 +4,18 @@ import test from "node:test";
 
 const root = new URL("../", import.meta.url);
 
-async function render() {
+async function render(authenticated = false) {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
   const { default: worker } = await import(workerUrl.href);
 
   return worker.fetch(
     new Request("http://localhost/", {
-      headers: { accept: "text/html", host: "localhost" },
+      headers: {
+        accept: "text/html",
+        host: "localhost",
+        ...(authenticated ? { "oai-authenticated-user-id": "test-user", "oai-authenticated-user-email": "test@example.com" } : {}),
+      },
     }),
     {
       ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) },
@@ -20,43 +24,58 @@ async function render() {
   );
 }
 
-test("server-renders the finished drawing studio shell", async () => {
+test("server-renders the stable account sign-in gate", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
   assert.match(html, /OTHER THAN WORKS/);
-  assert.match(html, /하루 10분 그림 작업실/);
-  assert.match(html, /작업실 문을 여는 중/);
+  assert.match(html, /ChatGPT로 로그인/);
+  assert.match(html, /signin-with-chatgpt/);
+  assert.match(html, /같은 캐릭터와 그림 기록/);
   assert.match(html, /manifest\.webmanifest/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/);
 });
 
-test("includes the complete shared MVP and installable web app assets", async () => {
-  const [page, layout, styles, manifest, serviceWorker, packageJson, communityClient, worker, hosting, migration, messageMigration] = await Promise.all([
+test("server-renders the studio loader for a signed-in account", async () => {
+  const response = await render(true);
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /작업실 문을 여는 중/);
+  assert.doesNotMatch(html, /ChatGPT로 로그인/);
+});
+
+test("includes the complete shared MVP, roster, host controls and map assets", async () => {
+  const [page, studio, layout, styles, manifest, serviceWorker, packageJson, communityClient, communityApi, requestAuth, worker, hosting, migration, messageMigration, accountMigration] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/studio.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../public/manifest.webmanifest", import.meta.url), "utf8"),
     readFile(new URL("../public/sw.js", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../app/lib/community-client.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/server/api/community-api.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/server/auth/request-auth.ts", import.meta.url), "utf8"),
     readFile(new URL("../worker/index.ts", import.meta.url), "utf8"),
     readFile(new URL("../.openai/hosting.json", import.meta.url), "utf8"),
     readFile(new URL("../drizzle/0000_shared_studio.sql", import.meta.url), "utf8"),
     readFile(new URL("../drizzle/0001_profile_message.sql", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/0002_accounts_roster_map.sql", import.meta.url), "utf8"),
   ]);
 
-  assert.match(page, /visibilitychange/);
-  assert.match(page, /validateCharacter/);
-  assert.match(page, /1024 × 1024px/);
-  assert.match(page, /IndexedDB|indexedDB/);
-  assert.match(page, /CompletionModal/);
-  assert.match(page, /TogetherPanel/);
-  assert.match(page, /RecordsPanel/);
-  assert.match(page, /GalleryPanel/);
-  assert.match(page, /MissionPanel/);
+  assert.match(page, /getChatGPTUser/);
+  assert.match(page, /chatGPTSignInPath/);
+  assert.match(studio, /visibilitychange/);
+  assert.match(studio, /validateCharacter/);
+  assert.match(studio, /1024 × 1024px/);
+  assert.match(studio, /IndexedDB|indexedDB/);
+  assert.match(studio, /CompletionModal/);
+  assert.match(studio, /TogetherPanel/);
+  assert.match(studio, /RecordsPanel/);
+  assert.match(studio, /GalleryPanel/);
+  assert.match(studio, /MissionPanel/);
   assert.match(layout, /brand-character\.png/);
   assert.match(styles, /prefers-reduced-motion/);
   assert.match(manifest, /"display": "standalone"/);
@@ -66,6 +85,13 @@ test("includes the complete shared MVP and installable web app assets", async ()
   assert.match(communityClient, /updatePresence/);
   assert.match(communityClient, /saveCloudSession/);
   assert.match(communityClient, /updateSharedMessage/);
+  assert.match(communityClient, /setupRoster/);
+  assert.match(communityClient, /claimRoster/);
+  assert.match(communityClient, /updateTeacherNote/);
+  assert.match(communityApi, /admin_user_hash/);
+  assert.match(communityApi, /student_already_claimed/);
+  assert.match(communityApi, /teacher_note/);
+  assert.match(requestAuth, /oai-authenticated-user-id/);
   assert.match(worker, /handleCommunityApi/);
   assert.match(hosting, /"d1": "DB"/);
   assert.match(hosting, /"r2": "UPLOADS"/);
@@ -73,10 +99,16 @@ test("includes the complete shared MVP and installable web app assets", async ()
   assert.match(migration, /CREATE TABLE `presence`/);
   assert.match(migration, /CREATE TABLE `work_sessions`/);
   assert.match(messageMigration, /ADD `message`/);
-  assert.match(page, /예시 캐릭터/);
-  assert.match(page, /desk-scene/);
-  assert.match(page, /내 캐릭터 위 메시지/);
-  assert.doesNotMatch(page, /friendSeed|gallerySeed/);
+  assert.match(accountMigration, /CREATE TABLE `students`/);
+  assert.match(accountMigration, /CREATE TABLE `app_settings`/);
+  assert.match(studio, /예시 캐릭터/);
+  assert.match(studio, /together-map/);
+  assert.match(studio, /floating-name/);
+  assert.match(studio, /map-chair/);
+  assert.match(studio, /내 캐릭터 위 메시지/);
+  assert.match(studio, /한마디 수정/);
+  assert.doesNotMatch(studio, /desk-tablet|아이패드 책상/);
+  assert.doesNotMatch(studio, /friendSeed|gallerySeed/);
 
   await access(new URL("../public/brand-character.png", import.meta.url));
   await assert.rejects(access(new URL("../app/_sites-preview/SkeletonPreview.tsx", import.meta.url)));

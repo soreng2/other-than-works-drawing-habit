@@ -1,11 +1,18 @@
-import { PROFILE_MESSAGE_MIGRATION, SCHEMA_STATEMENTS } from "../../../db/schema";
+import {
+  PRESENCE_MODE_MIGRATION,
+  PROFILE_MESSAGE_MIGRATION,
+  PROFILE_NICKNAME_MIGRATION,
+  SCHEMA_STATEMENTS,
+} from "../../../db/schema";
 
 export async function ensureDatabase(database: D1Database) {
   await database.batch(SCHEMA_STATEMENTS.map((statement) => database.prepare(statement)));
-  try {
-    await database.prepare(PROFILE_MESSAGE_MIGRATION).run();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (!message.toLowerCase().includes("duplicate column")) throw error;
+  for (const migration of [PROFILE_MESSAGE_MIGRATION, PROFILE_NICKNAME_MIGRATION, PRESENCE_MODE_MIGRATION]) {
+    try {
+      await database.prepare(migration).run();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.toLowerCase().includes("duplicate column")) throw error;
+    }
   }
 }
