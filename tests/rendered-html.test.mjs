@@ -134,6 +134,7 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(studio, /together-map/);
   assert.match(studio, /SharedMap/);
   assert.match(studio, /mapSpots/);
+  assert.doesNotMatch(studio, /mapAreaLabels/);
   assert.match(studio, /floating-name/);
   assert.match(studio, /map-chair/);
   assert.match(styles, /@keyframes map-stroll/);

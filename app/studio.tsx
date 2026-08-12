@@ -702,13 +702,6 @@ const mapSpots: Record<MapPlace, MapSpot[]> = {
   lounge: [{ x: 14, y: 49 }, { x: 84, y: 73 }, { x: 76, y: 82 }],
 };
 
-const mapAreaLabels: Array<{ place: MapPlace; title: string }> = [
-  { place: "working", title: "집중 자리" },
-  { place: "gallery", title: "초록 창가" },
-  { place: "tips", title: "컬러 러그" },
-  { place: "lounge", title: "둥근 테이블" },
-];
-
 function stringSeed(value: string) {
   return [...value].reduce((sum, character) => (sum * 31 + character.charCodeAt(0)) >>> 0, 17);
 }
@@ -776,7 +769,6 @@ function SharedMap({ members, clock }: { members: MapMember[]; clock: number }) 
   });
   return (
     <div className={`together-map${members.length > 8 ? " dense" : ""}`} aria-label="수강생들이 머무는 한 화면 공동 작업실 지도">
-      {mapAreaLabels.map(({ place, title }) => <span key={place} className={`map-area-label ${place}-label`}>{title}</span>)}
       <div className="map-people">
         {arranged.map(({ member, spot }, order) => <MapFriend key={member.id} friend={member} clock={clock} spot={spot} order={order} />)}
       </div>
