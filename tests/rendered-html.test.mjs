@@ -114,6 +114,8 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(studio, /자유 집중/);
   assert.match(studio, /timerTargets/);
   assert.match(studio, /지금부터 집중 시작!/);
+  assert.match(studio, /onNavigate\("focus"\)/);
+  assert.match(studio, /function FocusPanel/);
   assert.match(studio, /이번 집중에 할 일/);
   assert.match(studio, /otw-village\.png/);
   assert.match(studio, /focus-desk-front/);
@@ -132,8 +134,11 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(studio, /CompletionModal/);
   assert.match(studio, /TogetherPanel/);
   assert.match(studio, /RecordsPanel/);
+  assert.match(studio, /records-management/);
+  assert.match(studio, /\["records", roster\?\.isAdmin \? "기록·관리" : "기록"\]/);
   assert.match(studio, /GalleryPanel/);
   assert.match(studio, /galleryFrameSpots/);
+  assert.match(studio, /\{ x: 76\.6, y: 44\.6, width: 16\.2, height: 19\.5 \}/);
   assert.match(studio, /GalleryVisitor/);
   assert.match(studio, /전시에서 내리기/);
   assert.match(studio, /MissionPanel/);
@@ -195,7 +200,9 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(styles, /studio-room\.jpg/);
   assert.match(styles, /shared-lounge\.png/);
   assert.match(styles, /gallery-room\.png/);
+  assert.match(styles, /\.gallery-frame-art img[\s\S]*?object-fit: contain/);
   assert.match(styles, /timer-presets/);
+  assert.match(styles, /\.focus-page/);
   assert.match(studio, /예시 캐릭터/);
   assert.match(studio, /첫 반 만들고 내 작업실 열기/);
   assert.match(studio, /반과 닉네임만/);

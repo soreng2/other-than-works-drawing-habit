@@ -43,7 +43,7 @@ type PersistedState = {
   sessions: WorkSession[];
 };
 
-type TabKey = "home" | "together" | "records" | "gallery" | "mission";
+type TabKey = "home" | "focus" | "together" | "records" | "gallery";
 type TimerTarget = 0 | 300 | 600 | 1200 | 1800;
 
 const categories: Array<{
@@ -579,41 +579,14 @@ function ProfileEditor({ profile, onClose, onSave }: { profile: Profile; onClose
 function HomePanel({
   profile,
   sessions,
-  elapsed,
-  timerTarget,
-  running,
-  category,
-  focusNote,
-  pauseNotice,
-  onCategory,
-  onFocusNote,
-  onTimerTarget,
-  onToggle,
-  onFinish,
-  onReset,
   onNavigate,
 }: {
   profile: Profile;
   sessions: WorkSession[];
-  elapsed: number;
-  timerTarget: TimerTarget;
-  running: boolean;
-  category: CategoryKey;
-  focusNote: string;
-  pauseNotice: string;
-  onCategory: (key: CategoryKey) => void;
-  onFocusNote: (note: string) => void;
-  onTimerTarget: (target: TimerTarget) => void;
-  onToggle: () => void;
-  onFinish: () => void;
-  onReset: () => void;
   onNavigate: (tab: TabKey) => void;
 }) {
   const totalMinutes = sessions.reduce((sum, session) => sum + minutesFor(session.seconds), 0);
   const todayMinutes = sessions.filter((session) => isSameDay(new Date(session.completedAt), new Date())).reduce((sum, session) => sum + minutesFor(session.seconds), 0);
-  const timerProgress = timerTarget === 0 ? Math.min(1, elapsed / 600) : Math.min(1, elapsed / timerTarget);
-  const timerStyle = { "--timer-progress": `${timerProgress * 360}deg` } as CSSProperties;
-  const targetReached = timerTarget > 0 && elapsed >= timerTarget;
   const villageFriends = [
     { id: "village-me", profile, x: 48, y: 70, delay: "-1.2s" },
     { id: "village-green", profile: { name: "green", characterPreset: "moss" as CharacterPresetKey }, x: 23, y: 76, delay: "-3.8s" },
@@ -631,11 +604,50 @@ function HomePanel({
         <img src="/otw-village.png" alt="시계 광장, 작업실과 전시장이 있는 아더댄웍스 창작 마을" />
         <button className="village-hotspot village-studio" type="button" onClick={() => onNavigate("together")}><span>아더댄웍스</span><small>친구들과 작업하기</small></button>
         <button className="village-hotspot village-gallery" type="button" onClick={() => onNavigate("gallery")}><span>전시장</span><small>그림 보러 가기</small></button>
-        <button className="village-hotspot village-clock" type="button" onClick={() => document.getElementById("focus-room")?.scrollIntoView({ behavior: "smooth", block: "start" })}><span>집중 시계</span><small>지금부터 집중 시작!</small></button>
+        <button className="village-hotspot village-clock" type="button" onClick={() => onNavigate("focus")}><span>집중 시계</span><small>지금부터 집중 시작!</small></button>
         {villageFriends.map((friend) => <span className="village-walker" style={{ "--walker-x": `${friend.x}%`, "--walker-y": `${friend.y}%`, "--walker-delay": friend.delay } as CSSProperties} key={friend.id}><Character profile={friend.profile} /></span>)}
       </section>
 
-      <p className="village-guide">건물을 누르면 공간으로 들어가요. 가운데 시계는 내 집중 공간으로 이어져요.</p>
+      <p className="village-guide">건물을 누르면 공간으로 들어가요. 가운데 시계를 누르면 집중 페이지가 열려요.</p>
+    </div>
+  );
+}
+
+function FocusPanel({
+  profile,
+  elapsed,
+  timerTarget,
+  running,
+  category,
+  focusNote,
+  pauseNotice,
+  onCategory,
+  onFocusNote,
+  onTimerTarget,
+  onToggle,
+  onFinish,
+  onReset,
+}: {
+  profile: Profile;
+  elapsed: number;
+  timerTarget: TimerTarget;
+  running: boolean;
+  category: CategoryKey;
+  focusNote: string;
+  pauseNotice: string;
+  onCategory: (key: CategoryKey) => void;
+  onFocusNote: (note: string) => void;
+  onTimerTarget: (target: TimerTarget) => void;
+  onToggle: () => void;
+  onFinish: () => void;
+  onReset: () => void;
+}) {
+  const timerProgress = timerTarget === 0 ? Math.min(1, elapsed / 600) : Math.min(1, elapsed / timerTarget);
+  const timerStyle = { "--timer-progress": `${timerProgress * 360}deg` } as CSSProperties;
+  const targetReached = timerTarget > 0 && elapsed >= timerTarget;
+  return (
+    <div className="focus-page">
+      <header className="focus-page-heading"><p className="eyebrow">MY FOCUS ROOM</p><h2>그림에만 머무는 시간</h2><span>앱을 벗어나면 타이머가 잠시 멈춰요.</span></header>
 
       <section className={`private-focus${running ? " is-running" : ""}`} id="focus-room">
         <div className="focus-ribbon">지금부터 집중 시작!</div>
@@ -817,7 +829,18 @@ function monthCells(date: Date) {
   return cells;
 }
 
-function RecordsPanel({ sessions }: { sessions: WorkSession[] }) {
+function RecordsPanel({ sessions, teacherNote, isHost, students, classes, onTeacherNote, onClassCode, onAddClass, onResetStudent, onRemoveStudent }: {
+  sessions: WorkSession[];
+  teacherNote: string;
+  isHost: boolean;
+  students: RosterSnapshot["students"];
+  classes: RosterSnapshot["classes"];
+  onTeacherNote: (note: string) => Promise<void>;
+  onClassCode: (classId: string, classCode: string) => Promise<void>;
+  onAddClass: (name: string, classCode: string) => Promise<void>;
+  onResetStudent: (studentId: string) => Promise<void>;
+  onRemoveStudent: (studentId: string) => Promise<void>;
+}) {
   const now = new Date();
   const cells = monthCells(now);
   const thisWeekMinutes = sessions.filter((session) => isThisWeek(new Date(session.completedAt))).reduce((sum, session) => sum + minutesFor(session.seconds), 0);
@@ -828,6 +851,7 @@ function RecordsPanel({ sessions }: { sessions: WorkSession[] }) {
   }).map((session) => new Date(session.completedAt).toDateString())).size;
   return (
     <div className="panel-stack section-panel">
+      <MissionPanel sessions={sessions} teacherNote={teacherNote} isHost={isHost} onTeacherNote={onTeacherNote} />
       <section className="paper-card news-card">
         <p className="eyebrow">이번 주 기록</p><h2>작업실 소식</h2>
         <div className="award-row"><span>{thisWeekMinutes ? "◆" : "○"}</span><div><b>{thisWeekMinutes ? `${thisWeekCount}번의 시작을 모았어요` : "언제든 다시 시작할 수 있어요"}</b><p>{thisWeekMinutes ? `이번 주 ${thisWeekMinutes}분 동안 작업실 불을 켰어요.` : "쉬었던 날의 기록도 그대로예요. 오늘 5분부터 시작해봐요."}</p></div></div>
@@ -854,22 +878,24 @@ function RecordsPanel({ sessions }: { sessions: WorkSession[] }) {
           </article>
         ))}
       </section>
+      {isHost && <section className="records-management"><div className="records-management-heading"><p className="eyebrow">선생님 계정 전용</p><h2>반과 수강생 관리</h2><span>기록과 관리가 한곳에 있어요.</span></div><RosterManager students={students} classes={classes} onClassCode={onClassCode} onAddClass={onAddClass} onReset={onResetStudent} onRemove={onRemoveStudent} /></section>}
     </div>
   );
 }
 
 const galleryFrameSpots = [
-  { x: 2.6, y: 24.3, width: 6.9, height: 18.1 },
-  { x: 13.8, y: 24.9, width: 4.6, height: 16.8 },
-  { x: 22.6, y: 25.7, width: 3.8, height: 14.5 },
-  { x: 33.9, y: 24.2, width: 9.8, height: 17.4 },
-  { x: 48.8, y: 24.2, width: 9.3, height: 17.4 },
-  { x: 62.3, y: 24.2, width: 10, height: 17.4 },
-  { x: 76.3, y: 24.2, width: 9.5, height: 17.4 },
+  { x: 7.2, y: 18.2, width: 16.1, height: 19.6 },
+  { x: 30.2, y: 18.2, width: 16.5, height: 19.6 },
+  { x: 53.3, y: 18.2, width: 16.5, height: 19.6 },
+  { x: 76.6, y: 18.2, width: 16.2, height: 19.6 },
+  { x: 7.2, y: 44.6, width: 16.1, height: 19.5 },
+  { x: 30.2, y: 44.6, width: 16.5, height: 19.5 },
+  { x: 53.3, y: 44.6, width: 16.5, height: 19.5 },
+  { x: 76.6, y: 44.6, width: 16.2, height: 19.5 },
 ] as const;
 
 const galleryVisitorSpots = [
-  { x: 25, y: 67, move: 18 }, { x: 46, y: 77, move: -22 }, { x: 67, y: 66, move: 16 }, { x: 78, y: 84, move: -14 },
+  { x: 22, y: 84, move: 18 }, { x: 43, y: 89, move: -22 }, { x: 64, y: 83, move: 16 }, { x: 81, y: 90, move: -14 },
 ] as const;
 
 function GalleryVisitor({ friend, index }: { friend: MapMember; index: number }) {
@@ -1013,17 +1039,11 @@ function RosterManager({ students, classes, onClassCode, onAddClass, onReset, on
   );
 }
 
-function MissionPanel({ sessions, teacherNote, isHost, students, classes, onTeacherNote, onClassCode, onAddClass, onResetStudent, onRemoveStudent }: {
+function MissionPanel({ sessions, teacherNote, isHost, onTeacherNote }: {
   sessions: WorkSession[];
   teacherNote: string;
   isHost: boolean;
-  students: RosterSnapshot["students"];
-  classes: RosterSnapshot["classes"];
   onTeacherNote: (note: string) => Promise<void>;
-  onClassCode: (classId: string, classCode: string) => Promise<void>;
-  onAddClass: (name: string, classCode: string) => Promise<void>;
-  onResetStudent: (studentId: string) => Promise<void>;
-  onRemoveStudent: (studentId: string) => Promise<void>;
 }) {
   const progress = sessions.filter((session) => session.category === "sketch" && isThisWeek(new Date(session.completedAt))).length;
   const totalMinutes = sessions.reduce((sum, session) => sum + minutesFor(session.seconds), 0);
@@ -1032,7 +1052,7 @@ function MissionPanel({ sessions, teacherNote, isHost, students, classes, onTeac
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteError, setNoteError] = useState("");
   return (
-    <div className="panel-stack section-panel mission-panel">
+    <div className="panel-stack mission-panel">
       <section className="paper-card mission-card">
         <div className="card-title-row"><span className="eyebrow">이번 주 미션</span><i>스케치</i></div>
         <h2>못생긴 첫 스케치 3번</h2><p>완성하려고 애쓰지 말고, 10분 동안 손을 멈추지 않는 스케치를 세 번 남겨보세요.</p>
@@ -1060,7 +1080,6 @@ function MissionPanel({ sessions, teacherNote, isHost, students, classes, onTeac
         </> : <><p>“{teacherNote}”</p>{isHost && <button className="teacher-edit-button" type="button" onClick={() => setEditingNote(true)}>한마디 수정</button>}</>}</div>
       </section>
       <section className="paper-card journey-card"><p className="eyebrow">작업실 성장</p><h2>조금씩 열리는 공간</h2>{milestones.map((milestone, index) => { const open = milestone.minutes <= totalMinutes; return <div className={`journey-row${open ? " open" : ""}`} key={milestone.title}><span>{milestone.icon}</span><div><b>{milestone.title}</b><p>{milestone.detail}</p></div><i>{milestone.minutes === 0 ? "기본" : `${milestone.minutes}분`}</i>{index < milestones.length - 1 && <em />}</div>; })}</section>
-      {isHost && <RosterManager students={students} classes={classes} onClassCode={onClassCode} onAddClass={onAddClass} onReset={onResetStudent} onRemove={onRemoveStudent} />}
     </div>
   );
 }
@@ -1408,15 +1427,15 @@ export default function Home() {
       </header>
       {connectionMessage && <div className="connection-banner">{connectionMessage}</div>}
       <div className="app-content">
-        {tab === "home" && <HomePanel profile={profile} sessions={sessions} elapsed={elapsed} timerTarget={timerTarget} running={running} category={category} focusNote={focusNote} pauseNotice={pauseNotice} onCategory={setCategory} onFocusNote={setFocusNote} onTimerTarget={(target) => { if (!running && elapsed === 0) { setTimerTarget(target); goalReached.current = false; } }} onToggle={toggleTimer} onFinish={openFinish} onReset={resetTimer} onNavigate={setTab} />}
+        {tab === "home" && <HomePanel profile={profile} sessions={sessions} onNavigate={setTab} />}
+        {tab === "focus" && <FocusPanel profile={profile} elapsed={elapsed} timerTarget={timerTarget} running={running} category={category} focusNote={focusNote} pauseNotice={pauseNotice} onCategory={setCategory} onFocusNote={setFocusNote} onTimerTarget={(target) => { if (!running && elapsed === 0) { setTimerTarget(target); goalReached.current = false; } }} onToggle={toggleTimer} onFinish={openFinish} onReset={resetTimer} />}
         {tab === "together" && <TogetherPanel profile={profile} activeFriends={activeFriends} running={running} elapsed={elapsed} category={category} clock={clock} onMessage={saveMessage} />}
-        {tab === "records" && <RecordsPanel sessions={sessions} />}
+        {tab === "records" && <RecordsPanel sessions={sessions} teacherNote={teacherNote} isHost={Boolean(roster?.isAdmin)} students={roster?.students ?? []} classes={roster?.classes ?? []} onTeacherNote={saveTeacherNote} onClassCode={saveClassCode} onAddClass={addClass} onResetStudent={resetStudent} onRemoveStudent={removeStudent} />}
         {tab === "gallery" && <GalleryPanel profile={profile} sessions={sessions} sharedGallery={sharedGallery} activeFriends={activeFriends} isHost={Boolean(roster?.isAdmin)} onRemove={removeArtwork} />}
-        {tab === "mission" && <MissionPanel sessions={sessions} teacherNote={teacherNote} isHost={Boolean(roster?.isAdmin)} students={roster?.students ?? []} classes={roster?.classes ?? []} onTeacherNote={saveTeacherNote} onClassCode={saveClassCode} onAddClass={addClass} onResetStudent={resetStudent} onRemoveStudent={removeStudent} />}
       </div>
       <nav className="bottom-nav" aria-label="주요 메뉴">
         {([
-          ["home", "마을"], ["together", "아더댄웍스"], ["records", "기록"], ["gallery", "전시"], ["mission", roster?.isAdmin ? "관리" : "미션"],
+          ["home", "마을"], ["focus", running ? "집중 중" : "집중"], ["together", "아더댄웍스"], ["records", roster?.isAdmin ? "기록·관리" : "기록"], ["gallery", "전시"],
         ] as Array<[TabKey, string]>).map(([key, label]) => <button type="button" key={key} className={tab === key ? "active" : ""} onClick={() => setTab(key)}><span aria-hidden="true" />{label}</button>)}
       </nav>
       {finishOpen && <CompletionModal seconds={elapsed} goalSeconds={timerTarget} category={category} onClose={() => setFinishOpen(false)} onSave={saveSession} />}
