@@ -59,6 +59,9 @@ export type RosterStudent = {
   claimed: boolean;
   classId?: string;
   className?: string;
+  lastSeenAt?: string;
+  drawingCount?: number;
+  drawingSeconds?: number;
 };
 
 export type RosterClass = {

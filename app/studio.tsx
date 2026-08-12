@@ -9,7 +9,6 @@ import {
   type CSSProperties,
 } from "react";
 import {
-  createRosterClass,
   fetchCommunity,
   fetchRoster,
   getDeviceIdentity,
@@ -288,6 +287,18 @@ function isThisWeek(date: Date) {
   const end = new Date(start);
   end.setDate(start.getDate() + 7);
   return date >= start && date < end;
+}
+
+function thisWeekDates() {
+  const now = new Date();
+  const monday = new Date(now);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + index);
+    return date;
+  });
 }
 
 function DefaultCharacter({ compact = false, preset = "sky" }: { compact?: boolean; preset?: CharacterPresetKey }) {
@@ -580,16 +591,31 @@ function HomePanel({
   profile,
   sessions,
   teacherNote,
+  isHost,
   onNavigate,
+  onTeacherNote,
 }: {
   profile: Profile;
   sessions: WorkSession[];
   teacherNote: string;
+  isHost: boolean;
   onNavigate: (tab: TabKey) => void;
+  onTeacherNote: (note: string) => Promise<void>;
 }) {
+  const [missionOpen, setMissionOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState(false);
+  const [noteDraft, setNoteDraft] = useState(teacherNote);
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [noteError, setNoteError] = useState("");
   const totalMinutes = sessions.reduce((sum, session) => sum + minutesFor(session.seconds), 0);
   const todayMinutes = sessions.filter((session) => isSameDay(new Date(session.completedAt), new Date())).reduce((sum, session) => sum + minutesFor(session.seconds), 0);
   const missionProgress = sessions.filter((session) => session.category === "sketch" && isThisWeek(new Date(session.completedAt))).length;
+  const weekSessions = sessions.filter((session) => isThisWeek(new Date(session.completedAt)));
+  const subMissions = [
+    { label: "10분 이상 집중 3번", value: weekSessions.filter((session) => session.seconds >= 600).length, goal: 3 },
+    { label: "스케치 기록 3번", value: missionProgress, goal: 3 },
+    { label: "오늘 그림 한 장 남기기", value: sessions.some((session) => isSameDay(new Date(session.completedAt), new Date())) ? 1 : 0, goal: 1 },
+  ];
   const villageFriends = [
     { id: "village-green", profile: { name: "green", characterPreset: "moss" as CharacterPresetKey }, x: 23, y: 76, delay: "-3.8s" },
     { id: "village-orange", profile: { name: "orange", characterPreset: "apricot" as CharacterPresetKey }, x: 76, y: 75, delay: "-5.4s" },
@@ -607,18 +633,30 @@ function HomePanel({
         <button className="village-hotspot village-studio" type="button" onClick={() => onNavigate("together")}><span>아더댄웍스</span><small>친구들과 작업하기</small></button>
         <button className="village-hotspot village-gallery" type="button" onClick={() => onNavigate("gallery")}><span>전시장</span><small>그림 보러 가기</small></button>
         <button className="village-hotspot village-clock" type="button" onClick={() => onNavigate("focus")}><span>집중 시계</span><small>지금부터 집중 시작!</small></button>
-        <button className="village-mission-board" type="button" onClick={() => onNavigate("records")}><small>이번 주 미션</small><b>못생긴 첫 스케치 3번</b><span>{Math.min(missionProgress, 3)} / 3 · 눌러서 확인</span></button>
+        <button className="village-mission-board" type="button" onClick={() => setMissionOpen(true)}><small>이번 주 미션</small><b>못생긴 첫 스케치 3번</b><span>{Math.min(missionProgress, 3)} / 3 · 작은 미션도 확인하기</span></button>
         <span className="village-me"><span className="village-teacher-speech">{teacherNote}</span><Character profile={profile} /></span>
         {villageFriends.map((friend) => <span className="village-walker" style={{ "--walker-x": `${friend.x}%`, "--walker-y": `${friend.y}%`, "--walker-delay": friend.delay } as CSSProperties} key={friend.id}><Character profile={friend.profile} /></span>)}
       </section>
 
       <p className="village-guide">건물을 누르면 공간으로 들어가요. 가운데 시계를 누르면 집중 페이지가 열려요.</p>
+      {missionOpen && <div className="village-sheet-backdrop" role="presentation" onClick={() => setMissionOpen(false)}><section className="village-mission-sheet" role="dialog" aria-modal="true" aria-labelledby="weekly-mission-title" onClick={(event) => event.stopPropagation()}>
+        <button className="close-button" type="button" onClick={() => setMissionOpen(false)} aria-label="미션 닫기">×</button>
+        <p className="eyebrow">THIS WEEK</p><h2 id="weekly-mission-title">못생긴 첫 스케치 3번</h2><p>잘 그리려고 멈추지 말고, 가볍게 손을 움직여 세 번의 시작을 남겨보세요.</p>
+        <div className="mission-sub-list">{subMissions.map((mission) => <article className={mission.value >= mission.goal ? "complete" : ""} key={mission.label}><span>{mission.value >= mission.goal ? "✓" : "○"}</span><b>{mission.label}</b><small>{Math.min(mission.value, mission.goal)} / {mission.goal}</small></article>)}</div>
+        <div className="mission-sheet-note"><b>선생님의 한마디</b>{editingNote ? <><textarea value={noteDraft} maxLength={180} onChange={(event) => setNoteDraft(event.target.value)} />{noteError && <p className="error-message">{noteError}</p>}<div><button className="secondary-button" type="button" onClick={() => { setEditingNote(false); setNoteDraft(teacherNote); }}>취소</button><button className="primary-button" type="button" disabled={noteSaving || !noteDraft.trim()} onClick={async () => { try { setNoteSaving(true); setNoteError(""); await onTeacherNote(noteDraft.trim()); setEditingNote(false); } catch (error) { setNoteError(error instanceof Error ? error.message : "한마디를 저장하지 못했어요."); } finally { setNoteSaving(false); } }}>{noteSaving ? "저장 중" : "저장"}</button></div></> : <><p>“{teacherNote}”</p>{isHost && <button className="teacher-edit-button" type="button" onClick={() => { setNoteDraft(teacherNote); setEditingNote(true); }}>한마디 수정</button>}</>}</div>
+      </section></div>}
     </div>
   );
 }
 
+function GrowthPanel({ sessions }: { sessions: WorkSession[] }) {
+  const totalMinutes = sessions.reduce((sum, session) => sum + minutesFor(session.seconds), 0);
+  return <section className="paper-card journey-card focus-growth"><p className="eyebrow">작업실 성장</p><h2>집중할수록 조금씩 열려요</h2>{milestones.map((milestone, index) => { const open = milestone.minutes <= totalMinutes; return <div className={`journey-row${open ? " open" : ""}`} key={milestone.title}><span>{milestone.icon}</span><div><b>{milestone.title}</b><p>{milestone.detail}</p></div><i>{milestone.minutes === 0 ? "기본" : `${milestone.minutes}분`}</i>{index < milestones.length - 1 && <em />}</div>; })}</section>;
+}
+
 function FocusPanel({
   profile,
+  sessions,
   elapsed,
   timerTarget,
   running,
@@ -633,6 +671,7 @@ function FocusPanel({
   onReset,
 }: {
   profile: Profile;
+  sessions: WorkSession[];
   elapsed: number;
   timerTarget: TimerTarget;
   running: boolean;
@@ -678,6 +717,7 @@ function FocusPanel({
           {!running && elapsed > 0 && <button className="timer-reset" type="button" onClick={onReset}>이번 타이머 지우기</button>}
         </div>
       </section>
+      <GrowthPanel sessions={sessions} />
     </div>
   );
 }
@@ -822,59 +862,41 @@ function TogetherPanel({ profile, activeFriends, running, elapsed, category, clo
   );
 }
 
-function monthCells(date: Date) {
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  const firstDay = new Date(year, month, 1).getDay();
-  const count = new Date(year, month + 1, 0).getDate();
-  const cells: Array<Date | null> = Array(firstDay).fill(null);
-  for (let day = 1; day <= count; day += 1) cells.push(new Date(year, month, day));
-  while (cells.length % 7 !== 0) cells.push(null);
-  return cells;
-}
-
-function RecordsPanel({ sessions, teacherNote, isHost, students, classes, onTeacherNote, onClassCode, onAddClass, onResetStudent, onRemoveStudent }: {
+function RecordsPanel({ sessions, isHost, students, classes, onClassCode, onResetStudent, onRemoveStudent }: {
   sessions: WorkSession[];
-  teacherNote: string;
   isHost: boolean;
   students: RosterSnapshot["students"];
   classes: RosterSnapshot["classes"];
-  onTeacherNote: (note: string) => Promise<void>;
   onClassCode: (classId: string, classCode: string) => Promise<void>;
-  onAddClass: (name: string, classCode: string) => Promise<void>;
   onResetStudent: (studentId: string) => Promise<void>;
   onRemoveStudent: (studentId: string) => Promise<void>;
 }) {
   const now = new Date();
-  const cells = monthCells(now);
-  const thisWeekMinutes = sessions.filter((session) => isThisWeek(new Date(session.completedAt))).reduce((sum, session) => sum + minutesFor(session.seconds), 0);
-  const thisWeekCount = sessions.filter((session) => isThisWeek(new Date(session.completedAt))).length;
-  const dayCount = new Set(sessions.filter((session) => {
-    const date = new Date(session.completedAt);
-    return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
-  }).map((session) => new Date(session.completedAt).toDateString())).size;
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const weekDates = thisWeekDates();
+  const weekSessions = sessions.filter((session) => isThisWeek(new Date(session.completedAt)));
+  const thisWeekMinutes = weekSessions.reduce((sum, session) => sum + minutesFor(session.seconds), 0);
+  const thisWeekCount = weekSessions.length;
+  const selectedSessions = selectedDate ? weekSessions.filter((session) => new Date(session.completedAt).toDateString() === selectedDate) : [];
   return (
     <div className="panel-stack section-panel">
-      <MissionPanel sessions={sessions} teacherNote={teacherNote} isHost={isHost} onTeacherNote={onTeacherNote} />
       <section className="paper-card news-card">
         <p className="eyebrow">이번 주 기록</p><h2>작업실 소식</h2>
         <div className="award-row"><span>{thisWeekMinutes ? "◆" : "○"}</span><div><b>{thisWeekMinutes ? `${thisWeekCount}번의 시작을 모았어요` : "언제든 다시 시작할 수 있어요"}</b><p>{thisWeekMinutes ? `이번 주 ${thisWeekMinutes}분 동안 작업실 불을 켰어요.` : "쉬었던 날의 기록도 그대로예요. 오늘 5분부터 시작해봐요."}</p></div></div>
       </section>
-      <section className="paper-card calendar-card">
-        <div className="card-title-row"><b>{now.getFullYear()}년 {now.getMonth() + 1}월</b><span>작업한 날 {dayCount}일</span></div>
-        <div className="calendar-grid weekdays">{["일", "월", "화", "수", "목", "금", "토"].map((day) => <span key={day}>{day}</span>)}</div>
-        <div className="calendar-grid days">
-          {cells.map((date, index) => {
-            const worked = date ? sessions.some((session) => isSameDay(new Date(session.completedAt), date)) : false;
-            return date ? <span className={`${worked ? "worked " : ""}${isSameDay(date, now) ? "today" : ""}`} key={date.toISOString()}>{date.getDate()}</span> : <span key={`empty-${index}`} />;
+      <section className="paper-card week-record-card">
+        <div className="card-title-row"><div><p className="eyebrow">이번 주 기록</p><b>{weekDates[0].getMonth() + 1}.{weekDates[0].getDate()} — {weekDates[6].getMonth() + 1}.{weekDates[6].getDate()}</b></div><span>{weekSessions.length}번 집중</span></div>
+        <div className="week-record-grid">
+          {weekDates.map((date) => {
+            const key = date.toDateString();
+            const worked = weekSessions.some((session) => isSameDay(new Date(session.completedAt), date));
+            return <button type="button" disabled={!worked} className={`${worked ? "worked " : "empty "}${selectedDate === key ? "selected " : ""}${isSameDay(date, now) ? "today" : ""}`} key={date.toISOString()} onClick={() => setSelectedDate(selectedDate === key ? null : key)}><small>{["일", "월", "화", "수", "목", "금", "토"][date.getDay()]}</small><b>{date.getDate()}</b>{worked ? <span>클리어!</span> : <span>기록 없음</span>}</button>;
           })}
         </div>
       </section>
       <section className="record-section">
-        <p className="eyebrow">그림 기록</p><h2>최근 작업</h2>
-        {sessions.length === 0 ? (
-          <div className="empty-state"><span>▧</span><b>아직 남긴 그림이 없어요</b><p>작업실에서 타이머를 시작하고 오늘의 그림 한 장을 남겨보세요.</p></div>
-        ) : sessions.map((session) => (
+        <p className="eyebrow">선택한 날짜</p><h2>{selectedDate ? new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "long" }).format(new Date(selectedDate)) : "날짜를 눌러 기록을 열어보세요"}</h2>
+        {!selectedDate ? <div className="record-selection-empty"><span>✓</span><p>클리어 도장이 찍힌 날짜를 누르면<br />그날 남긴 그림만 보여요.</p></div> : selectedSessions.map((session) => (
           <article className="session-row" key={session.id}>
             <img src={session.artworkDataUrl} alt={session.note || `${categoryTitle(session.category)} 작업`} />
             <div><b>{categoryTitle(session.category)}</b><span>{minutesFor(session.seconds)}분 · {new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", hour: "numeric", minute: "numeric" }).format(new Date(session.completedAt))}</span>{session.note && <p>{session.note}</p>}</div>
@@ -882,7 +904,7 @@ function RecordsPanel({ sessions, teacherNote, isHost, students, classes, onTeac
           </article>
         ))}
       </section>
-      {isHost && <section className="records-management"><div className="records-management-heading"><p className="eyebrow">선생님 계정 전용</p><h2>반과 수강생 관리</h2><span>기록과 관리가 한곳에 있어요.</span></div><RosterManager students={students} classes={classes} onClassCode={onClassCode} onAddClass={onAddClass} onReset={onResetStudent} onRemove={onRemoveStudent} /></section>}
+      {isHost && <section className="records-management"><div className="records-management-heading"><p className="eyebrow">선생님 계정 전용</p><h2>수강생 활동 관리</h2><span>접속과 그림 습관을 한곳에서 확인해요.</span></div><RosterManager students={students} classes={classes} onClassCode={onClassCode} onReset={onResetStudent} onRemove={onRemoveStudent} /></section>}
     </div>
   );
 }
@@ -1009,49 +1031,38 @@ function GalleryPanel({ profile, sessions, sharedGallery, activeFriends, isHost,
   );
 }
 
-function RosterManager({ students, classes, onClassCode, onAddClass, onReset, onRemove }: {
+function RosterManager({ students, classes, onClassCode, onReset, onRemove }: {
   students: RosterSnapshot["students"];
   classes: RosterSnapshot["classes"];
   onClassCode: (classId: string, classCode: string) => Promise<void>;
-  onAddClass: (name: string, classCode: string) => Promise<void>;
   onReset: (studentId: string) => Promise<void>;
   onRemove: (studentId: string) => Promise<void>;
 }) {
-  const [classNameDraft, setClassNameDraft] = useState("");
-  const [classCodeDraft, setClassCodeDraft] = useState("");
   const [codeDrafts, setCodeDrafts] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   return (
     <section className="paper-card roster-manager">
-      <div className="card-title-row"><div><p className="eyebrow">선생님 계정 전용</p><h2>반 · 수강생 관리</h2></div><span>{classes.length}개 반 · {students.filter((student) => student.claimed).length}명</span></div>
-      <p className="roster-guide">수강생은 Google 로그인 후 반과 닉네임을 직접 정해요. 이곳에서는 반 코드와 들어온 수강생만 관리하면 돼요.</p>
-      <div className="class-manager-list">{classes.map((item) => <article key={item.id}>
-        <div><b>{item.name}</b><small>{students.filter((student) => student.classId === item.id && student.claimed).length}명 참여</small></div>
-        <div className="class-code-display"><code>{item.code || "코드 재설정 필요"}</code>{item.code && <button type="button" onClick={async () => { await navigator.clipboard.writeText(item.code!); setNotice(`${item.name} 코드를 복사했어요.`); }}>복사</button>}</div>
-        <div className="class-code-update"><input className="text-input" value={codeDrafts[item.id] ?? ""} maxLength={20} onChange={(event) => setCodeDrafts((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="새 코드 4~20자" aria-label={`${item.name} 새 코드`} /><button className="secondary-button" type="button" disabled={saving || (codeDrafts[item.id] ?? "").trim().length < 4} onClick={async () => {
-          const nextCode = (codeDrafts[item.id] ?? "").trim();
+      <div className="card-title-row"><div><p className="eyebrow">선생님 계정 전용</p><h2>수강생 관리</h2></div><span>{students.filter((student) => student.claimed).length}명</span></div>
+      <p className="roster-guide">수강생은 Google 계정으로 들어와 닉네임을 정해요. 접속과 집중 기록은 아래에서 확인할 수 있어요.</p>
+      {classes[0] && <div className="class-code-inline">
+        <b>입장 코드</b><input className="text-input" value={codeDrafts[classes[0].id] ?? classes[0].code ?? "아더댄웍스"} maxLength={20} onChange={(event) => setCodeDrafts({ [classes[0].id]: event.target.value })} aria-label="입장 코드" /><button className="secondary-button" type="button" disabled={saving || (codeDrafts[classes[0].id] ?? classes[0].code ?? "").trim().length < 4} onClick={async () => {
+          const item = classes[0];
+          const nextCode = (codeDrafts[item.id] ?? item.code ?? "아더댄웍스").trim();
           try { setSaving(true); setError(""); setNotice(""); await onClassCode(item.id, nextCode); setNotice(`${item.name} 코드를 바꿨어요.`); setCodeDrafts((current) => ({ ...current, [item.id]: "" })); }
           catch (codeError) { setError(codeError instanceof Error ? codeError.message : "반 코드를 바꾸지 못했어요."); }
           finally { setSaving(false); }
-        }}>변경</button></div>
-      </article>)}</div>
-      <div className="roster-divider" />
-      <div className="roster-subheading"><b>새 반 만들기</b><span>반별 코드 사용</span></div>
-      <div className="new-class-form"><input className="text-input" value={classNameDraft} maxLength={20} onChange={(event) => setClassNameDraft(event.target.value)} placeholder="반 이름" aria-label="새 반 이름" /><input className="text-input" value={classCodeDraft} maxLength={20} onChange={(event) => setClassCodeDraft(event.target.value)} placeholder="반 코드 4자 이상" aria-label="새 반 코드" /><button className="primary-button" type="button" disabled={saving} onClick={async () => {
-        try { setSaving(true); setError(""); setNotice(""); if (!classNameDraft.trim()) throw new Error("반 이름을 적어주세요."); if (classCodeDraft.trim().length < 4) throw new Error("반 코드를 네 글자 이상 적어주세요."); await onAddClass(classNameDraft.trim(), classCodeDraft.trim()); setNotice(`${classNameDraft.trim()}을 만들었어요.`); setClassNameDraft(""); setClassCodeDraft(""); }
-        catch (classError) { setError(classError instanceof Error ? classError.message : "반을 만들지 못했어요."); }
-        finally { setSaving(false); }
-      }}>반 추가</button></div>
+        }}>변경</button><button type="button" onClick={async () => { const code = codeDrafts[classes[0].id] ?? classes[0].code ?? "아더댄웍스"; await navigator.clipboard.writeText(code); setNotice("입장 코드를 복사했어요."); }}>복사</button>
+      </div>}
       {notice && <p className="success-message">{notice}</p>}
       {error && <p className="error-message" role="alert">{error}</p>}
       <div className="roster-divider" />
-      <div className="roster-subheading"><b>참여한 수강생</b><span>닉네임 · 반</span></div>
+      <div className="roster-subheading"><b>수강생 활동</b><span>접속 · 그림 횟수 · 집중 시간</span></div>
       <div className="roster-list">
         {students.filter((student) => student.claimed || student.nickname).map((student) => <article key={student.id}>
           <span>{(student.nickname || student.legalName).slice(0, 1)}</span>
-          <div><b>{student.nickname || student.legalName}</b><small>{student.className || "반 미지정"}{student.claimed ? " · 연결됨" : " · 다시 연결 대기"}</small></div>
+          <div><b>{student.nickname || student.legalName}</b><small>{student.claimed ? `최근 접속 ${student.lastSeenAt ? new Intl.DateTimeFormat("ko-KR", { month: "numeric", day: "numeric", hour: "numeric", minute: "numeric" }).format(new Date(student.lastSeenAt)) : "기록 전"}` : "다시 연결 대기"}</small><p className="student-activity"><span>그림 {student.drawingCount ?? 0}회</span><span>집중 {Math.floor((student.drawingSeconds ?? 0) / 60)}분</span></p></div>
           <div className="roster-row-actions">{student.claimed && <button className="reset-student" type="button" disabled={saving} onClick={async () => {
             if (!window.confirm(`${student.legalName}님의 계정 연결을 바꿀까요?\n캐릭터와 그림 기록은 그대로 유지돼요.`)) return;
             try { setSaving(true); setError(""); setNotice(""); await onReset(student.id); setNotice(`${student.legalName}님이 새 Google 계정으로 다시 연결할 수 있어요.`); }
@@ -1413,14 +1424,6 @@ export default function Home() {
     setRoster(await updateRosterClassCode(classId, classCode));
   }
 
-  async function addClass(name: string, classCode: string) {
-    if (demoMode.current) {
-      setRoster((current) => current ? { ...current, classes: [...current.classes, { id: crypto.randomUUID(), name, code: classCode }] } : current);
-      return;
-    }
-    setRoster(await createRosterClass(name, classCode));
-  }
-
   async function removeStudent(studentId: string) {
     if (demoMode.current) {
       setRoster((current) => current ? { ...current, students: current.students.filter((student) => student.id !== studentId) } : current);
@@ -1458,15 +1461,15 @@ export default function Home() {
       </header>
       {connectionMessage && <div className="connection-banner">{connectionMessage}</div>}
       <div className="app-content">
-        {tab === "home" && <HomePanel profile={profile} sessions={sessions} teacherNote={teacherNote} onNavigate={setTab} />}
-        {tab === "focus" && <FocusPanel profile={profile} elapsed={elapsed} timerTarget={timerTarget} running={running} category={category} focusNote={focusNote} pauseNotice={pauseNotice} onCategory={setCategory} onFocusNote={setFocusNote} onTimerTarget={(target) => { if (!running && elapsed === 0) { setTimerTarget(target); goalReached.current = false; } }} onToggle={toggleTimer} onFinish={openFinish} onReset={resetTimer} />}
+        {tab === "home" && <HomePanel profile={profile} sessions={sessions} teacherNote={teacherNote} isHost={Boolean(roster?.isAdmin)} onNavigate={setTab} onTeacherNote={saveTeacherNote} />}
+        {tab === "focus" && <FocusPanel profile={profile} sessions={sessions} elapsed={elapsed} timerTarget={timerTarget} running={running} category={category} focusNote={focusNote} pauseNotice={pauseNotice} onCategory={setCategory} onFocusNote={setFocusNote} onTimerTarget={(target) => { if (!running && elapsed === 0) { setTimerTarget(target); goalReached.current = false; } }} onToggle={toggleTimer} onFinish={openFinish} onReset={resetTimer} />}
         {tab === "together" && <TogetherPanel profile={profile} activeFriends={activeFriends} running={running} elapsed={elapsed} category={category} clock={clock} onMessage={saveMessage} />}
-        {tab === "records" && <RecordsPanel sessions={sessions} teacherNote={teacherNote} isHost={Boolean(roster?.isAdmin)} students={roster?.students ?? []} classes={roster?.classes ?? []} onTeacherNote={saveTeacherNote} onClassCode={saveClassCode} onAddClass={addClass} onResetStudent={resetStudent} onRemoveStudent={removeStudent} />}
+        {tab === "records" && <RecordsPanel sessions={sessions} isHost={Boolean(roster?.isAdmin)} students={roster?.students ?? []} classes={roster?.classes ?? []} onClassCode={saveClassCode} onResetStudent={resetStudent} onRemoveStudent={removeStudent} />}
         {tab === "gallery" && <GalleryPanel profile={profile} sessions={sessions} sharedGallery={sharedGallery} activeFriends={activeFriends} isHost={Boolean(roster?.isAdmin)} onRemove={removeArtwork} />}
       </div>
       <nav className="bottom-nav" aria-label="주요 메뉴">
         {([
-          ["home", "마을"], ["focus", running ? "집중 중" : "집중"], ["together", "아더댄웍스"], ["records", roster?.isAdmin ? "기록·관리" : "기록"], ["gallery", "전시"],
+          ["home", "아더댄웍스"], ["focus", "집중모드"], ["together", "모각그"], ["gallery", "어워드"], ["records", "기록관리"],
         ] as Array<[TabKey, string]>).map(([key, label]) => <button type="button" key={key} className={tab === key ? "active" : ""} onClick={() => setTab(key)}><span aria-hidden="true" />{label}</button>)}
       </nav>
       {finishOpen && <CompletionModal seconds={elapsed} goalSeconds={timerTarget} category={category} onClose={() => setFinishOpen(false)} onSave={saveSession} />}

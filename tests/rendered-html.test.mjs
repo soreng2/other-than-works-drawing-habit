@@ -135,7 +135,11 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(studio, /TogetherPanel/);
   assert.match(studio, /RecordsPanel/);
   assert.match(studio, /records-management/);
-  assert.match(studio, /\["records", roster\?\.isAdmin \? "기록·관리" : "기록"\]/);
+  assert.match(studio, /\["home", "아더댄웍스"\]/);
+  assert.match(studio, /\["focus", "집중모드"\]/);
+  assert.match(studio, /\["together", "모각그"\]/);
+  assert.match(studio, /\["gallery", "어워드"\]/);
+  assert.match(studio, /\["records", "기록관리"\]/);
   assert.match(studio, /GalleryPanel/);
   assert.match(studio, /galleryFrameSpots/);
   assert.match(studio, /surface: "partition"/);
@@ -144,6 +148,9 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(studio, /GalleryVisitor/);
   assert.match(studio, /전시에서 내리기/);
   assert.match(studio, /MissionPanel/);
+  assert.match(studio, /thisWeekDates/);
+  assert.match(studio, /클리어!/);
+  assert.match(studio, /drawingSeconds/);
   assert.match(layout, /og\.jpg/);
   assert.match(styles, /prefers-reduced-motion/);
   assert.match(manifest, /"display": "standalone"/);
@@ -233,8 +240,9 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(studio, /내 캐릭터 위 메시지/);
   assert.match(studio, /한마디 수정/);
   assert.match(studio, /선생님 계정 전용/);
-  assert.match(studio, /반 · 수강생 관리/);
-  assert.match(studio, /새 반 만들기/);
+  assert.match(studio, /수강생 활동 관리/);
+  assert.match(studio, /입장 코드/);
+  assert.doesNotMatch(studio, /새 반 만들기/);
   assert.doesNotMatch(studio, /function MapZone/);
   assert.doesNotMatch(studio, /옆으로 넘기면/);
   assert.doesNotMatch(studio, /desk-tablet|아이패드 책상/);

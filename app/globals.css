@@ -735,6 +735,80 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, label:has(inp
   .gallery-heading > span, .gallery-map-empty { font-size: 12px; }
 }
 
+/* 2026-08 mobile composition fix: every illustrated layer shares a stable floor line. */
+html, body, .app-shell, .app-content { max-width: 100%; overflow-x: hidden; }
+.app-content { width: 100%; }
+.bottom-nav { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.bottom-nav button { min-width: 0; padding: 0 2px; overflow: hidden; font-size: 8.5px; line-height: 1.1; white-space: nowrap; }
+.bottom-nav button span,
+.bottom-nav button.active span { width: 15px; height: 3px; flex: none; background: transparent; }
+.bottom-nav button.active span { background: var(--otw-blue); }
+.compact-work-choice .pill-scroll { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; overflow: visible; }
+.compact-work-choice .category-pill { min-width: 0; width: 100%; padding-inline: 3px; font-size: 8px; white-space: nowrap; }
+
+.focus-desk-scene { overflow: hidden; isolation: isolate; background: #f7fbff; }
+.focus-room-back { inset: -2px; width: calc(100% + 4px); height: calc(100% + 4px); object-fit: cover; }
+.focus-chair { top: 44%; width: 34%; height: 41%; }
+.focus-character { top: 49%; width: 40%; height: 40%; }
+.focus-character .character-image.custom { width: 82%; height: 82%; }
+.focus-desk-front { left: -2px; right: auto; bottom: -2px; width: calc(100% + 4px); height: 62%; object-fit: contain; object-position: center bottom; }
+.focus-growth { margin-top: 14px; }
+
+.village-mission-board { left: 4%; right: 4%; bottom: 2.5%; width: auto; grid-template-columns: auto 1fr auto; align-items: center; gap: 3px 8px; padding: 10px 12px; }
+.village-mission-board small { grid-column: 1 / -1; font-size: 8px; }
+.village-mission-board b { min-width: 0; font-size: 12px; }
+.village-mission-board span { justify-self: end; font-size: 8px; white-space: nowrap; }
+.village-sheet-backdrop { position: fixed; z-index: 80; inset: 0; display: grid; align-items: end; padding: 18px; background: rgba(25,27,29,.32); }
+.village-mission-sheet { position: relative; width: min(100%, 540px); margin: 0 auto; padding: 24px 18px 18px; border: 2px solid var(--ink); border-radius: 10px 10px 5px 5px; background: #fff; box-shadow: 0 -8px 0 rgba(49,95,174,.14); }
+.village-mission-sheet h2 { margin: 4px 0 7px; font-size: 22px; }
+.village-mission-sheet > p:not(.eyebrow) { margin: 0; color: #666d76; font-size: 11px; line-height: 1.55; }
+.mission-sub-list { display: grid; gap: 7px; margin-top: 14px; }
+.mission-sub-list article { display: grid; grid-template-columns: 24px 1fr auto; align-items: center; gap: 7px; padding: 9px 10px; border: 1.5px solid var(--ink); border-radius: 5px; background: #f1f3f5; }
+.mission-sub-list article.complete { background: var(--otw-lime); }
+.mission-sub-list article span { font-size: 15px; font-weight: 950; }
+.mission-sub-list article b { font-size: 11px; }
+.mission-sub-list article small { font-size: 9px; font-weight: 900; }
+.mission-sheet-note { margin-top: 13px; padding: 11px; border-left: 4px solid var(--otw-blue); background: var(--otw-sky); }
+.mission-sheet-note > b { font-size: 10px; }
+.mission-sheet-note > p { margin: 5px 0; font-size: 11px; line-height: 1.5; }
+.mission-sheet-note textarea { width: 100%; min-height: 70px; margin-top: 7px; padding: 8px; border: 1.5px solid var(--ink); resize: vertical; }
+.mission-sheet-note > div { display: flex; justify-content: flex-end; gap: 6px; }
+
+.week-record-card { background: #fff; }
+.week-record-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 12px; }
+.week-record-grid button { min-width: 0; min-height: 72px; display: grid; justify-items: center; align-content: center; gap: 3px; padding: 5px 1px; border: 1.5px solid #cbd0d7; border-radius: 5px; color: #a4a9b0; background: #f0f2f4; }
+.week-record-grid button.worked { cursor: pointer; border-color: var(--ink); color: var(--ink); background: #fff; }
+.week-record-grid button.worked.selected { box-shadow: inset 0 0 0 2px var(--otw-blue); background: var(--otw-lime); }
+.week-record-grid button.today b { color: var(--otw-blue); }
+.week-record-grid button small { font-size: 7px; }
+.week-record-grid button b { font-size: 13px; }
+.week-record-grid button span { max-width: 100%; font-size: 6.5px; font-weight: 950; white-space: nowrap; }
+.record-selection-empty { display: grid; justify-items: center; gap: 7px; padding: 28px 12px; border: 1.5px dashed #adb5bf; color: #7c838c; background: rgba(255,255,255,.58); text-align: center; }
+.record-selection-empty > span { display: grid; width: 38px; height: 38px; place-items: center; border: 2px solid #aeb5be; border-radius: 50%; font-size: 20px; }
+.record-selection-empty p { margin: 0; font-size: 10px; line-height: 1.55; }
+
+.class-code-inline { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 5px; padding: 9px; border: 1.5px solid var(--ink); border-radius: 5px; background: var(--otw-lime); }
+.class-code-inline > b { font-size: 9px; white-space: nowrap; }
+.class-code-inline .text-input { min-width: 0; height: 34px; padding: 0 7px; }
+.class-code-inline button { min-height: 34px; padding: 0 8px; border: 1.5px solid var(--ink); border-radius: 4px; font-size: 8px; font-weight: 900; }
+.student-activity { display: flex; gap: 5px; margin: 5px 0 0; }
+.student-activity span { padding: 3px 5px; color: #315fae; background: #e5effd; font-size: 7px; font-weight: 900; }
+
+.gallery-folder-statue { top: auto; bottom: 1.2%; width: 32%; max-height: 26%; transform: translateX(-50%); }
+.gallery-visitor { top: auto; bottom: .8%; transform: translateX(-50%); animation-name: gallery-floor-walk; }
+@keyframes gallery-floor-walk {
+  0%, 18%, 100% { transform: translateX(-50%) translateX(0); }
+  42%, 62% { transform: translateX(-50%) translateX(var(--visitor-move)); }
+  78%, 90% { transform: translateX(-50%) translateX(calc(var(--visitor-move) * -.45)); }
+}
+
+@media (min-width: 700px) {
+  .bottom-nav button { font-size: 10px; }
+  .village-mission-board b { font-size: 15px; }
+  .village-mission-board span { font-size: 10px; }
+  .village-sheet-backdrop { align-items: center; }
+}
+
 /* The village and the private pomodoro room are separate destinations. */
 .village-home { display: grid; gap: 14px; padding: 14px 14px 34px; }
 .village-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; padding: 2px 3px 0; }
@@ -1429,4 +1503,33 @@ textarea::placeholder { color: #8a9098; }
   .village-teacher-speech { width: 180px; padding: 8px 11px; font-size: 10px; }
   .village-mission-board b { font-size: 11px; }
   .village-mission-board span { font-size: 8px; }
+}
+
+/* Final alignment overrides live last so legacy visual rules cannot move the new layers. */
+html, body, .app-shell, .app-content { max-width: 100%; overflow-x: hidden; }
+.bottom-nav { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.bottom-nav button { min-width: 0; padding: 0 2px; overflow: hidden; font-size: 8.5px; white-space: nowrap; }
+.bottom-nav button span,
+.bottom-nav button.active span { width: 15px; height: 3px; flex: none; }
+.focus-ribbon { height: 76px; margin-bottom: -14px; }
+.focus-ribbon img { width: 92%; height: 92%; left: 4%; top: 4%; object-fit: cover; object-position: center 52%; clip-path: inset(30% 0 30% 0); transform: scale(1.35); }
+.focus-ribbon span { padding-bottom: 0; color: #17191b; font-size: 14px; text-shadow: 0 1px 0 rgba(255,255,255,.35); }
+.compact-work-choice .pill-scroll { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; overflow: visible; }
+.compact-work-choice .category-pill { min-width: 0; width: 100%; padding-inline: 3px; font-size: 8px; white-space: nowrap; }
+.focus-desk-scene { overflow: hidden; isolation: isolate; }
+.focus-room-back { inset: -2px; width: calc(100% + 4px); height: calc(100% + 4px); }
+.focus-chair { top: 44%; width: 34%; height: 41%; }
+.focus-character { top: 49%; width: 40%; height: 40%; }
+.focus-character .character-image.custom { width: 82%; height: 82%; }
+.focus-desk-front { left: -2px; right: auto; bottom: -2px; width: calc(100% + 4px); height: 62%; }
+.village-mission-board { left: 4%; right: 4%; bottom: 2.5%; width: auto; grid-template-columns: auto 1fr auto; align-items: center; gap: 3px 8px; padding: 10px 12px; }
+.village-mission-board small { grid-column: 1 / -1; font-size: 8px; }
+.village-mission-board b { min-width: 0; font-size: 12px; }
+.village-mission-board span { justify-self: end; font-size: 8px; white-space: nowrap; }
+.gallery-folder-statue { top: auto; bottom: -4%; width: 32%; max-height: 26%; transform: translateX(-50%); }
+.gallery-visitor { top: auto; bottom: .8%; transform: translateX(-50%); animation-name: gallery-floor-walk; }
+@media (min-width: 700px) {
+  .bottom-nav button { font-size: 10px; }
+  .village-mission-board b { font-size: 15px; }
+  .village-mission-board span { font-size: 10px; }
 }

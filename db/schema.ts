@@ -55,6 +55,7 @@ export const SCHEMA_STATEMENTS = [
     auth_email TEXT NOT NULL DEFAULT '',
     profile_id TEXT UNIQUE,
     class_id TEXT REFERENCES classes(id),
+    last_seen_at INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
   )`,
@@ -71,6 +72,7 @@ export const STUDENT_CLASS_MIGRATION = "ALTER TABLE students ADD COLUMN class_id
 export const STUDENT_CLASS_INDEX = "CREATE INDEX IF NOT EXISTS idx_students_class_id ON students(class_id)";
 export const STUDENT_AUTH_PROVIDER_MIGRATION = "ALTER TABLE students ADD COLUMN auth_provider TEXT NOT NULL DEFAULT 'chatgpt'";
 export const STUDENT_AUTH_EMAIL_MIGRATION = "ALTER TABLE students ADD COLUMN auth_email TEXT NOT NULL DEFAULT ''";
+export const STUDENT_LAST_SEEN_MIGRATION = "ALTER TABLE students ADD COLUMN last_seen_at INTEGER NOT NULL DEFAULT 0";
 
 export type ProfileRow = {
   id: string;
@@ -97,6 +99,7 @@ export type StudentRow = {
   auth_email: string;
   profile_id: string | null;
   class_id: string | null;
+  last_seen_at: number;
 };
 
 export type ClassRow = {

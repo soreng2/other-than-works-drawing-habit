@@ -10,6 +10,7 @@ import {
   STUDENT_CLASS_MIGRATION,
   STUDENT_AUTH_EMAIL_MIGRATION,
   STUDENT_AUTH_PROVIDER_MIGRATION,
+  STUDENT_LAST_SEEN_MIGRATION,
 } from "../../../db/schema";
 
 const DEFAULT_CLASS_ID = "00000000-0000-5000-8000-000000000001";
@@ -24,6 +25,7 @@ export async function ensureDatabase(database: D1Database) {
     GALLERY_HIDDEN_MIGRATION,
     STUDENT_AUTH_PROVIDER_MIGRATION,
     STUDENT_AUTH_EMAIL_MIGRATION,
+    STUDENT_LAST_SEEN_MIGRATION,
   ]) {
     try {
       await database.prepare(migration).run();

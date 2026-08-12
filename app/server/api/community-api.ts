@@ -14,7 +14,7 @@ const CLASS_CODE_KEY = "class_code_hash";
 const CLASS_CODE_DISPLAY_KEY = "class_code_display";
 const TEACHER_NOTE_KEY = "teacher_note";
 const HOST_MEMBER_LABEL = "선생님";
-const DESIGNATED_ADMIN_EMAIL = "mon.mut.friends@gmail.com";
+const DESIGNATED_ADMIN_EMAILS = new Set(["mon.mut.friends@gmail.com", "mon.mut.friend@gmail.com"]);
 
 function errorResponse(error: unknown) {
   const code = error instanceof Error ? error.message : "unexpected_error";
@@ -54,7 +54,7 @@ function normalizeName(value: string) {
 }
 
 function isDesignatedAdmin(auth: RequestUser) {
-  return auth.email.trim().toLowerCase() === DESIGNATED_ADMIN_EMAIL;
+  return DESIGNATED_ADMIN_EMAILS.has(auth.email.trim().toLowerCase());
 }
 
 async function tokenHash(token: string) {
@@ -97,6 +97,8 @@ async function memberFor(database: D1Database, auth: RequestUser): Promise<Membe
     FROM students s LEFT JOIN classes c ON c.id = s.class_id WHERE s.auth_user_hash = ?`)
     .bind(auth.userHash).first<Member>();
   if (!member?.profile_id) throw new Error("membership_required");
+  await database.prepare("UPDATE students SET last_seen_at = ?, updated_at = ? WHERE id = ?")
+    .bind(Date.now(), Date.now(), member.id).run();
   return member as Member;
 }
 
@@ -156,12 +158,16 @@ async function rosterState(database: D1Database, auth: RequestUser, classCode = 
   let codeMatches = false;
   if (classCode.trim() && codeHash) codeMatches = await hashSecret(classCode) === codeHash;
   const classes = classResult.results.map((item) => ({ id: item.id, name: item.name, code: isAdmin ? item.code_display : undefined }));
-  let students: Array<{ id: string; legalName: string; nickname?: string; claimed: boolean; classId?: string; className?: string }> = [];
+  let students: Array<{ id: string; legalName: string; nickname?: string; claimed: boolean; classId?: string; className?: string; lastSeenAt?: string; drawingCount?: number; drawingSeconds?: number }> = [];
   if (isAdmin) {
-    const result = await database.prepare(`SELECT s.id, s.legal_name, s.nickname, s.auth_user_hash, s.class_id, c.name AS class_name
+    const result = await database.prepare(`SELECT s.id, s.legal_name, s.nickname, s.auth_user_hash, s.class_id, s.last_seen_at, c.name AS class_name,
+        COUNT(ws.id) AS drawing_count, COALESCE(SUM(ws.seconds), 0) AS drawing_seconds
       FROM students s LEFT JOIN classes c ON c.id = s.class_id
-      WHERE s.normalized_name != '__host__' ORDER BY c.created_at ASC, s.updated_at DESC LIMIT 500`)
-      .all<Pick<StudentRow, "id" | "legal_name" | "nickname" | "auth_user_hash" | "class_id"> & { class_name?: string }>();
+      LEFT JOIN work_sessions ws ON ws.profile_id = s.profile_id
+      WHERE s.normalized_name != '__host__'
+      GROUP BY s.id, s.legal_name, s.nickname, s.auth_user_hash, s.class_id, s.last_seen_at, c.name, c.created_at, s.updated_at
+      ORDER BY c.created_at ASC, s.updated_at DESC LIMIT 500`)
+      .all<Pick<StudentRow, "id" | "legal_name" | "nickname" | "auth_user_hash" | "class_id" | "last_seen_at"> & { class_name?: string; drawing_count: number; drawing_seconds: number }>();
     students = result.results.map((student) => ({
       id: student.id,
       legalName: student.legal_name,
@@ -169,6 +175,9 @@ async function rosterState(database: D1Database, auth: RequestUser, classCode = 
       claimed: Boolean(student.auth_user_hash),
       classId: student.class_id || undefined,
       className: student.class_name || undefined,
+      lastSeenAt: student.last_seen_at ? new Date(student.last_seen_at).toISOString() : undefined,
+      drawingCount: Number(student.drawing_count || 0),
+      drawingSeconds: Number(student.drawing_seconds || 0),
     }));
   } else if (!resolvedMember && codeMatches) {
     const result = await database.prepare(`SELECT id, legal_name, nickname, auth_user_hash FROM students
