@@ -123,10 +123,16 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(studio, /예시 캐릭터/);
   assert.match(studio, /명단 저장하고 내 작업실 열기/);
   assert.match(studio, /together-map/);
+  assert.match(studio, /SharedMap/);
+  assert.match(studio, /mapSpots/);
   assert.match(studio, /floating-name/);
   assert.match(studio, /map-chair/);
+  assert.match(styles, /@keyframes map-stroll/);
+  assert.match(styles, /aspect-ratio: 1/);
   assert.match(studio, /내 캐릭터 위 메시지/);
   assert.match(studio, /한마디 수정/);
+  assert.doesNotMatch(studio, /function MapZone/);
+  assert.doesNotMatch(studio, /옆으로 넘기면/);
   assert.doesNotMatch(studio, /desk-tablet|아이패드 책상/);
   assert.doesNotMatch(studio, /friendSeed|gallerySeed/);
 

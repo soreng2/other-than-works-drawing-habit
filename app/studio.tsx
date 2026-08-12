@@ -692,6 +692,21 @@ const idleLines = [
 const idlePlaces = ["gallery", "tips", "lounge"] as const;
 type MapPlace = "working" | (typeof idlePlaces)[number];
 type MapMember = SharedFriend & { mine?: boolean };
+type MapSpot = { x: number; y: number };
+
+const mapSpots: Record<MapPlace, MapSpot[]> = {
+  working: [{ x: 21, y: 29 }, { x: 39, y: 29 }, { x: 30, y: 39 }],
+  gallery: [{ x: 68, y: 29 }, { x: 82, y: 36 }, { x: 72, y: 43 }],
+  tips: [{ x: 19, y: 67 }, { x: 35, y: 65 }, { x: 27, y: 80 }],
+  lounge: [{ x: 65, y: 68 }, { x: 82, y: 69 }, { x: 74, y: 82 }],
+};
+
+const mapAreaLabels: Array<{ place: MapPlace; title: string }> = [
+  { place: "working", title: "집중 책상" },
+  { place: "gallery", title: "작은 전시장" },
+  { place: "tips", title: "팁 게시판" },
+  { place: "lounge", title: "쉬는 자리" },
+];
 
 function stringSeed(value: string) {
   return [...value].reduce((sum, character) => (sum * 31 + character.charCodeAt(0)) >>> 0, 17);
@@ -702,13 +717,25 @@ function placeFor(friend: MapMember, clock: number): MapPlace {
   return idlePlaces[(stringSeed(friend.id) + Math.floor(clock / 180_000)) % idlePlaces.length];
 }
 
-function MapFriend({ friend, clock }: { friend: MapMember; clock: number }) {
+function MapFriend({ friend, clock, spot, order }: { friend: MapMember; clock: number; spot: MapSpot; order: number }) {
   const working = friend.mode === "working";
+  const seed = stringSeed(friend.id);
   const fallback = working
     ? `${categoryTitle(friend.category)} · ${Math.max(0, Math.floor((clock - friend.startedAt) / 60_000))}분째`
-    : idleLines[(stringSeed(friend.id) + Math.floor(clock / 120_000)) % idleLines.length];
+    : idleLines[(seed + Math.floor(clock / 120_000)) % idleLines.length];
+  const direction = seed % 2 === 0 ? 1 : -1;
+  const mapStyle = {
+    "--map-x": `${spot.x}%`,
+    "--map-y": `${spot.y}%`,
+    "--wander-x-a": `${direction * (10 + seed % 8)}px`,
+    "--wander-y-a": `${-5 - seed % 6}px`,
+    "--wander-x-b": `${direction * (-7 - seed % 7)}px`,
+    "--wander-y-b": `${4 + seed % 5}px`,
+    "--wander-delay": `${-(seed % 8_000)}ms`,
+    zIndex: 10 + order,
+  } as CSSProperties;
   return (
-    <article className={`map-friend${working ? " working" : ""}${friend.mine ? " mine" : ""}`}>
+    <article style={mapStyle} className={`map-friend${working ? " working" : " idle"}${friend.mine ? " mine" : ""}`}>
       <span className="floating-name">{friend.nickname || friend.name}{friend.mine ? " · 나" : ""}</span>
       <span className={`map-speech${friend.message ? " personal" : ""}`}>{friend.message || fallback}</span>
       <div className="map-avatar"><Character profile={{ name: friend.name, nickname: friend.nickname, characterPreset: friend.characterPreset, characterDataUrl: friend.characterDataUrl }} /></div>
@@ -718,13 +745,41 @@ function MapFriend({ friend, clock }: { friend: MapMember; clock: number }) {
   );
 }
 
-function MapZone({ title, place, members, clock }: { title: string; place: MapPlace; members: MapMember[]; clock: number }) {
+function SharedMap({ members, clock }: { members: MapMember[]; clock: number }) {
+  const placeCounts: Record<MapPlace, number> = { working: 0, gallery: 0, tips: 0, lounge: 0 };
+  const arranged = members.map((member) => {
+    const preferredPlace = placeFor(member, clock);
+    const place = preferredPlace === "working"
+      ? preferredPlace
+      : [...idlePlaces].sort((left, right) => {
+          const countDifference = placeCounts[left] - placeCounts[right];
+          if (countDifference !== 0) return countDifference;
+          const preferredIndex = idlePlaces.indexOf(preferredPlace);
+          const leftDistance = (idlePlaces.indexOf(left) - preferredIndex + idlePlaces.length) % idlePlaces.length;
+          const rightDistance = (idlePlaces.indexOf(right) - preferredIndex + idlePlaces.length) % idlePlaces.length;
+          return leftDistance - rightDistance;
+        })[0];
+    const placeOrder = placeCounts[place];
+    placeCounts[place] += 1;
+    const spots = mapSpots[place];
+    const base = spots[placeOrder % spots.length];
+    const overflowRow = Math.floor(placeOrder / spots.length);
+    return {
+      member,
+      place,
+      spot: {
+        x: Math.max(7, Math.min(93, base.x + (overflowRow % 2 === 0 ? overflowRow * 2 : -overflowRow * 2))),
+        y: Math.max(12, Math.min(88, base.y + Math.floor(overflowRow / 2) * 7)),
+      },
+    };
+  });
   return (
-    <section className={`map-zone ${place}-zone`}>
-      <span className="map-zone-title">{title}</span>
-      <div className="map-people">{members.map((member) => <MapFriend key={member.id} friend={member} clock={clock} />)}</div>
-      {members.length === 0 && <small className="map-empty">아직 조용해요</small>}
-    </section>
+    <div className={`together-map${members.length > 8 ? " dense" : ""}`} aria-label="수강생들이 머무는 한 화면 공동 작업실 지도">
+      {mapAreaLabels.map(({ place, title }) => <span key={place} className={`map-area-label ${place}-label`}>{title}</span>)}
+      <div className="map-people">
+        {arranged.map(({ member, spot }, order) => <MapFriend key={member.id} friend={member} clock={clock} spot={spot} order={order} />)}
+      </div>
+    </div>
   );
 }
 
@@ -770,18 +825,8 @@ function TogetherPanel({ profile, activeFriends, running, elapsed, category, clo
         {messageError && <p className="error-message" role="alert">{messageError}</p>}
         <small>등록한 메시지는 함께 작업 중인 수강생에게 보여요.</small>
       </form>
-      <div className="together-map" aria-label="수강생들이 머무는 공동 작업실 지도">
-        {(["working", "gallery", "tips", "lounge"] as MapPlace[]).map((place) => (
-          <MapZone
-            key={place}
-            place={place}
-            title={{ working: "집중 책상", gallery: "작은 전시장", tips: "팁 게시판", lounge: "쉬는 자리" }[place]}
-            members={members.map((member) => member.mine ? { ...member, message } : member).filter((member) => placeFor(member, clock) === place)}
-            clock={clock}
-          />
-        ))}
-      </div>
-      <p className="map-strip-hint">옆으로 넘기면 다른 공간도 볼 수 있어요.</p>
+      <SharedMap members={members.map((member) => member.mine ? { ...member, message } : member)} clock={clock} />
+      <p className="map-strip-hint">집중 중인 친구는 책상에, 쉬는 친구는 전시와 소파 주변에 머물러요.</p>
       <section className="paper-card quiet-rule"><b>♥ 이 공간에는 순위가 없어요</b><p>오래 한 사람보다 오늘 시작한 사람을 반겨요. 집중을 끝내면 캐릭터도 조용히 자기 작업실로 돌아갑니다.</p></section>
     </div>
   );
