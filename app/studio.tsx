@@ -93,14 +93,6 @@ const timerTargets: Array<{ seconds: TimerTarget; label: string }> = [
   { seconds: 0, label: "자유" },
 ];
 
-const starterPrompts: Record<CategoryKey, string[]> = {
-  sketch: ["가장 가까운 물건을 선 20개로 그려보기", "손을 보지 않고 1분 윤곽선 그리기", "동그라미 세 개에서 캐릭터 시작하기"],
-  line: ["좋아하는 그림의 선 굵기 세 가지 따라 해보기", "지우개 없이 한 번에 외곽선 이어보기", "짧은 선과 긴 선만으로 물건 하나 그리기"],
-  color: ["오늘 눈에 들어온 색 세 개만 써보기", "명암 없이 색면만으로 채워보기", "평소 안 쓰는 색 하나를 주인공으로 만들기"],
-  emoticon: ["같은 얼굴로 감정 세 가지 바꿔보기", "말풍선 없이 상황이 보이게 그려보기", "손동작 하나로 기분 표현하기"],
-  free: ["완성하지 않아도 되는 첫 선 하나 긋기", "지금 가장 그리고 싶은 조각부터 시작하기", "어제 그림에서 마음에 든 부분만 이어보기"],
-};
-
 const DB_NAME = "other-than-works-mvp";
 const STORE_NAME = "app-state";
 
@@ -313,6 +305,11 @@ function Character({ profile, compact = false }: { profile: Profile; compact?: b
     return <img className={`character-image custom${compact ? " compact" : ""}`} src={profile.characterDataUrl} alt={`${profile.name} 캐릭터`} />;
   }
   return <DefaultCharacter compact={compact} preset={profile.characterPreset ?? "sky"} />;
+}
+
+function FocusCharacter({ profile }: { profile: Profile }) {
+  if (profile.characterDataUrl) return <Character profile={profile} />;
+  return <img className={`character-image official focus-preset preset-${profile.characterPreset ?? "sky"}`} src="/folder-focus-blue.png" alt={`${profile.name}가 펜을 들고 집중하는 모습`} />;
 }
 
 function PresetPicker({ selected, custom, onSelect }: { selected: CharacterPresetKey; custom: boolean; onSelect: (preset: CharacterPresetKey) => void }) {
@@ -597,90 +594,86 @@ function HomePanel({
   sessions,
   elapsed,
   timerTarget,
-  clock,
   running,
   category,
+  focusNote,
   pauseNotice,
   onCategory,
+  onFocusNote,
   onTimerTarget,
   onToggle,
   onFinish,
   onReset,
+  onNavigate,
 }: {
   profile: Profile;
   sessions: WorkSession[];
   elapsed: number;
   timerTarget: TimerTarget;
-  clock: number;
   running: boolean;
   category: CategoryKey;
+  focusNote: string;
   pauseNotice: string;
   onCategory: (key: CategoryKey) => void;
+  onFocusNote: (note: string) => void;
   onTimerTarget: (target: TimerTarget) => void;
   onToggle: () => void;
   onFinish: () => void;
   onReset: () => void;
+  onNavigate: (tab: TabKey) => void;
 }) {
   const totalMinutes = sessions.reduce((sum, session) => sum + minutesFor(session.seconds), 0);
   const todayMinutes = sessions.filter((session) => isSameDay(new Date(session.completedAt), new Date())).reduce((sum, session) => sum + minutesFor(session.seconds), 0);
-  const currentMilestone = [...milestones].reverse().find((item) => item.minutes <= totalMinutes) ?? milestones[0];
-  const nextMilestone = milestones.find((item) => item.minutes > totalMinutes);
-  const milestoneProgress = nextMilestone
-    ? Math.max(0, Math.min(1, (totalMinutes - currentMilestone.minutes) / (nextMilestone.minutes - currentMilestone.minutes)))
-    : 1;
   const timerProgress = timerTarget === 0 ? Math.min(1, elapsed / 600) : Math.min(1, elapsed / timerTarget);
   const timerStyle = { "--timer-progress": `${timerProgress * 360}deg` } as CSSProperties;
-  const promptList = starterPrompts[category];
-  const dailyPrompt = promptList[Math.floor(clock / 86_400_000) % promptList.length];
   const targetReached = timerTarget > 0 && elapsed >= timerTarget;
+  const villageFriends = [
+    { id: "village-me", profile, x: 48, y: 70, delay: "-1.2s" },
+    { id: "village-green", profile: { name: "green", characterPreset: "moss" as CharacterPresetKey }, x: 23, y: 76, delay: "-3.8s" },
+    { id: "village-orange", profile: { name: "orange", characterPreset: "apricot" as CharacterPresetKey }, x: 76, y: 75, delay: "-5.4s" },
+  ];
 
   return (
-    <div className="panel-stack home-panel">
-      <header className="home-greeting">
-        <div>
-          <p className="eyebrow">{new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "long" }).format(new Date())}</p>
-          <h2>오늘도 가볍게 시작해요</h2>
-        </div>
-        <div className="today-count"><span>오늘</span><b>{todayMinutes}분</b></div>
+    <div className="village-home">
+      <header className="village-heading">
+        <div><p>{new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "long" }).format(new Date())}</p><h2>오늘은 어디서 시작할까요?</h2></div>
+        <div><span>오늘 {todayMinutes}분</span><b>누적 {totalMinutes}분</b></div>
       </header>
 
-      <StudioScene profile={profile} totalMinutes={totalMinutes} />
-
-      <section className="room-progress" aria-label="작업실 성장 진행">
-        <div className="room-progress-head"><div><b>{currentMilestone.title}</b><span>누적 {totalMinutes}분</span></div><button type="button" onClick={onToggle}>{running ? "잠시 멈춤" : elapsed > 0 ? "이어서 하기" : timerTarget === 0 ? "자유 집중 시작" : `${timerTarget / 60}분 바로 시작`}</button></div>
-        <div className="progress-track"><i style={{ width: `${milestoneProgress * 100}%` }} /></div>
-        <p>{nextMilestone ? `${nextMilestone.title}까지 ${Math.max(0, nextMilestone.minutes - totalMinutes)}분` : "작업실의 모든 공간을 발견했어요."}</p>
+      <section className="village-map" aria-label="아더댄웍스 창작 마을">
+        <img src="/otw-village.png" alt="시계 광장, 작업실과 전시장이 있는 아더댄웍스 창작 마을" />
+        <button className="village-hotspot village-studio" type="button" onClick={() => onNavigate("together")}><span>아더댄웍스</span><small>친구들과 작업하기</small></button>
+        <button className="village-hotspot village-gallery" type="button" onClick={() => onNavigate("gallery")}><span>전시장</span><small>그림 보러 가기</small></button>
+        <button className="village-hotspot village-clock" type="button" onClick={() => document.getElementById("focus-room")?.scrollIntoView({ behavior: "smooth", block: "start" })}><span>집중 시계</span><small>지금부터 집중 시작!</small></button>
+        {villageFriends.map((friend) => <span className="village-walker" style={{ "--walker-x": `${friend.x}%`, "--walker-y": `${friend.y}%`, "--walker-delay": friend.delay } as CSSProperties} key={friend.id}><Character profile={friend.profile} /></span>)}
       </section>
 
-      <section className="work-choice">
-        <p className="eyebrow">오늘의 작업</p>
-        <h3>무슨 작업을 할까요?</h3>
-        <div className="pill-scroll">
-          {categories.map((item) => (
-            <button type="button" key={item.key} onClick={() => onCategory(item.key)} className={`category-pill${category === item.key ? " active" : ""}`}>
-              {item.title}
-            </button>
-          ))}
-        </div>
-      </section>
+      <p className="village-guide">건물을 누르면 공간으로 들어가요. 가운데 시계는 내 집중 공간으로 이어져요.</p>
 
-      <section className="paper-card timer-card">
-        <div className="timer-heading"><div><b>{categoryTitle(category)}</b><span>{dailyPrompt}</span></div><i>{targetReached ? "목표 완료" : timerTarget === 0 ? "자유 집중" : `${timerTarget / 60}분 타이머`}</i></div>
-        <div className="timer-presets" aria-label="집중 시간 선택">
-          {timerTargets.map((target) => <button type="button" key={target.seconds} disabled={running || elapsed > 0} className={timerTarget === target.seconds ? "active" : ""} onClick={() => onTimerTarget(target.seconds)}>{target.label}</button>)}
+      <section className={`private-focus${running ? " is-running" : ""}`} id="focus-room">
+        <div className="focus-ribbon">지금부터 집중 시작!</div>
+        <div className="focus-desk-scene">
+          <div className="focus-room-back" aria-hidden="true"><span className="focus-lamp" /><span className="focus-wall-art" /><span className="focus-plant" /></div>
+          <div className="focus-chair" aria-hidden="true" />
+          <div className="focus-character"><FocusCharacter profile={profile} /></div>
+          <div className="focus-desk-front" aria-hidden="true"><span className="focus-tablet"><i className="apple-mark">●</i></span><span className="focus-table-edge" /><span className="focus-pencil-cup" /><span className="focus-notebook" /></div>
+          <span className="focus-blink" aria-hidden="true" />
         </div>
-        <div className="timer-ring" style={timerStyle}>
-          <div className="timer-inner">
-            <strong>{timerDisplay(elapsed, timerTarget)}</strong>
-            <span>{running ? (targetReached ? "조금 더 이어가는 중" : "집중하는 중") : elapsed === 0 ? (timerTarget === 0 ? "시간을 재며 시작" : "남은 시간") : targetReached ? "오늘의 목표 완료" : "잠시 멈춤"}</span>
+
+        <div className="focus-controls">
+          <div className="focus-title"><div><p className="eyebrow">내 공간 · POMODORO</p><h3>{running ? "조용히 그리는 중" : "오늘 그릴 것을 정해볼까요?"}</h3></div><i>{targetReached ? "목표 완료" : timerTarget === 0 ? "자유 집중" : `${timerTarget / 60}분`}</i></div>
+          <label className="focus-note"><span>이번 집중에 할 일</span><input value={focusNote} onChange={(event) => onFocusNote(event.target.value.slice(0, 40))} disabled={running} placeholder="예: 캐릭터 표정 3개 스케치" maxLength={40} /></label>
+
+          <div className="work-choice compact-work-choice">
+            <div className="pill-scroll">{categories.map((item) => <button type="button" key={item.key} disabled={running} onClick={() => onCategory(item.key)} className={`category-pill${category === item.key ? " active" : ""}`}>{item.title}</button>)}</div>
           </div>
+
+          <div className="timer-presets" aria-label="집중 시간 선택">{timerTargets.map((target) => <button type="button" key={target.seconds} disabled={running || elapsed > 0} className={timerTarget === target.seconds ? "active" : ""} onClick={() => onTimerTarget(target.seconds)}>{target.label}</button>)}</div>
+          <button className="focus-clock" style={timerStyle} type="button" onClick={onToggle} aria-label={running ? "집중 잠시 멈추기" : "집중 시작하기"}><span><strong>{timerDisplay(elapsed, timerTarget)}</strong><small>{running ? "집중하는 중" : elapsed > 0 ? "눌러서 이어하기" : "시계를 눌러 시작"}</small></span></button>
+          {pauseNotice && <p className="pause-notice">Ⅱ {pauseNotice}</p>}
+          <div className="timer-actions"><button className="primary-button" type="button" onClick={onToggle}>{running ? "잠시 멈추기" : elapsed === 0 ? "집중 시작하기" : "이어서 하기"}</button>{elapsed > 0 && <button className="finish-button" type="button" onClick={onFinish}>기록</button>}</div>
+          {!running && elapsed > 0 && <button className="timer-reset" type="button" onClick={onReset}>이번 타이머 지우기</button>}
         </div>
-        {pauseNotice && <p className="pause-notice">Ⅱ {pauseNotice}</p>}
-        <div className="timer-actions">
-          <button className="primary-button" type="button" onClick={onToggle}>{running ? "잠시 멈추기" : elapsed === 0 ? (timerTarget === 0 ? "자유 집중 시작" : `${timerTarget / 60}분 시작`) : "이어서 하기"}</button>
-          {elapsed > 0 && <button className="finish-button" type="button" onClick={onFinish}>기록</button>}
-        </div>
-        {!running && elapsed > 0 && <button className="timer-reset" type="button" onClick={onReset}>이번 타이머 지우기</button>}
       </section>
     </div>
   );
@@ -1130,6 +1123,7 @@ export default function Home() {
   const [timerTarget, setTimerTarget] = useState<TimerTarget>(600);
   const [elapsed, setElapsed] = useState(0);
   const [running, setRunning] = useState(false);
+  const [focusNote, setFocusNote] = useState("");
   const [pauseNotice, setPauseNotice] = useState("");
   const [finishOpen, setFinishOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -1308,6 +1302,14 @@ export default function Home() {
   function toggleTimer() {
     if (running) { pauseTimer(); return; }
     if (timerTarget > 0 && elapsed >= timerTarget) goalReached.current = true;
+    const focusMessage = focusNote.trim();
+    if (focusMessage && profile?.message !== focusMessage) {
+      if (demoMode.current) persist({ ...profile, message: focusMessage }, sessions);
+      else {
+        const identity = identityRef.current;
+        if (identity) updateSharedMessage(identity, focusMessage).then((saved) => persist(saved, sessions)).catch(() => undefined);
+      }
+    }
     setPauseNotice(""); elapsedBeforeRun.current = elapsed; runStartedAt.current = Date.now(); setRunning(true);
   }
 
@@ -1419,7 +1421,7 @@ export default function Home() {
       </header>
       {connectionMessage && <div className="connection-banner">{connectionMessage}</div>}
       <div className="app-content">
-        {tab === "home" && <HomePanel profile={profile} sessions={sessions} elapsed={elapsed} timerTarget={timerTarget} clock={clock} running={running} category={category} pauseNotice={pauseNotice} onCategory={setCategory} onTimerTarget={(target) => { if (!running && elapsed === 0) { setTimerTarget(target); goalReached.current = false; } }} onToggle={toggleTimer} onFinish={openFinish} onReset={resetTimer} />}
+        {tab === "home" && <HomePanel profile={profile} sessions={sessions} elapsed={elapsed} timerTarget={timerTarget} running={running} category={category} focusNote={focusNote} pauseNotice={pauseNotice} onCategory={setCategory} onFocusNote={setFocusNote} onTimerTarget={(target) => { if (!running && elapsed === 0) { setTimerTarget(target); goalReached.current = false; } }} onToggle={toggleTimer} onFinish={openFinish} onReset={resetTimer} onNavigate={setTab} />}
         {tab === "together" && <TogetherPanel profile={profile} activeFriends={activeFriends} running={running} elapsed={elapsed} category={category} clock={clock} onMessage={saveMessage} />}
         {tab === "records" && <RecordsPanel sessions={sessions} />}
         {tab === "gallery" && <GalleryPanel profile={profile} sessions={sessions} sharedGallery={sharedGallery} activeFriends={activeFriends} isHost={Boolean(roster?.isAdmin)} onRemove={removeArtwork} />}
@@ -1427,7 +1429,7 @@ export default function Home() {
       </div>
       <nav className="bottom-nav" aria-label="주요 메뉴">
         {([
-          ["home", "작업실"], ["together", "함께"], ["records", "기록"], ["gallery", "전시"], ["mission", roster?.isAdmin ? "관리" : "미션"],
+          ["home", "마을"], ["together", "아더댄웍스"], ["records", "기록"], ["gallery", "전시"], ["mission", roster?.isAdmin ? "관리" : "미션"],
         ] as Array<[TabKey, string]>).map(([key, label]) => <button type="button" key={key} className={tab === key ? "active" : ""} onClick={() => setTab(key)}><span aria-hidden="true" />{label}</button>)}
       </nav>
       {finishOpen && <CompletionModal seconds={elapsed} goalSeconds={timerTarget} category={category} onClose={() => setFinishOpen(false)} onSave={saveSession} />}

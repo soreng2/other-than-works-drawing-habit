@@ -74,7 +74,15 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(studio, /seconds: 300/);
   assert.match(studio, /자유 집중/);
   assert.match(studio, /timerTargets/);
-  assert.match(studio, /분 바로 시작/);
+  assert.match(studio, /지금부터 집중 시작!/);
+  assert.match(studio, /이번 집중에 할 일/);
+  assert.match(studio, /otw-village\.png/);
+  assert.match(studio, /focus-desk-front/);
+  assert.match(studio, /apple-mark/);
+  assert.match(styles, /\.focus-room-back[\s\S]*?z-index: 1/);
+  assert.match(styles, /\.focus-chair[\s\S]*?z-index: 2/);
+  assert.match(styles, /\.focus-character[\s\S]*?z-index: 3/);
+  assert.match(styles, /\.focus-desk-front[\s\S]*?z-index: 4/);
   assert.match(studio, /validateCharacter/);
   assert.match(studio, /const sourceWidth =/);
   assert.match(studio, /character-image custom/);
