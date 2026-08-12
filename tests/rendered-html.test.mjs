@@ -129,6 +129,9 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(studio, /map-chair/);
   assert.match(styles, /@keyframes map-stroll/);
   assert.match(styles, /aspect-ratio: 1/);
+  assert.match(styles, /\.together-map \.map-friend\.mine::after \{ content: none; \}/);
+  assert.match(styles, /\.together-map \.floating-name[\s\S]*?animation: none;/);
+  assert.match(styles, /@media \(min-width: 700px\)/);
   assert.match(studio, /내 캐릭터 위 메시지/);
   assert.match(studio, /한마디 수정/);
   assert.doesNotMatch(studio, /function MapZone/);

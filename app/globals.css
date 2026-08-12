@@ -442,8 +442,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, label:has(inp
   border: 1px solid rgba(23,25,27,.42);
   border-radius: 7px;
   color: #405578;
-  background: rgba(255,254,250,.8);
-  backdrop-filter: blur(4px);
+  background: #fffefa;
   font-size: 7px;
   font-weight: 850;
   letter-spacing: -.02em;
@@ -456,8 +455,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, label:has(inp
   position: absolute;
   left: var(--map-x);
   top: var(--map-y);
-  width: 78px;
-  height: 105px;
+  width: 100px;
+  height: 132px;
   display: block;
   padding: 0;
   transform: translate(-50%, -50%);
@@ -465,43 +464,37 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, label:has(inp
   pointer-events: none;
 }
 .together-map .map-friend.idle { animation: map-stroll 9.5s ease-in-out var(--wander-delay) infinite; }
-.together-map .map-friend.mine::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: 12px 1px -2px;
-  border: 1px dashed rgba(75,112,179,.55);
-  border-radius: 50%;
-  background: rgba(240,245,252,.28);
-}
+.together-map .map-friend.mine { border: 0; border-radius: 0; background: transparent; }
+.together-map .map-friend.mine::after { content: none; }
 .together-map .floating-name {
-  top: -1px;
-  max-width: 80px;
-  padding: 3px 6px;
+  top: 0;
+  max-width: 98px;
+  padding: 4px 7px;
   border: 1px solid rgba(23,25,27,.72);
   border-radius: 6px;
-  background: rgba(255,254,250,.94);
+  background: #fffefa;
   box-shadow: 1.5px 1.5px 0 rgba(23,25,27,.72);
-  font-size: 7px;
+  font-size: 8px;
+  animation: none;
 }
 .together-map .map-speech {
-  top: 21px;
-  width: 76px;
-  min-height: 25px;
-  padding: 3px 5px;
+  top: 27px;
+  width: 94px;
+  min-height: 29px;
+  padding: 4px 6px;
   border: 1px solid rgba(23,25,27,.58);
   border-radius: 7px;
   color: var(--ink);
-  background: rgba(255,254,250,.91);
-  font-size: 5.5px;
+  background: #fffefa;
+  font-size: 6.5px;
   line-height: 1.25;
 }
-.together-map .map-speech.personal { color: #45628f; background: rgba(241,246,220,.94); }
+.together-map .map-speech.personal { color: #45628f; background: #f1f6dc; }
 .together-map .map-avatar { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); }
-.together-map .map-avatar .character-image { width: 64px; height: 64px; filter: drop-shadow(0 3px 0 rgba(60,66,72,.1)); }
-.together-map .map-friend.working { width: 94px; height: 120px; }
-.together-map .map-friend.working .map-avatar { z-index: 4; bottom: 15px; margin: 0; }
-.together-map .map-friend.working .map-avatar .character-image { width: 82px; height: 82px; }
+.together-map .map-avatar .character-image { width: 86px; height: 86px; filter: drop-shadow(0 3px 0 rgba(60,66,72,.1)); }
+.together-map .map-friend.working { width: 116px; height: 148px; }
+.together-map .map-friend.working .map-avatar { z-index: 4; bottom: 17px; margin: 0; }
+.together-map .map-friend.working .map-avatar .character-image { width: 105px; height: 105px; }
 .together-map .map-friend.working .map-chair { bottom: 2px; width: 42px; height: 50px; }
 .together-map .map-friend.working .map-chair span { border: 1px solid rgba(23,25,27,.72); background: #b5cba9; }
 .together-map .map-friend.working .map-chair i,
@@ -509,12 +502,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, label:has(inp
 .together-map .map-friend.working .map-desk { left: 5px; right: 5px; bottom: 0; height: 34px; }
 .together-map .map-friend.working .map-desk > span { height: 7px; border: 1px solid rgba(23,25,27,.72); background: #f6dfbd; }
 .together-map .map-friend.working .map-desk > i { top: 6px; width: 4px; height: 27px; border: 1px solid rgba(23,25,27,.6); background: #aabce0; }
-.together-map.dense .map-friend { width: 68px; height: 94px; }
-.together-map.dense .map-avatar .character-image { width: 54px; height: 54px; }
-.together-map.dense .floating-name { max-width: 66px; font-size: 6px; }
-.together-map.dense .map-speech { width: 64px; font-size: 5px; }
-.together-map.dense .map-friend.working { width: 78px; height: 105px; }
-.together-map.dense .map-friend.working .map-avatar .character-image { width: 68px; height: 68px; }
+.together-map.dense .map-friend { width: 82px; height: 108px; }
+.together-map.dense .map-avatar .character-image { width: 68px; height: 68px; }
+.together-map.dense .floating-name { max-width: 78px; font-size: 6.5px; }
+.together-map.dense .map-speech { width: 76px; font-size: 5.5px; }
+.together-map.dense .map-friend.working { width: 94px; height: 124px; }
+.together-map.dense .map-friend.working .map-avatar .character-image { width: 82px; height: 82px; }
 .map-strip-hint { color: #58709b; }
 
 @keyframes map-stroll {
@@ -561,5 +554,22 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, label:has(inp
 @media (max-width: 380px) {
   .studio-scene { height: 296px; }
   .map-area-label { font-size: 6.5px; }
-  .together-map .map-friend { transform: translate(-50%, -50%) scale(.92); }
+}
+
+@media (min-width: 700px) {
+  .together-map .map-friend { width: 156px; height: 198px; }
+  .together-map .map-avatar .character-image { width: 140px; height: 140px; }
+  .together-map .floating-name { max-width: 144px; padding: 5px 10px; font-size: 11px; }
+  .together-map .map-speech { top: 34px; width: 136px; min-height: 38px; padding: 6px 8px; font-size: 9px; }
+  .together-map .map-friend.working { width: 182px; height: 220px; }
+  .together-map .map-friend.working .map-avatar { bottom: 25px; }
+  .together-map .map-friend.working .map-avatar .character-image { width: 164px; height: 164px; }
+  .together-map .map-friend.working .map-chair { width: 58px; height: 74px; }
+  .together-map .map-friend.working .map-desk { left: 9px; right: 9px; height: 48px; }
+  .together-map .map-friend.working .map-desk > span { height: 9px; }
+  .together-map .map-friend.working .map-desk > i { top: 8px; height: 39px; }
+  .together-map.dense .map-friend { width: 118px; height: 158px; }
+  .together-map.dense .map-avatar .character-image { width: 104px; height: 104px; }
+  .together-map.dense .map-friend.working { width: 138px; height: 176px; }
+  .together-map.dense .map-friend.working .map-avatar .character-image { width: 124px; height: 124px; }
 }
