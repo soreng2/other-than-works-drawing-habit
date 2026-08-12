@@ -36,6 +36,15 @@ export const SCHEMA_STATEMENTS = [
     value TEXT NOT NULL,
     updated_at INTEGER NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS classes (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    code_hash TEXT NOT NULL,
+    code_display TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  )`,
   `CREATE TABLE IF NOT EXISTS students (
     id TEXT PRIMARY KEY NOT NULL,
     legal_name TEXT NOT NULL,
@@ -43,6 +52,7 @@ export const SCHEMA_STATEMENTS = [
     nickname TEXT NOT NULL DEFAULT '',
     auth_user_hash TEXT UNIQUE,
     profile_id TEXT UNIQUE,
+    class_id TEXT REFERENCES classes(id),
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
   )`,
@@ -55,6 +65,8 @@ export const PRESENCE_MODE_MIGRATION = "ALTER TABLE presence ADD COLUMN mode TEX
 export const CHARACTER_PRESET_MIGRATION = "ALTER TABLE profiles ADD COLUMN character_preset TEXT NOT NULL DEFAULT 'sky'";
 export const GALLERY_HIDDEN_MIGRATION = "ALTER TABLE work_sessions ADD COLUMN gallery_hidden INTEGER NOT NULL DEFAULT 0";
 export const GALLERY_VISIBLE_INDEX = "CREATE INDEX IF NOT EXISTS idx_work_sessions_gallery_visible ON work_sessions(gallery_hidden, completed_at DESC)";
+export const STUDENT_CLASS_MIGRATION = "ALTER TABLE students ADD COLUMN class_id TEXT REFERENCES classes(id)";
+export const STUDENT_CLASS_INDEX = "CREATE INDEX IF NOT EXISTS idx_students_class_id ON students(class_id)";
 
 export type ProfileRow = {
   id: string;
@@ -69,6 +81,7 @@ export type PresenceRow = ProfileRow & {
   mode: string;
   category: string;
   started_at: number;
+  class_name?: string | null;
 };
 
 export type StudentRow = {
@@ -77,6 +90,15 @@ export type StudentRow = {
   nickname: string;
   auth_user_hash: string | null;
   profile_id: string | null;
+  class_id: string | null;
+};
+
+export type ClassRow = {
+  id: string;
+  name: string;
+  code_hash: string;
+  code_display: string;
+  is_active: number;
 };
 
 export type SessionRow = {

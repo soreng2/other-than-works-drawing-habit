@@ -8,6 +8,7 @@ export type Profile = {
   characterPreset?: CharacterPresetKey;
   characterDataUrl?: string;
   message?: string;
+  className?: string;
 };
 
 export type WorkSession = {
@@ -29,6 +30,7 @@ export type SharedFriend = {
   category: CategoryKey;
   startedAt: number;
   message: string;
+  className?: string;
 };
 
 export type SharedArtwork = WorkSession & {
@@ -55,6 +57,14 @@ export type RosterStudent = {
   legalName: string;
   nickname?: string;
   claimed: boolean;
+  classId?: string;
+  className?: string;
+};
+
+export type RosterClass = {
+  id: string;
+  name: string;
+  code?: string;
 };
 
 export type RosterSnapshot = {
@@ -63,5 +73,7 @@ export type RosterSnapshot = {
   linked: boolean;
   nickname?: string;
   classCode?: string;
+  className?: string;
+  classes: RosterClass[];
   students: RosterStudent[];
 };

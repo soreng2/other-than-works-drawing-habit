@@ -1,10 +1,10 @@
 import type { CategoryKey, CharacterPresetKey, Profile, SharedArtwork, SharedFriend, WorkSession } from "../../lib/community-types";
-import type { PresenceRow, ProfileRow, SessionRow, StudentRow } from "../../../db/schema";
+import type { ClassRow, PresenceRow, ProfileRow, SessionRow, StudentRow } from "../../../db/schema";
 import { requireRequestUser, hashSecret, type RequestUser } from "../auth/request-auth";
 import { ensureDatabase } from "../db/runtime";
 
 type CommunityEnv = { DB?: D1Database; UPLOADS?: R2Bucket };
-type Member = StudentRow & { profile_id: string };
+type Member = StudentRow & { profile_id: string; class_name?: string | null };
 
 const categories = new Set<CategoryKey>(["sketch", "line", "color", "emoticon", "free"]);
 const characterPresets = new Set<CharacterPresetKey>(["sky", "moss", "apricot", "rose", "violet", "lemon"]);
@@ -19,13 +19,14 @@ const DESIGNATED_ADMIN_EMAIL = "mon.mut.friends@gmail.com";
 function errorResponse(error: unknown) {
   const code = error instanceof Error ? error.message : "unexpected_error";
   const messages: Record<string, string> = {
-    signin_required: "계속하려면 ChatGPT로 로그인해주세요.",
-    membership_required: "수강생 명단에서 본인 이름을 먼저 연결해주세요.",
+    signin_required: "계속하려면 Google 계정으로 다시 로그인해주세요.",
+    membership_required: "닉네임과 반을 먼저 설정해주세요.",
     database_binding_missing: "공동 작업실 저장소가 아직 준비되지 않았어요.",
     uploads_binding_missing: "이미지 저장소가 아직 준비되지 않았어요.",
     invalid_identity: "이전 기기의 프로필 정보를 확인하지 못했어요.",
-    invalid_roster: "수강생 명단과 반 코드를 확인해주세요.",
+    invalid_roster: "닉네임과 반 정보를 확인해주세요.",
     invalid_class_code: "반 코드가 맞지 않아요.",
+    invalid_class: "선택한 반을 찾지 못했어요.",
     host_only: "수강생 명단은 선생님 계정에서만 바꿀 수 있어요.",
     no_new_students: "새로 추가할 수강생 이름이 없어요.",
     student_already_claimed: "이미 다른 계정에 연결된 이름이에요. 선생님에게 연결 해제를 요청해주세요.",
@@ -64,7 +65,7 @@ function mediaUrl(request: Request, key: string | null | undefined) {
   return key ? `${new URL(request.url).origin}/api/media/${encodeURIComponent(key)}` : undefined;
 }
 
-function mapProfile(request: Request, row: ProfileRow): Profile {
+function mapProfile(request: Request, row: ProfileRow, className?: string | null): Profile {
   return {
     id: row.id,
     name: row.name,
@@ -72,6 +73,7 @@ function mapProfile(request: Request, row: ProfileRow): Profile {
     characterPreset: validCharacterPreset(row.character_preset) ? row.character_preset : "sky",
     characterDataUrl: mediaUrl(request, row.character_key),
     message: row.message,
+    className: className || undefined,
   };
 }
 
@@ -91,8 +93,9 @@ async function setting(database: D1Database, key: string) {
 }
 
 async function memberFor(database: D1Database, auth: RequestUser): Promise<Member> {
-  const member = await database.prepare("SELECT id, legal_name, nickname, auth_user_hash, profile_id FROM students WHERE auth_user_hash = ?")
-    .bind(auth.userHash).first<StudentRow>();
+  const member = await database.prepare(`SELECT s.id, s.legal_name, s.nickname, s.auth_user_hash, s.profile_id, s.class_id, c.name AS class_name
+    FROM students s LEFT JOIN classes c ON c.id = s.class_id WHERE s.auth_user_hash = ?`)
+    .bind(auth.userHash).first<Member>();
   if (!member?.profile_id) throw new Error("membership_required");
   return member as Member;
 }
@@ -103,8 +106,9 @@ function hostNickname(auth: RequestUser) {
 }
 
 async function ensureAdminMember(database: D1Database, auth: RequestUser): Promise<Member> {
-  const existing = await database.prepare("SELECT id, legal_name, nickname, auth_user_hash, profile_id FROM students WHERE auth_user_hash = ?")
-    .bind(auth.userHash).first<StudentRow>();
+  const existing = await database.prepare(`SELECT s.id, s.legal_name, s.nickname, s.auth_user_hash, s.profile_id, s.class_id, c.name AS class_name
+    FROM students s LEFT JOIN classes c ON c.id = s.class_id WHERE s.auth_user_hash = ?`)
+    .bind(auth.userHash).first<Member>();
   if (existing?.profile_id) return existing as Member;
   const now = Date.now();
   await database.prepare(`INSERT OR IGNORE INTO students
@@ -112,27 +116,45 @@ async function ensureAdminMember(database: D1Database, auth: RequestUser): Promi
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).bind(
     crypto.randomUUID(), HOST_MEMBER_LABEL, "__host__", hostNickname(auth), auth.userHash, auth.profileId, now, now,
   ).run();
-  const member = await database.prepare("SELECT id, legal_name, nickname, auth_user_hash, profile_id FROM students WHERE auth_user_hash = ?")
-    .bind(auth.userHash).first<StudentRow>();
+  const member = await database.prepare(`SELECT s.id, s.legal_name, s.nickname, s.auth_user_hash, s.profile_id, s.class_id, c.name AS class_name
+    FROM students s LEFT JOIN classes c ON c.id = s.class_id WHERE s.auth_user_hash = ?`)
+    .bind(auth.userHash).first<Member>();
   if (!member?.profile_id) throw new Error("invalid_roster");
   return member as Member;
 }
 
 async function rosterState(database: D1Database, auth: RequestUser, classCode = "") {
-  const [adminHash, codeHash, savedClassCode, member] = await Promise.all([
+  const [adminHash, codeHash, savedClassCode, member, classResult] = await Promise.all([
     setting(database, ADMIN_KEY),
     setting(database, CLASS_CODE_KEY),
     setting(database, CLASS_CODE_DISPLAY_KEY),
-    database.prepare("SELECT id, legal_name, nickname, auth_user_hash, profile_id FROM students WHERE auth_user_hash = ?")
-      .bind(auth.userHash).first<StudentRow>(),
+    database.prepare(`SELECT s.id, s.legal_name, s.nickname, s.auth_user_hash, s.profile_id, s.class_id, c.name AS class_name
+      FROM students s LEFT JOIN classes c ON c.id = s.class_id WHERE s.auth_user_hash = ?`)
+      .bind(auth.userHash).first<Member>(),
+    database.prepare("SELECT id, name, code_display FROM classes WHERE is_active = 1 ORDER BY created_at ASC LIMIT 50")
+      .all<Pick<ClassRow, "id" | "name" | "code_display">>(),
   ]);
   const isAdmin = isDesignatedAdmin(auth);
   const needsSetup = !adminHash && isAdmin;
   const resolvedMember = isAdmin && !member ? await ensureAdminMember(database, auth) : member;
   let codeMatches = false;
   if (classCode.trim() && codeHash) codeMatches = await hashSecret(classCode) === codeHash;
-  let students: Array<{ id: string; legalName: string; nickname?: string; claimed: boolean }> = [];
+  const classes = classResult.results.map((item) => ({ id: item.id, name: item.name, code: isAdmin ? item.code_display : undefined }));
+  let students: Array<{ id: string; legalName: string; nickname?: string; claimed: boolean; classId?: string; className?: string }> = [];
   if (isAdmin) {
+    const result = await database.prepare(`SELECT s.id, s.legal_name, s.nickname, s.auth_user_hash, s.class_id, c.name AS class_name
+      FROM students s LEFT JOIN classes c ON c.id = s.class_id
+      WHERE s.normalized_name != '__host__' ORDER BY c.created_at ASC, s.updated_at DESC LIMIT 500`)
+      .all<Pick<StudentRow, "id" | "legal_name" | "nickname" | "auth_user_hash" | "class_id"> & { class_name?: string }>();
+    students = result.results.map((student) => ({
+      id: student.id,
+      legalName: student.legal_name,
+      nickname: student.nickname || undefined,
+      claimed: Boolean(student.auth_user_hash),
+      classId: student.class_id || undefined,
+      className: student.class_name || undefined,
+    }));
+  } else if (!resolvedMember && codeMatches) {
     const result = await database.prepare(`SELECT id, legal_name, nickname, auth_user_hash FROM students
       WHERE normalized_name != '__host__' ORDER BY normalized_name ASC LIMIT 200`)
       .all<Pick<StudentRow, "id" | "legal_name" | "nickname" | "auth_user_hash">>();
@@ -142,10 +164,6 @@ async function rosterState(database: D1Database, auth: RequestUser, classCode = 
       nickname: student.nickname || undefined,
       claimed: Boolean(student.auth_user_hash),
     }));
-  } else if (!resolvedMember && codeMatches) {
-    const result = await database.prepare("SELECT id, legal_name FROM students WHERE auth_user_hash IS NULL AND normalized_name != '__host__' ORDER BY normalized_name ASC LIMIT 200")
-      .all<{ id: string; legal_name: string }>();
-    students = result.results.map((student) => ({ id: student.id, legalName: student.legal_name, claimed: false }));
   }
   return {
     needsSetup,
@@ -153,6 +171,8 @@ async function rosterState(database: D1Database, auth: RequestUser, classCode = 
     linked: Boolean(resolvedMember),
     nickname: resolvedMember?.nickname || undefined,
     classCode: isAdmin ? savedClassCode || undefined : undefined,
+    className: resolvedMember?.class_name || undefined,
+    classes,
     students,
   };
 }
@@ -164,7 +184,7 @@ async function handleRoster(request: Request, database: D1Database, auth: Reques
   }
   if (request.method !== "POST") return Response.json({ error: "method_not_allowed" }, { status: 405 });
 
-  const body = await request.json() as { action?: string; names?: string[]; classCode?: string; studentId?: string; nickname?: string };
+  const body = await request.json() as { action?: string; names?: string[]; classCode?: string; classId?: string; className?: string; studentId?: string; nickname?: string };
   if (body.action === "setup") {
     if (!isDesignatedAdmin(auth)) throw new Error("host_only");
     const [adminHash, studentCount] = await Promise.all([
@@ -173,6 +193,7 @@ async function handleRoster(request: Request, database: D1Database, auth: Reques
     ]);
     if (adminHash || (studentCount?.count ?? 0) > 0) throw new Error("invalid_roster");
     const classCode = String(body.classCode ?? "").trim();
+    const className = String(body.className ?? "첫 번째 반").trim().slice(0, 20);
     const seen = new Set<string>();
     const names = (body.names ?? []).map((value) => String(value).trim().slice(0, 30)).filter((value) => {
       const normalized = normalizeName(value);
@@ -180,22 +201,54 @@ async function handleRoster(request: Request, database: D1Database, auth: Reques
       seen.add(normalized);
       return true;
     });
-    if (classCode.length < 4 || classCode.length > 20 || names.length < 1 || names.length > 200) throw new Error("invalid_roster");
+    if (!className || classCode.length < 4 || classCode.length > 20 || names.length > 200) throw new Error("invalid_roster");
     const now = Date.now();
+    const classId = crypto.randomUUID();
     const statements = [
       database.prepare("INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)").bind(ADMIN_KEY, auth.userHash, now),
       database.prepare("INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)").bind(CLASS_CODE_KEY, await hashSecret(classCode), now),
       database.prepare("INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)").bind(CLASS_CODE_DISPLAY_KEY, classCode, now),
+      database.prepare(`INSERT INTO classes (id, name, code_hash, code_display, is_active, created_at, updated_at)
+        VALUES (?, ?, ?, ?, 1, ?, ?)`).bind(classId, className, await hashSecret(classCode), classCode, now, now),
       database.prepare(`INSERT INTO students
         (id, legal_name, normalized_name, nickname, auth_user_hash, profile_id, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).bind(
         crypto.randomUUID(), HOST_MEMBER_LABEL, "__host__", hostNickname(auth), auth.userHash, auth.profileId, now, now,
       ),
-      ...names.map((name) => database.prepare("INSERT INTO students (id, legal_name, normalized_name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)")
-        .bind(crypto.randomUUID(), name, normalizeName(name), now, now)),
+      ...names.map((name) => database.prepare("INSERT INTO students (id, legal_name, normalized_name, class_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)")
+        .bind(crypto.randomUUID(), name, normalizeName(name), classId, now, now)),
     ];
     await database.batch(statements);
     return Response.json(await rosterState(database, auth, classCode), { status: 201 });
+  }
+
+  if (body.action === "join") {
+    const existing = await database.prepare("SELECT id FROM students WHERE auth_user_hash = ?").bind(auth.userHash).first();
+    if (existing) return Response.json(await rosterState(database, auth));
+    const nickname = String(body.nickname ?? "").trim().slice(0, 12);
+    const classCode = String(body.classCode ?? "").trim();
+    const classId = String(body.classId ?? "");
+    if (!nickname || !profileIdPattern.test(classId)) throw new Error("invalid_roster");
+    const selectedClass = await database.prepare("SELECT id, code_hash FROM classes WHERE id = ? AND is_active = 1")
+      .bind(classId).first<Pick<ClassRow, "id" | "code_hash">>();
+    if (!selectedClass) throw new Error("invalid_class");
+    if (!selectedClass.code_hash || await hashSecret(classCode) !== selectedClass.code_hash) throw new Error("invalid_class_code");
+
+    const now = Date.now();
+    const reclaim = await database.prepare(`SELECT id, profile_id FROM students
+      WHERE auth_user_hash IS NULL AND class_id = ? AND nickname = ? AND normalized_name LIKE 'reclaim-%'
+      ORDER BY updated_at DESC LIMIT 1`).bind(classId, nickname).first<Pick<StudentRow, "id" | "profile_id">>();
+    if (reclaim) {
+      await database.prepare(`UPDATE students SET legal_name = ?, normalized_name = ?, nickname = ?, auth_user_hash = ?,
+        profile_id = ?, updated_at = ? WHERE id = ?`)
+        .bind(nickname, `account-${auth.userHash}`, nickname, auth.userHash, reclaim.profile_id || auth.profileId, now, reclaim.id).run();
+    } else {
+      await database.prepare(`INSERT INTO students
+        (id, legal_name, normalized_name, nickname, auth_user_hash, profile_id, class_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .bind(crypto.randomUUID(), nickname, `account-${auth.userHash}`, nickname, auth.userHash, auth.profileId, classId, now, now).run();
+    }
+    return Response.json(await rosterState(database, auth));
   }
 
   if (body.action === "claim") {
@@ -208,8 +261,12 @@ async function handleRoster(request: Request, database: D1Database, auth: Reques
     const nickname = String(body.nickname ?? "").trim().slice(0, 12);
     const studentId = String(body.studentId ?? "");
     if (!nickname || !profileIdPattern.test(studentId)) throw new Error("invalid_roster");
+    const selected = await database.prepare("SELECT profile_id FROM students WHERE id = ? AND auth_user_hash IS NULL AND normalized_name != '__host__'")
+      .bind(studentId).first<Pick<StudentRow, "profile_id">>();
+    if (!selected) throw new Error("student_already_claimed");
+    const profileId = selected.profile_id || auth.profileId;
     const result = await database.prepare(`UPDATE students SET nickname = ?, auth_user_hash = ?, profile_id = ?, updated_at = ?
-      WHERE id = ? AND auth_user_hash IS NULL`).bind(nickname, auth.userHash, auth.profileId, Date.now(), studentId).run();
+      WHERE id = ? AND auth_user_hash IS NULL`).bind(nickname, auth.userHash, profileId, Date.now(), studentId).run();
     if (!result.meta.changes) throw new Error("student_already_claimed");
     return Response.json(await rosterState(database, auth));
   }
@@ -234,6 +291,29 @@ async function handleRoster(request: Request, database: D1Database, auth: Reques
     return Response.json(await rosterState(database, auth), { status: 201 });
   }
 
+  if (body.action === "add_class") {
+    if (!isDesignatedAdmin(auth)) throw new Error("host_only");
+    const className = String(body.className ?? "").trim().slice(0, 20);
+    const classCode = String(body.classCode ?? "").trim();
+    if (!className || classCode.length < 4 || classCode.length > 20) throw new Error("invalid_roster");
+    const now = Date.now();
+    await database.prepare(`INSERT INTO classes
+      (id, name, code_hash, code_display, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, 1, ?, ?)`)
+      .bind(crypto.randomUUID(), className, await hashSecret(classCode), classCode, now, now).run();
+    return Response.json(await rosterState(database, auth), { status: 201 });
+  }
+
+  if (body.action === "set_class_code") {
+    if (!isDesignatedAdmin(auth)) throw new Error("host_only");
+    const classId = String(body.classId ?? "");
+    const classCode = String(body.classCode ?? "").trim();
+    if (!profileIdPattern.test(classId) || classCode.length < 4 || classCode.length > 20) throw new Error("invalid_class_code");
+    const result = await database.prepare("UPDATE classes SET code_hash = ?, code_display = ?, updated_at = ? WHERE id = ? AND is_active = 1")
+      .bind(await hashSecret(classCode), classCode, Date.now(), classId).run();
+    if (!result.meta.changes) throw new Error("invalid_class");
+    return Response.json(await rosterState(database, auth));
+  }
+
   if (body.action === "set_code") {
     if (!isDesignatedAdmin(auth)) throw new Error("host_only");
     const classCode = String(body.classCode ?? "").trim();
@@ -247,6 +327,22 @@ async function handleRoster(request: Request, database: D1Database, auth: Reques
         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`)
         .bind(CLASS_CODE_DISPLAY_KEY, classCode, now),
     ]);
+    return Response.json(await rosterState(database, auth));
+  }
+
+  if (body.action === "reset_claim") {
+    if (!isDesignatedAdmin(auth)) throw new Error("host_only");
+    const studentId = String(body.studentId ?? "");
+    if (!profileIdPattern.test(studentId)) throw new Error("invalid_roster");
+    const student = await database.prepare("SELECT id, profile_id FROM students WHERE id = ? AND normalized_name != '__host__'")
+      .bind(studentId).first<Pick<StudentRow, "id" | "profile_id">>();
+    if (!student) throw new Error("invalid_roster");
+    const statements = [
+      database.prepare("UPDATE students SET auth_user_hash = NULL, normalized_name = ?, updated_at = ? WHERE id = ?")
+        .bind(`reclaim-${student.id}`, Date.now(), student.id),
+    ];
+    if (student.profile_id) statements.push(database.prepare("DELETE FROM presence WHERE profile_id = ?").bind(student.profile_id));
+    await database.batch(statements);
     return Response.json(await rosterState(database, auth));
   }
 
@@ -316,15 +412,16 @@ async function handleProfile(request: Request, database: D1Database, uploads: R2
   const row = await database.prepare("SELECT id, name, nickname, character_preset, character_key, message FROM profiles WHERE id = ?")
     .bind(member.profile_id).first<ProfileRow>();
   if (!row) throw new Error("invalid_profile");
-  return Response.json({ profile: mapProfile(request, row), migrated: Boolean(existing) });
+  return Response.json({ profile: mapProfile(request, row, member.class_name), migrated: Boolean(existing) });
 }
 
 async function handleCommunity(request: Request, database: D1Database, member: Member) {
   if (request.method !== "GET") return Response.json({ error: "method_not_allowed" }, { status: 405 });
   const [profile, activeResult, galleryResult, sessionsResult, teacherNote] = await Promise.all([
     database.prepare("SELECT id, name, nickname, character_preset, character_key, message FROM profiles WHERE id = ?").bind(member.profile_id).first<ProfileRow>(),
-    database.prepare(`SELECT p.id, p.name, p.nickname, p.character_preset, p.character_key, p.message, pr.mode, pr.category, pr.started_at
+    database.prepare(`SELECT p.id, p.name, p.nickname, p.character_preset, p.character_key, p.message, pr.mode, pr.category, pr.started_at, c.name AS class_name
       FROM presence pr JOIN profiles p ON p.id = pr.profile_id
+      LEFT JOIN students st ON st.profile_id = p.id LEFT JOIN classes c ON c.id = st.class_id
       WHERE pr.updated_at >= ? ORDER BY pr.mode DESC, pr.started_at ASC LIMIT 100`).bind(Date.now() - 90_000).all<PresenceRow>(),
     database.prepare(`SELECT s.id, s.profile_id, s.seconds, s.category, s.artwork_key, s.note, s.completed_at,
       COALESCE(NULLIF(p.nickname, ''), p.name) AS artist, p.character_key
@@ -344,6 +441,7 @@ async function handleCommunity(request: Request, database: D1Database, member: M
     category: row.category as CategoryKey,
     startedAt: row.started_at,
     message: row.message,
+    className: row.class_name || undefined,
   }));
   const gallery: SharedArtwork[] = galleryResult.results.map((row) => ({
     ...mapSession(request, row),
@@ -352,7 +450,7 @@ async function handleCommunity(request: Request, database: D1Database, member: M
     artistCharacterDataUrl: mediaUrl(request, row.character_key),
   }));
   return Response.json({
-    profile: profile ? mapProfile(request, profile) : null,
+    profile: profile ? mapProfile(request, profile, member.class_name) : null,
     active,
     gallery,
     sessions: sessionsResult.results.map((row) => mapSession(request, row)),
@@ -380,7 +478,7 @@ async function handleMessage(request: Request, database: D1Database, member: Mem
   await database.prepare("UPDATE profiles SET message = ?, updated_at = ? WHERE id = ?").bind(message, Date.now(), member.profile_id).run();
   const row = await database.prepare("SELECT id, name, nickname, character_preset, character_key, message FROM profiles WHERE id = ?").bind(member.profile_id).first<ProfileRow>();
   if (!row) throw new Error("profile_not_found");
-  return Response.json({ profile: mapProfile(request, row) });
+  return Response.json({ profile: mapProfile(request, row, member.class_name) });
 }
 
 async function handlePresence(request: Request, database: D1Database, member: Member) {

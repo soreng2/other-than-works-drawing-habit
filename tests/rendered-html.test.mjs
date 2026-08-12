@@ -31,7 +31,7 @@ test("server-renders the stable account sign-in gate", async () => {
 
   const html = await response.text();
   assert.match(html, /OTHER THAN WORKS/);
-  assert.match(html, /ChatGPT로 로그인/);
+  assert.match(html, /Google 계정으로 계속하기/);
   assert.match(html, /signin-with-chatgpt/);
   assert.match(html, /같은 캐릭터와 그림 기록/);
   assert.match(html, /manifest\.webmanifest/);
@@ -43,11 +43,11 @@ test("server-renders the studio loader for a signed-in account", async () => {
   assert.equal(response.status, 200);
   const html = await response.text();
   assert.match(html, /작업실 문을 여는 중/);
-  assert.doesNotMatch(html, /ChatGPT로 로그인/);
+  assert.doesNotMatch(html, />ChatGPT로 로그인</);
 });
 
 test("includes the complete shared MVP, roster, host controls and map assets", async () => {
-  const [page, studio, layout, styles, manifest, serviceWorker, packageJson, communityClient, communityApi, requestAuth, worker, hosting, migration, messageMigration, accountMigration, presetMigration, galleryMigration] = await Promise.all([
+  const [page, studio, layout, styles, manifest, serviceWorker, packageJson, communityClient, communityApi, requestAuth, worker, hosting, migration, messageMigration, accountMigration, presetMigration, galleryMigration, classesMigration] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/studio.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
@@ -65,6 +65,7 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
     readFile(new URL("../drizzle/0002_accounts_roster_map.sql", import.meta.url), "utf8"),
     readFile(new URL("../drizzle/0003_character_presets.sql", import.meta.url), "utf8"),
     readFile(new URL("../drizzle/0004_gallery_visibility.sql", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/0005_classes.sql", import.meta.url), "utf8"),
   ]);
 
   assert.match(page, /getChatGPTUser/);
@@ -125,6 +126,8 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(accountMigration, /CREATE TABLE `app_settings`/);
   assert.match(presetMigration, /character_preset/);
   assert.match(galleryMigration, /gallery_hidden/);
+  assert.match(classesMigration, /CREATE TABLE `classes`/);
+  assert.match(classesMigration, /ADD `class_id`/);
   assert.match(communityApi, /WHERE s\.gallery_hidden = 0/);
   assert.match(communityApi, /UPDATE work_sessions SET gallery_hidden = 1/);
   assert.match(styles, /preset-grid/);
@@ -133,7 +136,13 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(styles, /gallery-room\.png/);
   assert.match(styles, /timer-presets/);
   assert.match(studio, /예시 캐릭터/);
-  assert.match(studio, /명단 저장하고 내 작업실 열기/);
+  assert.match(studio, /첫 반 만들고 내 작업실 열기/);
+  assert.match(studio, /반과 닉네임만/);
+  assert.match(studio, /class-choice-grid/);
+  assert.match(communityClient, /joinRosterClass/);
+  assert.match(communityClient, /createRosterClass/);
+  assert.match(communityApi, /action === "join"/);
+  assert.match(communityApi, /action === "add_class"/);
   assert.match(studio, /together-map/);
   assert.match(studio, /SharedMap/);
   assert.match(studio, /mapSpots/);
@@ -148,8 +157,8 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(studio, /내 캐릭터 위 메시지/);
   assert.match(studio, /한마디 수정/);
   assert.match(studio, /선생님 계정 전용/);
-  assert.match(studio, /수강생 접속 코드/);
-  assert.match(studio, /수강생 추가/);
+  assert.match(studio, /반 · 수강생 관리/);
+  assert.match(studio, /새 반 만들기/);
   assert.doesNotMatch(studio, /function MapZone/);
   assert.doesNotMatch(studio, /옆으로 넘기면/);
   assert.doesNotMatch(studio, /desk-tablet|아이패드 책상/);

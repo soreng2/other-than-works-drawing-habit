@@ -9,20 +9,21 @@ import {
   type CSSProperties,
 } from "react";
 import {
-  addRosterStudents,
-  claimRoster,
+  createRosterClass,
   fetchCommunity,
   fetchRoster,
   getDeviceIdentity,
+  joinRosterClass,
   removeGalleryArtwork,
   removeRosterStudent,
+  resetRosterStudent,
   saveCloudProfile,
   saveCloudSession,
   sendPresenceStop,
   sendPresenceOffline,
   setupRoster,
   updatePresence,
-  updateClassCode,
+  updateRosterClassCode,
   updateSharedMessage,
   updateTeacherNote,
 } from "./lib/community-client";
@@ -312,35 +313,15 @@ function PresetPicker({ selected, custom, onSelect }: { selected: CharacterPrese
   );
 }
 
-function normalizedSearch(value: string) {
-  return value.normalize("NFKC").replace(/\s+/g, "").toLocaleLowerCase("ko-KR");
-}
-
 function Enrollment({ snapshot, onComplete }: { snapshot: RosterSnapshot; onComplete: () => void }) {
   const [names, setNames] = useState("");
+  const [className, setClassName] = useState("");
   const [classCode, setClassCode] = useState("");
   const [nickname, setNickname] = useState("");
-  const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState("");
-  const [roster, setRoster] = useState(snapshot);
+  const [selectedClassId, setSelectedClassId] = useState(snapshot.classes[0]?.id ?? "");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const visibleStudents = roster.students.filter((student) => normalizedSearch(student.legalName).includes(normalizedSearch(query)));
   const setupNames = names.split(/\r?\n/).map((name) => name.trim()).filter(Boolean);
-
-  async function loadNames() {
-    try {
-      setSaving(true);
-      setError("");
-      const next = await fetchRoster(classCode);
-      if (!next.students.length) throw new Error("반 코드가 맞지 않거나 선택할 이름이 없어요.");
-      setRoster(next);
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "명단을 불러오지 못했어요.");
-    } finally {
-      setSaving(false);
-    }
-  }
 
   if (snapshot.needsSetup) {
     return (
@@ -349,27 +330,28 @@ function Enrollment({ snapshot, onComplete }: { snapshot: RosterSnapshot; onComp
           <p className="eyebrow">HOST SETUP</p>
           <DefaultCharacter />
           <h1>수강생 작업실을<br />처음 열어주세요</h1>
-          <p>선생님 계정(mon.mut.friends@gmail.com)에서만 명단을 만들고 수정할 수 있어요. 수강생 이름은 한 줄에 한 명씩 적어주세요.</p>
-          <label className="field-label" htmlFor="student-list">수강생 명단</label>
-          <textarea id="student-list" value={names} onChange={(event) => setNames(event.target.value)} placeholder={"소랭\n은지\n세은\n밍쵸"} />
+          <p>첫 반만 만들어두면 수강생은 Google 계정으로 로그인해 스스로 닉네임을 정하고 반을 선택할 수 있어요.</p>
+          <label className="field-label" htmlFor="setup-class-name">첫 반 이름</label>
+          <input id="setup-class-name" className="text-input" value={className} maxLength={20} onChange={(event) => setClassName(event.target.value)} placeholder="예: 이모티콘 8월반" />
           <label className="field-label" htmlFor="class-code">수강생에게 알려줄 반 코드</label>
           <input id="class-code" className="text-input" value={classCode} maxLength={20} onChange={(event) => setClassCode(event.target.value)} placeholder="4자 이상" />
-          <p className="setup-requirements">수강생 이름 1명 이상 · 반 코드 4자 이상</p>
+          <details className="legacy-roster-setup"><summary>기존 명단이 있다면 함께 넣기 (선택)</summary><textarea id="student-list" value={names} onChange={(event) => setNames(event.target.value)} placeholder={"한 줄에 한 명씩"} /></details>
+          <p className="setup-requirements">반 이름 · 반 코드 4자 이상</p>
           {error && <p className="error-message" role="alert">{error}</p>}
           <button className="primary-button wide" type="button" disabled={saving} onClick={async () => {
             try {
               setSaving(true);
               setError("");
-              if (!setupNames.length) throw new Error("수강생 이름을 한 줄에 한 명 이상 적어주세요.");
+              if (!className.trim()) throw new Error("반 이름을 적어주세요.");
               if (classCode.trim().length < 4) throw new Error("반 코드는 네 글자 이상 적어주세요.");
-              await setupRoster(setupNames, classCode.trim());
+              await setupRoster(setupNames, classCode.trim(), className.trim());
               onComplete();
             } catch (setupError) {
               setError(setupError instanceof Error ? setupError.message : "명단을 저장하지 못했어요.");
             } finally {
               setSaving(false);
             }
-          }}>{saving ? "작업실을 준비하는 중…" : "명단 저장하고 내 작업실 열기"}</button>
+          }}>{saving ? "작업실을 준비하는 중…" : "첫 반 만들고 내 작업실 열기"}</button>
           <a className="signout-link" href="/signout-with-chatgpt?return_to=%2F">다른 계정으로 로그인</a>
         </section>
       </main>
@@ -379,37 +361,35 @@ function Enrollment({ snapshot, onComplete }: { snapshot: RosterSnapshot; onComp
   return (
     <main className="enrollment-shell">
       <section className="enrollment-card">
-        <p className="eyebrow">FIND MY NAME</p>
-        <h1>수강생 명단에서<br />내 이름을 찾아주세요</h1>
-        <p>한 번 연결하면 다른 기기에서도 같은 캐릭터와 기록으로 들어와요.</p>
-        {!roster.students.length && !roster.isAdmin && <>
-          <label className="field-label" htmlFor="join-code">반 코드</label>
-          <div className="code-row"><input id="join-code" className="text-input" value={classCode} maxLength={20} onChange={(event) => setClassCode(event.target.value)} placeholder="선생님이 알려준 코드" /><button className="secondary-button" type="button" disabled={saving || classCode.length < 4} onClick={loadNames}>명단 열기</button></div>
-        </>}
-        {(roster.students.length > 0 || roster.isAdmin) && <>
-          <label className="field-label" htmlFor="student-search">내 이름 검색</label>
-          <input id="student-search" className="text-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="등록된 이름" autoComplete="off" />
-          <div className="student-results">
-            {visibleStudents.map((student) => <button type="button" className={selectedId === student.id ? "selected" : ""} key={student.id} onClick={() => setSelectedId(student.id)}><span>{student.legalName.slice(0, 1)}</span>{student.legalName}<i>{selectedId === student.id ? "✓" : ""}</i></button>)}
-            {query && !visibleStudents.length && <p>일치하는 이름이 없어요.</p>}
-          </div>
-          <label className="field-label" htmlFor="student-nickname">앱에서 사용할 닉네임</label>
-          <input id="student-nickname" className="text-input" value={nickname} maxLength={12} onChange={(event) => setNickname(event.target.value)} placeholder="예: 소랭" />
-        </>}
+        <p className="eyebrow">JOIN MY CLASS</p>
+        <h1>반과 닉네임만<br />정하면 준비 끝!</h1>
+        <p>실명 명단을 찾지 않아도 돼요. 수업 반을 고르고 선생님이 알려준 코드를 적어주세요.</p>
+        <div className="enrollment-step"><b>1</b><span>수업 반 선택</span><small>이름 위에 작게 표시돼요.</small></div>
+        <div className="class-choice-grid">
+          {snapshot.classes.map((item) => <button type="button" key={item.id} className={selectedClassId === item.id ? "selected" : ""} onClick={() => { setSelectedClassId(item.id); setError(""); }}><span>{item.name}</span><i>{selectedClassId === item.id ? "✓" : "선택"}</i></button>)}
+          {!snapshot.classes.length && <p>아직 들어갈 수 있는 반이 없어요. 선생님에게 반 생성을 요청해주세요.</p>}
+        </div>
+        <div className="enrollment-step"><b>2</b><span>반 코드</span><small>선생님이 반별로 알려준 코드예요.</small></div>
+        <input id="join-code" className="text-input" value={classCode} maxLength={20} onChange={(event) => setClassCode(event.target.value)} placeholder="반 코드 4자 이상" autoCapitalize="characters" />
+        <div className="enrollment-step"><b>3</b><span>앱에서 보일 닉네임</span><small>나중에 캐릭터 설정에서 바꿀 수 있어요.</small></div>
+        <input id="student-nickname" className="text-input" value={nickname} maxLength={12} onChange={(event) => setNickname(event.target.value)} placeholder="예: 소랭" />
         {error && <p className="error-message" role="alert">{error}</p>}
-        <button className="primary-button wide" type="button" disabled={saving || !selectedId || !nickname.trim()} onClick={async () => {
+        <button className="primary-button wide" type="button" disabled={saving} onClick={async () => {
           try {
             setSaving(true);
             setError("");
-            await claimRoster(selectedId, nickname.trim(), classCode);
+            if (!selectedClassId) throw new Error("들어갈 반을 먼저 선택해주세요.");
+            if (classCode.trim().length < 4) throw new Error("반 코드를 네 글자 이상 적어주세요.");
+            if (!nickname.trim()) throw new Error("앱에서 사용할 닉네임을 적어주세요.");
+            await joinRosterClass(selectedClassId, nickname.trim(), classCode.trim());
             onComplete();
           } catch (claimError) {
-            setError(claimError instanceof Error ? claimError.message : "이름을 연결하지 못했어요.");
+            setError(claimError instanceof Error ? claimError.message : "반에 들어가지 못했어요.");
           } finally {
             setSaving(false);
           }
-        }}>{saving ? "내 작업실과 연결하는 중…" : "이 이름으로 연결"}</button>
-        <a className="signout-link" href="/signout-with-chatgpt?return_to=%2F">다른 계정으로 로그인</a>
+        }}>{saving ? "내 작업실과 연결하는 중…" : "다음 · 내 작업실 열기"}</button>
+        <a className="signout-link" href="/signout-with-chatgpt?return_to=%2F">다른 Google 계정으로 로그인</a>
       </section>
     </main>
   );
@@ -574,7 +554,7 @@ function ProfileEditor({ profile, onClose, onSave }: { profile: Profile; onClose
             }
           }}
         >{saving ? "친구들에게 알리는 중…" : "공동 작업실에 저장"}</button>
-        <p className="device-note">ChatGPT 계정에 연결되어 다른 기기에서도 같은 작업실이 열려요.</p>
+        <p className="device-note">Google 계정에 연결되어 다른 기기에서도 같은 작업실이 열려요.</p>
         <a className="signout-link" href="/signout-with-chatgpt?return_to=%2F">로그아웃</a>
       </section>
     </div>
@@ -731,7 +711,7 @@ function MapFriend({ friend, clock, spot, order }: { friend: MapMember; clock: n
   } as CSSProperties;
   return (
     <article style={mapStyle} className={`map-friend${working ? " working" : " idle"}${friend.mine ? " mine" : ""}`}>
-      <span className="floating-name">{friend.nickname || friend.name}{friend.mine ? " · 나" : ""}</span>
+      <span className="floating-name">{friend.className && <small>{friend.className}</small>}<b>{friend.nickname || friend.name}{friend.mine ? " · 나" : ""}</b></span>
       <span className={`map-speech${friend.message ? " personal" : ""}`}>{friend.message || fallback}</span>
       <div className="map-avatar"><Character profile={{ name: friend.name, nickname: friend.nickname, characterPreset: friend.characterPreset, characterDataUrl: friend.characterDataUrl }} /></div>
       {working && <div className="map-chair"><span /><i /></div>}
@@ -788,6 +768,7 @@ function TogetherPanel({ profile, activeFriends, running, elapsed, category, clo
     category,
     startedAt: running ? clock - elapsed * 1000 : clock,
     message: profile.message ?? "",
+    className: profile.className,
     mine: true,
   };
   const members: MapMember[] = [own, ...activeFriends.filter((friend) => friend.id !== profile.id)];
@@ -903,7 +884,7 @@ function GalleryVisitor({ friend, index }: { friend: MapMember; index: number })
   } as CSSProperties;
   return (
     <div className="gallery-visitor" style={style}>
-      <span>{friend.nickname || friend.name}{friend.mine ? " · 나" : ""}</span>
+      <span>{friend.className && <small>{friend.className}</small>}<b>{friend.nickname || friend.name}{friend.mine ? " · 나" : ""}</b></span>
       <Character profile={{ name: friend.name, nickname: friend.nickname, characterPreset: friend.characterPreset, characterDataUrl: friend.characterDataUrl }} />
     </div>
   );
@@ -936,6 +917,7 @@ function GalleryPanel({ profile, sessions, sharedGallery, activeFriends, isHost,
     category: "free",
     startedAt: 0,
     message: "",
+    className: profile.className,
     mine: true,
   };
   const visitors: MapMember[] = [own, ...activeFriends.filter((friend) => friend.id !== profile.id)].slice(0, galleryVisitorSpots.length);
@@ -970,75 +952,77 @@ function GalleryPanel({ profile, sessions, sharedGallery, activeFriends, isHost,
   );
 }
 
-function RosterManager({ students, classCode, onClassCode, onAdd, onRemove }: {
+function RosterManager({ students, classes, onClassCode, onAddClass, onReset, onRemove }: {
   students: RosterSnapshot["students"];
-  classCode?: string;
-  onClassCode: (classCode: string) => Promise<void>;
-  onAdd: (names: string[]) => Promise<void>;
+  classes: RosterSnapshot["classes"];
+  onClassCode: (classId: string, classCode: string) => Promise<void>;
+  onAddClass: (name: string, classCode: string) => Promise<void>;
+  onReset: (studentId: string) => Promise<void>;
   onRemove: (studentId: string) => Promise<void>;
 }) {
-  const [names, setNames] = useState("");
-  const [codeDraft, setCodeDraft] = useState("");
+  const [classNameDraft, setClassNameDraft] = useState("");
+  const [classCodeDraft, setClassCodeDraft] = useState("");
+  const [codeDrafts, setCodeDrafts] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const addNames = names.split(/\r?\n/).map((name) => name.trim()).filter(Boolean);
   return (
     <section className="paper-card roster-manager">
-      <div className="card-title-row"><div><p className="eyebrow">선생님 계정 전용</p><h2>수강생 관리</h2></div><span>{students.length}명</span></div>
-      <p className="roster-guide">이 영역은 mon.mut.friends@gmail.com 계정에만 보여요. 반 코드와 수강생 명단을 언제든 바꿀 수 있어요.</p>
-      <div className="class-code-manager">
-        <div><b>수강생 접속 코드</b><span>{classCode ? "아래 코드를 수강생에게 알려주세요." : "이전 코드는 보안 저장되어 다시 표시할 수 없어요. 새 코드로 바꾸면 확인·복사할 수 있어요."}</span></div>
-        {classCode && <div className="class-code-display"><code>{classCode}</code><button type="button" onClick={async () => { await navigator.clipboard.writeText(classCode); setNotice("반 코드를 복사했어요."); }}>복사</button></div>}
-        <label className="field-label" htmlFor="new-class-code">{classCode ? "반 코드 변경" : "새 반 코드 설정"}</label>
-        <div className="class-code-update"><input id="new-class-code" className="text-input" value={codeDraft} maxLength={20} onChange={(event) => setCodeDraft(event.target.value)} placeholder="4~20자" /><button className="secondary-button" type="button" disabled={saving || codeDraft.trim().length < 4} onClick={async () => {
-          try { setSaving(true); setError(""); setNotice(""); await onClassCode(codeDraft.trim()); setNotice(`반 코드를 ${codeDraft.trim()}(으)로 바꿨어요.`); setCodeDraft(""); }
+      <div className="card-title-row"><div><p className="eyebrow">선생님 계정 전용</p><h2>반 · 수강생 관리</h2></div><span>{classes.length}개 반 · {students.filter((student) => student.claimed).length}명</span></div>
+      <p className="roster-guide">수강생은 Google 로그인 후 반과 닉네임을 직접 정해요. 이곳에서는 반 코드와 들어온 수강생만 관리하면 돼요.</p>
+      <div className="class-manager-list">{classes.map((item) => <article key={item.id}>
+        <div><b>{item.name}</b><small>{students.filter((student) => student.classId === item.id && student.claimed).length}명 참여</small></div>
+        <div className="class-code-display"><code>{item.code || "코드 재설정 필요"}</code>{item.code && <button type="button" onClick={async () => { await navigator.clipboard.writeText(item.code!); setNotice(`${item.name} 코드를 복사했어요.`); }}>복사</button>}</div>
+        <div className="class-code-update"><input className="text-input" value={codeDrafts[item.id] ?? ""} maxLength={20} onChange={(event) => setCodeDrafts((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="새 코드 4~20자" aria-label={`${item.name} 새 코드`} /><button className="secondary-button" type="button" disabled={saving || (codeDrafts[item.id] ?? "").trim().length < 4} onClick={async () => {
+          const nextCode = (codeDrafts[item.id] ?? "").trim();
+          try { setSaving(true); setError(""); setNotice(""); await onClassCode(item.id, nextCode); setNotice(`${item.name} 코드를 바꿨어요.`); setCodeDrafts((current) => ({ ...current, [item.id]: "" })); }
           catch (codeError) { setError(codeError instanceof Error ? codeError.message : "반 코드를 바꾸지 못했어요."); }
           finally { setSaving(false); }
-        }}>{saving ? "변경 중" : "코드 저장"}</button></div>
-        <small>코드를 바꾸면 새로 들어오는 수강생부터 새 코드를 사용해요. 이미 연결된 수강생은 계속 접속할 수 있어요.</small>
-      </div>
+        }}>변경</button></div>
+      </article>)}</div>
       <div className="roster-divider" />
-      <div className="roster-subheading"><b>수강생 추가</b><span>한 줄에 한 명씩</span></div>
-      <p className="roster-guide">명단에서 빼도 그동안의 그림 기록은 지워지지 않아요.</p>
-      <textarea value={names} onChange={(event) => setNames(event.target.value)} placeholder={"새 수강생 이름\n한 줄에 한 명"} aria-label="추가할 수강생 이름" />
-      <button className="primary-button wide" type="button" disabled={saving || !addNames.length} onClick={async () => {
-        try {
-          setSaving(true); setError(""); setNotice("");
-          await onAdd(addNames);
-          setNames(""); setNotice(`${addNames.length}명을 명단에 추가했어요.`);
-        } catch (addError) {
-          setError(addError instanceof Error ? addError.message : "수강생을 추가하지 못했어요.");
-        } finally { setSaving(false); }
-      }}>{saving ? "명단을 바꾸는 중…" : "수강생 추가"}</button>
+      <div className="roster-subheading"><b>새 반 만들기</b><span>반별 코드 사용</span></div>
+      <div className="new-class-form"><input className="text-input" value={classNameDraft} maxLength={20} onChange={(event) => setClassNameDraft(event.target.value)} placeholder="반 이름" aria-label="새 반 이름" /><input className="text-input" value={classCodeDraft} maxLength={20} onChange={(event) => setClassCodeDraft(event.target.value)} placeholder="반 코드 4자 이상" aria-label="새 반 코드" /><button className="primary-button" type="button" disabled={saving} onClick={async () => {
+        try { setSaving(true); setError(""); setNotice(""); if (!classNameDraft.trim()) throw new Error("반 이름을 적어주세요."); if (classCodeDraft.trim().length < 4) throw new Error("반 코드를 네 글자 이상 적어주세요."); await onAddClass(classNameDraft.trim(), classCodeDraft.trim()); setNotice(`${classNameDraft.trim()}을 만들었어요.`); setClassNameDraft(""); setClassCodeDraft(""); }
+        catch (classError) { setError(classError instanceof Error ? classError.message : "반을 만들지 못했어요."); }
+        finally { setSaving(false); }
+      }}>반 추가</button></div>
       {notice && <p className="success-message">{notice}</p>}
       {error && <p className="error-message" role="alert">{error}</p>}
+      <div className="roster-divider" />
+      <div className="roster-subheading"><b>참여한 수강생</b><span>닉네임 · 반</span></div>
       <div className="roster-list">
-        {students.map((student) => <article key={student.id}>
-          <span>{student.legalName.slice(0, 1)}</span>
-          <div><b>{student.legalName}</b><small>{student.claimed ? `${student.nickname || "닉네임 미입력"} · 연결됨` : "초대 전"}</small></div>
-          <button type="button" disabled={saving} onClick={async () => {
+        {students.filter((student) => student.claimed || student.nickname).map((student) => <article key={student.id}>
+          <span>{(student.nickname || student.legalName).slice(0, 1)}</span>
+          <div><b>{student.nickname || student.legalName}</b><small>{student.className || "반 미지정"}{student.claimed ? " · 연결됨" : " · 다시 연결 대기"}</small></div>
+          <div className="roster-row-actions">{student.claimed && <button className="reset-student" type="button" disabled={saving} onClick={async () => {
+            if (!window.confirm(`${student.legalName}님의 계정 연결을 바꿀까요?\n캐릭터와 그림 기록은 그대로 유지돼요.`)) return;
+            try { setSaving(true); setError(""); setNotice(""); await onReset(student.id); setNotice(`${student.legalName}님이 새 Google 계정으로 다시 연결할 수 있어요.`); }
+            catch (resetError) { setError(resetError instanceof Error ? resetError.message : "계정 연결을 바꾸지 못했어요."); }
+            finally { setSaving(false); }
+          }}>계정 바꾸기</button>}<button type="button" disabled={saving} onClick={async () => {
             if (!window.confirm(`${student.legalName}님을 명단에서 뺄까요?\n기존 그림 기록은 지워지지 않아요.`)) return;
             try { setSaving(true); setError(""); setNotice(""); await onRemove(student.id); }
             catch (removeError) { setError(removeError instanceof Error ? removeError.message : "수강생을 빼지 못했어요."); }
             finally { setSaving(false); }
-          }}>빼기</button>
+          }}>빼기</button></div>
         </article>)}
-        {!students.length && <p>아직 등록된 수강생이 없어요.</p>}
+        {!students.some((student) => student.claimed || student.nickname) && <p>아직 참여한 수강생이 없어요.</p>}
       </div>
     </section>
   );
 }
 
-function MissionPanel({ sessions, teacherNote, isHost, students, classCode, onTeacherNote, onClassCode, onAddStudents, onRemoveStudent }: {
+function MissionPanel({ sessions, teacherNote, isHost, students, classes, onTeacherNote, onClassCode, onAddClass, onResetStudent, onRemoveStudent }: {
   sessions: WorkSession[];
   teacherNote: string;
   isHost: boolean;
   students: RosterSnapshot["students"];
-  classCode?: string;
+  classes: RosterSnapshot["classes"];
   onTeacherNote: (note: string) => Promise<void>;
-  onClassCode: (classCode: string) => Promise<void>;
-  onAddStudents: (names: string[]) => Promise<void>;
+  onClassCode: (classId: string, classCode: string) => Promise<void>;
+  onAddClass: (name: string, classCode: string) => Promise<void>;
+  onResetStudent: (studentId: string) => Promise<void>;
   onRemoveStudent: (studentId: string) => Promise<void>;
 }) {
   const progress = sessions.filter((session) => session.category === "sketch" && isThisWeek(new Date(session.completedAt))).length;
@@ -1076,7 +1060,7 @@ function MissionPanel({ sessions, teacherNote, isHost, students, classCode, onTe
         </> : <><p>“{teacherNote}”</p>{isHost && <button className="teacher-edit-button" type="button" onClick={() => setEditingNote(true)}>한마디 수정</button>}</>}</div>
       </section>
       <section className="paper-card journey-card"><p className="eyebrow">작업실 성장</p><h2>조금씩 열리는 공간</h2>{milestones.map((milestone, index) => { const open = milestone.minutes <= totalMinutes; return <div className={`journey-row${open ? " open" : ""}`} key={milestone.title}><span>{milestone.icon}</span><div><b>{milestone.title}</b><p>{milestone.detail}</p></div><i>{milestone.minutes === 0 ? "기본" : `${milestone.minutes}분`}</i>{index < milestones.length - 1 && <em />}</div>; })}</section>
-      {isHost && <RosterManager students={students} classCode={classCode} onClassCode={onClassCode} onAdd={onAddStudents} onRemove={onRemoveStudent} />}
+      {isHost && <RosterManager students={students} classes={classes} onClassCode={onClassCode} onAddClass={onAddClass} onReset={onResetStudent} onRemove={onRemoveStudent} />}
     </div>
   );
 }
@@ -1160,6 +1144,14 @@ export default function Home() {
     let cancelled = false;
     async function initialize() {
       setReady(false);
+      if (window.location.hostname === "localhost" && new URLSearchParams(window.location.search).has("enroll")) {
+        setRoster({ needsSetup: false, isAdmin: false, linked: false, classes: [
+          { id: "demo-class-1", name: "이모티콘 8월반" },
+          { id: "demo-class-2", name: "포트폴리오반" },
+        ], students: [] });
+        setReady(true);
+        return;
+      }
       if (window.location.hostname === "localhost" && new URLSearchParams(window.location.search).has("demo")) {
         demoMode.current = true;
         const demoProfile: Profile = { id: "demo-moru", name: "모루", nickname: "소랭", characterPreset: "sky", message: "오늘은 선을 가볍게!" };
@@ -1167,10 +1159,13 @@ export default function Home() {
           { id: "demo-1", completedAt: new Date().toISOString(), seconds: 720, category: "sketch", artworkDataUrl: "/studio-room.jpg", note: "창가의 작은 작업실" },
           { id: "demo-2", completedAt: new Date(Date.now() - 86_400_000 * 2).toISOString(), seconds: 1240, category: "color", artworkDataUrl: "/brand-character.png", note: "파란 폴더 친구 색연습" },
         ];
-        setRoster({ needsSetup: false, isAdmin: true, linked: true, nickname: "소랭", classCode: "OTW2026", students: [
-          { id: "demo-student-1", legalName: "은지", nickname: "은지", claimed: true },
-          { id: "demo-student-2", legalName: "세은", nickname: "세은", claimed: true },
-          { id: "demo-student-3", legalName: "새 수강생", claimed: false },
+        setRoster({ needsSetup: false, isAdmin: true, linked: true, nickname: "소랭", classCode: "OTW2026", className: "이모티콘 8월반", classes: [
+          { id: "demo-class-1", name: "이모티콘 8월반", code: "OTW2026" },
+          { id: "demo-class-2", name: "포트폴리오반", code: "PORT2026" },
+        ], students: [
+          { id: "demo-student-1", legalName: "은지", nickname: "은지", claimed: true, classId: "demo-class-1", className: "이모티콘 8월반" },
+          { id: "demo-student-2", legalName: "세은", nickname: "세은", claimed: true, classId: "demo-class-2", className: "포트폴리오반" },
+          { id: "demo-student-3", legalName: "새 수강생", claimed: false, classId: "demo-class-1", className: "이모티콘 8월반" },
         ] });
         setProfile(demoProfile);
         setSessions(demoSessions);
@@ -1351,20 +1346,20 @@ export default function Home() {
     setTeacherNote(await updateTeacherNote(note));
   }
 
-  async function addStudents(names: string[]) {
+  async function saveClassCode(classId: string, classCode: string) {
     if (demoMode.current) {
-      setRoster((current) => current ? { ...current, students: [...current.students, ...names.map((name) => ({ id: crypto.randomUUID(), legalName: name, claimed: false }))] } : current);
+      setRoster((current) => current ? { ...current, classes: current.classes.map((item) => item.id === classId ? { ...item, code: classCode } : item) } : current);
       return;
     }
-    setRoster(await addRosterStudents(names));
+    setRoster(await updateRosterClassCode(classId, classCode));
   }
 
-  async function saveClassCode(classCode: string) {
+  async function addClass(name: string, classCode: string) {
     if (demoMode.current) {
-      setRoster((current) => current ? { ...current, classCode } : current);
+      setRoster((current) => current ? { ...current, classes: [...current.classes, { id: crypto.randomUUID(), name, code: classCode }] } : current);
       return;
     }
-    setRoster(await updateClassCode(classCode));
+    setRoster(await createRosterClass(name, classCode));
   }
 
   async function removeStudent(studentId: string) {
@@ -1373,6 +1368,14 @@ export default function Home() {
       return;
     }
     setRoster(await removeRosterStudent(studentId));
+  }
+
+  async function resetStudent(studentId: string) {
+    if (demoMode.current) {
+      setRoster((current) => current ? { ...current, students: current.students.map((student) => student.id === studentId ? { ...student, claimed: false } : student) } : current);
+      return;
+    }
+    setRoster(await resetRosterStudent(studentId));
   }
 
   async function removeArtwork(sessionId: string) {
@@ -1392,7 +1395,7 @@ export default function Home() {
     <main className="app-shell">
       <header className="brand-bar">
         <button type="button" onClick={() => setTab("home")} aria-label="작업실 홈"><span className="brand-mark">O</span><span>OTHER THAN<br /><b>WORKS</b></span></button>
-        <button className="profile-chip" type="button" onClick={() => setProfileOpen(true)} aria-label="내 캐릭터 바꾸기"><Character profile={profile} compact /><span><b>{profile.nickname || profile.name}</b><small>{profile.name} · 캐릭터 바꾸기</small></span></button>
+            <button className="profile-chip" type="button" onClick={() => setProfileOpen(true)} aria-label="내 캐릭터 바꾸기"><Character profile={profile} compact /><span>{profile.className && <em>{profile.className}</em>}<b>{profile.nickname || profile.name}</b><small>{profile.name} · 캐릭터 바꾸기</small></span></button>
       </header>
       {connectionMessage && <div className="connection-banner">{connectionMessage}</div>}
       <div className="app-content">
@@ -1400,7 +1403,7 @@ export default function Home() {
         {tab === "together" && <TogetherPanel profile={profile} activeFriends={activeFriends} running={running} elapsed={elapsed} category={category} clock={clock} onMessage={saveMessage} />}
         {tab === "records" && <RecordsPanel sessions={sessions} />}
         {tab === "gallery" && <GalleryPanel profile={profile} sessions={sessions} sharedGallery={sharedGallery} activeFriends={activeFriends} isHost={Boolean(roster?.isAdmin)} onRemove={removeArtwork} />}
-        {tab === "mission" && <MissionPanel sessions={sessions} teacherNote={teacherNote} isHost={Boolean(roster?.isAdmin)} students={roster?.students ?? []} classCode={roster?.classCode} onTeacherNote={saveTeacherNote} onClassCode={saveClassCode} onAddStudents={addStudents} onRemoveStudent={removeStudent} />}
+        {tab === "mission" && <MissionPanel sessions={sessions} teacherNote={teacherNote} isHost={Boolean(roster?.isAdmin)} students={roster?.students ?? []} classes={roster?.classes ?? []} onTeacherNote={saveTeacherNote} onClassCode={saveClassCode} onAddClass={addClass} onResetStudent={resetStudent} onRemoveStudent={removeStudent} />}
       </div>
       <nav className="bottom-nav" aria-label="주요 메뉴">
         {([

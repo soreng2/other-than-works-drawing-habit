@@ -42,11 +42,11 @@ export async function fetchRoster(classCode = ""): Promise<RosterSnapshot> {
   return responseJson<RosterSnapshot>(await fetch(`/api/roster${query}`, { cache: "no-store" }));
 }
 
-export async function setupRoster(names: string[], classCode: string): Promise<RosterSnapshot> {
+export async function setupRoster(names: string[], classCode: string, className = "첫 번째 반"): Promise<RosterSnapshot> {
   return responseJson<RosterSnapshot>(await fetch("/api/roster", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ action: "setup", names, classCode }),
+    body: JSON.stringify({ action: "setup", names, classCode, className }),
   }));
 }
 
@@ -55,6 +55,30 @@ export async function claimRoster(studentId: string, nickname: string, classCode
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ action: "claim", studentId, nickname, classCode }),
+  }));
+}
+
+export async function joinRosterClass(classId: string, nickname: string, classCode: string): Promise<RosterSnapshot> {
+  return responseJson<RosterSnapshot>(await fetch("/api/roster", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "join", classId, nickname, classCode }),
+  }));
+}
+
+export async function createRosterClass(name: string, classCode: string): Promise<RosterSnapshot> {
+  return responseJson<RosterSnapshot>(await fetch("/api/roster", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "add_class", className: name, classCode }),
+  }));
+}
+
+export async function updateRosterClassCode(classId: string, classCode: string): Promise<RosterSnapshot> {
+  return responseJson<RosterSnapshot>(await fetch("/api/roster", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "set_class_code", classId, classCode }),
   }));
 }
 
@@ -71,6 +95,14 @@ export async function removeRosterStudent(studentId: string): Promise<RosterSnap
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ action: "remove", studentId }),
+  }));
+}
+
+export async function resetRosterStudent(studentId: string): Promise<RosterSnapshot> {
+  return responseJson<RosterSnapshot>(await fetch("/api/roster", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "reset_claim", studentId }),
   }));
 }
 
