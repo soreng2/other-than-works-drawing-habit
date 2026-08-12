@@ -690,12 +690,13 @@ function FocusPanel({
   const targetReached = timerTarget > 0 && elapsed >= timerTarget;
   return (
     <div className="focus-page">
-      <header className="focus-page-heading"><p className="eyebrow">MY FOCUS ROOM</p><h2>그림에만 머무는 시간</h2><span>앱을 벗어나면 타이머가 잠시 멈춰요.</span></header>
+      <header className="focus-page-heading"><p className="eyebrow">FOCUS MODE</p><h2>집중모드</h2><span>앱을 벗어나면 타이머가 잠시 멈춰요.</span></header>
 
       <section className={`private-focus${running ? " is-running" : ""}`} id="focus-room">
         <div className="focus-ribbon"><img src="/focus-ribbon.png" alt="" /><span>지금부터 집중 시작!</span></div>
         <div className="focus-desk-scene">
           <img className="focus-room-back" src="/focus-room-backdrop.png" alt="" aria-hidden="true" />
+          <button className="focus-clock scene-focus-clock" style={timerStyle} type="button" onClick={onToggle} aria-label={running ? "집중 잠시 멈추기" : "집중 시작하기"}><span><strong>{timerDisplay(elapsed, timerTarget)}</strong><small>{running ? "집중하는 중" : elapsed > 0 ? "눌러서 이어하기" : "눌러서 시작"}</small></span></button>
           <img className="focus-chair" src="/focus-chair.png" alt="" aria-hidden="true" />
           <div className="focus-character"><FocusCharacter profile={profile} /></div>
           <img className="focus-desk-front" src="/focus-desk-front.png" alt="" aria-hidden="true" />
@@ -711,7 +712,6 @@ function FocusPanel({
           </div>
 
           <div className="timer-presets" aria-label="집중 시간 선택">{timerTargets.map((target) => <button type="button" key={target.seconds} disabled={running || elapsed > 0} className={timerTarget === target.seconds ? "active" : ""} onClick={() => onTimerTarget(target.seconds)}>{target.label}</button>)}</div>
-          <button className="focus-clock" style={timerStyle} type="button" onClick={onToggle} aria-label={running ? "집중 잠시 멈추기" : "집중 시작하기"}><span><strong>{timerDisplay(elapsed, timerTarget)}</strong><small>{running ? "집중하는 중" : elapsed > 0 ? "눌러서 이어하기" : "시계를 눌러 시작"}</small></span></button>
           {pauseNotice && <p className="pause-notice">Ⅱ {pauseNotice}</p>}
           <div className="timer-actions"><button className="primary-button" type="button" onClick={onToggle}>{running ? "잠시 멈추기" : elapsed === 0 ? "집중 시작하기" : "이어서 하기"}</button>{elapsed > 0 && <button className="finish-button" type="button" onClick={onFinish}>기록</button>}</div>
           {!running && elapsed > 0 && <button className="timer-reset" type="button" onClick={onReset}>이번 타이머 지우기</button>}

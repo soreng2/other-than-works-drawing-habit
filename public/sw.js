@@ -1,4 +1,4 @@
-const CACHE = "otw-static-v6";
+const CACHE = "otw-static-v7";
 const APP_SHELL = ["/manifest.webmanifest", "/brand-character.png", "/studio-room.jpg", "/shared-lounge.png", "/gallery-room.png"];
 
 self.addEventListener("install", (event) => {

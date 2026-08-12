@@ -736,7 +736,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, label:has(inp
 }
 
 /* 2026-08 mobile composition fix: every illustrated layer shares a stable floor line. */
-html, body, .app-shell, .app-content { max-width: 100%; overflow-x: hidden; }
+html, body { max-width: 100%; overflow-x: hidden; }
+.app-shell, .app-content { overflow-x: hidden; }
 .app-content { width: 100%; }
 .bottom-nav { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .bottom-nav button { min-width: 0; padding: 0 2px; overflow: hidden; font-size: 8.5px; line-height: 1.1; white-space: nowrap; }
@@ -1506,7 +1507,9 @@ textarea::placeholder { color: #8a9098; }
 }
 
 /* Final alignment overrides live last so legacy visual rules cannot move the new layers. */
-html, body, .app-shell, .app-content { max-width: 100%; overflow-x: hidden; }
+html, body { max-width: 100%; overflow-x: hidden; }
+.app-shell { width: 100%; max-width: 576px; margin-inline: auto; overflow-x: hidden; }
+.app-content { width: 100%; max-width: 576px; overflow-x: hidden; }
 .bottom-nav { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .bottom-nav button { min-width: 0; padding: 0 2px; overflow: hidden; font-size: 8.5px; white-space: nowrap; }
 .bottom-nav button span,
@@ -1516,12 +1519,29 @@ html, body, .app-shell, .app-content { max-width: 100%; overflow-x: hidden; }
 .focus-ribbon span { padding-bottom: 0; color: #17191b; font-size: 14px; text-shadow: 0 1px 0 rgba(255,255,255,.35); }
 .compact-work-choice .pill-scroll { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; overflow: visible; }
 .compact-work-choice .category-pill { min-width: 0; width: 100%; padding-inline: 3px; font-size: 8px; white-space: nowrap; }
-.focus-desk-scene { overflow: hidden; isolation: isolate; }
-.focus-room-back { inset: -2px; width: calc(100% + 4px); height: calc(100% + 4px); }
-.focus-chair { top: 44%; width: 34%; height: 41%; }
-.focus-character { top: 49%; width: 40%; height: 40%; }
+.focus-desk-scene { position: relative; overflow: hidden; isolation: isolate; }
+.focus-room-back { inset: -3px; width: calc(100% + 6px); height: calc(100% + 6px); object-fit: cover; }
+.focus-chair { top: 53%; width: 33%; height: 43%; }
+.focus-character { top: 54%; width: 31%; height: 31%; }
 .focus-character .character-image.custom { width: 82%; height: 82%; }
-.focus-desk-front { left: -2px; right: auto; bottom: -2px; width: calc(100% + 4px); height: 62%; }
+.focus-desk-front { left: -3px; right: auto; bottom: -3px; width: calc(100% + 6px); height: 62%; }
+.scene-focus-clock {
+  position: absolute;
+  z-index: 6;
+  top: 5.5%;
+  left: 50%;
+  width: 84px;
+  height: 84px;
+  margin: 0;
+  transform: translateX(-50%);
+  border-width: 2px;
+  background: conic-gradient(#4f86dc var(--timer-progress), #edf3ff 0);
+  box-shadow: 3px 4px 0 var(--ink);
+}
+.scene-focus-clock::before { width: 68px; height: 68px; }
+.scene-focus-clock strong { font-size: 17px; letter-spacing: -.04em; }
+.scene-focus-clock small { font-size: 6px; }
+.scene-focus-clock:active { transform: translate(calc(-50% + 2px), 3px); }
 .village-mission-board { left: 4%; right: 4%; bottom: 2.5%; width: auto; grid-template-columns: auto 1fr auto; align-items: center; gap: 3px 8px; padding: 10px 12px; }
 .village-mission-board small { grid-column: 1 / -1; font-size: 8px; }
 .village-mission-board b { min-width: 0; font-size: 12px; }
@@ -1532,4 +1552,11 @@ html, body, .app-shell, .app-content { max-width: 100%; overflow-x: hidden; }
   .bottom-nav button { font-size: 10px; }
   .village-mission-board b { font-size: 15px; }
   .village-mission-board span { font-size: 10px; }
+}
+
+@media (max-width: 430px) {
+  .scene-focus-clock { top: 5%; width: 72px; height: 72px; }
+  .scene-focus-clock::before { width: 58px; height: 58px; }
+  .scene-focus-clock strong { font-size: 15px; }
+  .scene-focus-clock small { font-size: 5.5px; }
 }

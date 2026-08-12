@@ -115,6 +115,8 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(studio, /지금부터 집중 시작!/);
   assert.match(studio, /onNavigate\("focus"\)/);
   assert.match(studio, /function FocusPanel/);
+  assert.match(studio, /<h2>집중모드<\/h2>/);
+  assert.match(studio, /focus-clock scene-focus-clock/);
   assert.match(studio, /이번 집중에 할 일/);
   assert.match(studio, /otw-village\.png/);
   assert.match(studio, /focus-desk-front/);
@@ -124,6 +126,8 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(styles, /\.focus-chair[\s\S]*?z-index: 2/);
   assert.match(styles, /\.focus-character[\s\S]*?z-index: 3/);
   assert.match(styles, /\.focus-desk-front[\s\S]*?z-index: 4/);
+  assert.match(styles, /\.app-shell \{ width: 100%; max-width: 576px;/);
+  assert.match(styles, /\.scene-focus-clock[\s\S]*?z-index: 6/);
   assert.match(studio, /validateCharacter/);
   assert.match(studio, /const sourceWidth =/);
   assert.match(studio, /character-image custom/);
