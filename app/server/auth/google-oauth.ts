@@ -12,6 +12,9 @@ export type GoogleAuthEnv = {
   AUTH_SESSION_SECRET?: string;
 };
 
+const PLATFORM_SIGN_IN_PATH = "/signin-with-chatgpt?return_to=%2F";
+const PLATFORM_SIGN_OUT_PATH = "/signout-with-chatgpt?return_to=%2F";
+
 type GoogleUserInfo = {
   sub?: string;
   email?: string;
@@ -19,7 +22,7 @@ type GoogleUserInfo = {
   name?: string;
 };
 
-function configured(env: GoogleAuthEnv): env is Required<GoogleAuthEnv> {
+export function googleAuthConfigured(env: GoogleAuthEnv): env is Required<GoogleAuthEnv> {
   return Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.AUTH_SESSION_SECRET && env.AUTH_SESSION_SECRET.length >= 32);
 }
 
@@ -42,7 +45,7 @@ function callbackUrl(request: Request) {
 }
 
 async function startGoogleLogin(request: Request, env: GoogleAuthEnv) {
-  if (!configured(env)) return redirect(request, "/?auth_error=setup");
+  if (!googleAuthConfigured(env)) return redirect(request, PLATFORM_SIGN_IN_PATH);
   const state = randomState();
   const authorize = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   authorize.search = new URLSearchParams({
@@ -59,7 +62,7 @@ async function startGoogleLogin(request: Request, env: GoogleAuthEnv) {
 }
 
 async function finishGoogleLogin(request: Request, env: GoogleAuthEnv) {
-  if (!configured(env)) return redirect(request, "/?auth_error=setup");
+  if (!googleAuthConfigured(env)) return redirect(request, PLATFORM_SIGN_IN_PATH);
   const url = new URL(request.url);
   const state = url.searchParams.get("state");
   const expectedState = requestCookie(request, GOOGLE_OAUTH_STATE_COOKIE);
@@ -99,7 +102,8 @@ async function finishGoogleLogin(request: Request, env: GoogleAuthEnv) {
   }
 }
 
-function logout(request: Request) {
+function logout(request: Request, env: GoogleAuthEnv) {
+  if (!googleAuthConfigured(env)) return redirect(request, PLATFORM_SIGN_OUT_PATH);
   return redirect(request, "/", cookieHeader(request, GOOGLE_SESSION_COOKIE, "", 0));
 }
 
@@ -107,6 +111,6 @@ export function handleGoogleAuth(request: Request, env: GoogleAuthEnv) {
   const pathname = new URL(request.url).pathname;
   if (pathname === "/auth/google/start") return startGoogleLogin(request, env);
   if (pathname === "/auth/google/callback") return finishGoogleLogin(request, env);
-  if (pathname === "/auth/logout") return Promise.resolve(logout(request));
+  if (pathname === "/auth/logout") return Promise.resolve(logout(request, env));
   return null;
 }

@@ -24,7 +24,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
         <p>평소 쓰는 Google 계정으로 들어오면 다른 기기에서도 같은 캐릭터와 그림 기록을 이어볼 수 있어요.</p>
         {errorMessage && <p className="signin-error" role="alert">{errorMessage}</p>}
         <a className="signin-button" href={googleSignInPath()}>Google 계정으로 계속하기</a>
-        <small>ChatGPT 계정은 필요하지 않아요.</small>
+        <small>Google 직접 연결 전에는 다음 화면에서 <b>Google로 계속하기</b>를 선택해주세요.</small>
       </section>
     </main>
   );

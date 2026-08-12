@@ -48,8 +48,7 @@ test("server-renders the stable account sign-in gate", async () => {
   assert.match(html, /OTHER THAN WORKS/);
   assert.match(html, /Google 계정으로 계속하기/);
   assert.match(html, /\/auth\/google\/start/);
-  assert.match(html, /ChatGPT 계정은 필요하지 않아요/);
-  assert.doesNotMatch(html, /signin-with-chatgpt/);
+  assert.match(html, /Google로 계속하기/);
   assert.match(html, /같은 캐릭터와 그림 기록/);
   assert.match(html, /manifest\.webmanifest/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/);
@@ -173,6 +172,8 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(communityApi, /teacher_note/);
   assert.match(requestAuth, /googleSessionFromRequest/);
   assert.match(requestAuth, /google:\$\{session\.sub\}/);
+  assert.match(requestAuth, /oai-authenticated-user-id/);
+  assert.match(googleOauth, /signin-with-chatgpt/);
   assert.match(googleSession, /HttpOnly; SameSite=Lax/);
   assert.match(googleSession, /HMAC/);
   assert.match(googleOauth, /accounts\.google\.com\/o\/oauth2\/v2\/auth/);
