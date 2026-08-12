@@ -47,7 +47,7 @@ test("server-renders the studio loader for a signed-in account", async () => {
 });
 
 test("includes the complete shared MVP, roster, host controls and map assets", async () => {
-  const [page, studio, layout, styles, manifest, serviceWorker, packageJson, communityClient, communityApi, requestAuth, worker, hosting, migration, messageMigration, accountMigration, presetMigration] = await Promise.all([
+  const [page, studio, layout, styles, manifest, serviceWorker, packageJson, communityClient, communityApi, requestAuth, worker, hosting, migration, messageMigration, accountMigration, presetMigration, galleryMigration] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/studio.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
@@ -64,6 +64,7 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
     readFile(new URL("../drizzle/0001_profile_message.sql", import.meta.url), "utf8"),
     readFile(new URL("../drizzle/0002_accounts_roster_map.sql", import.meta.url), "utf8"),
     readFile(new URL("../drizzle/0003_character_presets.sql", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/0004_gallery_visibility.sql", import.meta.url), "utf8"),
   ]);
 
   assert.match(page, /getChatGPTUser/);
@@ -82,6 +83,9 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(studio, /TogetherPanel/);
   assert.match(studio, /RecordsPanel/);
   assert.match(studio, /GalleryPanel/);
+  assert.match(studio, /galleryFrameSpots/);
+  assert.match(studio, /GalleryVisitor/);
+  assert.match(studio, /전시에서 내리기/);
   assert.match(studio, /MissionPanel/);
   assert.match(layout, /og\.jpg/);
   assert.match(styles, /prefers-reduced-motion/);
@@ -97,6 +101,7 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(communityClient, /updateTeacherNote/);
   assert.match(communityClient, /addRosterStudents/);
   assert.match(communityClient, /removeRosterStudent/);
+  assert.match(communityClient, /removeGalleryArtwork/);
   assert.match(communityApi, /admin_user_hash/);
   assert.match(communityApi, /mon\.mut\.friends@gmail\.com/);
   assert.match(communityApi, /action === "add"/);
@@ -116,9 +121,13 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(accountMigration, /CREATE TABLE `students`/);
   assert.match(accountMigration, /CREATE TABLE `app_settings`/);
   assert.match(presetMigration, /character_preset/);
+  assert.match(galleryMigration, /gallery_hidden/);
+  assert.match(communityApi, /WHERE s\.gallery_hidden = 0/);
+  assert.match(communityApi, /UPDATE work_sessions SET gallery_hidden = 1/);
   assert.match(styles, /preset-grid/);
   assert.match(styles, /studio-room\.jpg/);
-  assert.match(styles, /shared-studio\.jpg/);
+  assert.match(styles, /shared-lounge\.png/);
+  assert.match(styles, /gallery-room\.png/);
   assert.match(styles, /timer-presets/);
   assert.match(studio, /예시 캐릭터/);
   assert.match(studio, /명단 저장하고 내 작업실 열기/);
@@ -142,6 +151,8 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   await access(new URL("../public/brand-character.png", import.meta.url));
   await access(new URL("../public/studio-room.jpg", import.meta.url));
   await access(new URL("../public/shared-studio.jpg", import.meta.url));
+  await access(new URL("../public/shared-lounge.png", import.meta.url));
+  await access(new URL("../public/gallery-room.png", import.meta.url));
   for (const color of ["blue", "green", "orange", "pink", "purple", "yellow"]) {
     await access(new URL(`../public/folder-${color}.png`, import.meta.url));
   }

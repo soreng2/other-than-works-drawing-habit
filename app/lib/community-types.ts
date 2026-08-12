@@ -33,6 +33,7 @@ export type SharedFriend = {
 
 export type SharedArtwork = WorkSession & {
   artist: string;
+  artistProfileId?: string;
   artistCharacterDataUrl?: string;
 };
 

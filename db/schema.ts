@@ -25,6 +25,7 @@ export const SCHEMA_STATEMENTS = [
     category TEXT NOT NULL,
     artwork_key TEXT NOT NULL,
     note TEXT NOT NULL DEFAULT '',
+    gallery_hidden INTEGER NOT NULL DEFAULT 0,
     completed_at INTEGER NOT NULL,
     created_at INTEGER NOT NULL
   )`,
@@ -52,6 +53,8 @@ export const PROFILE_MESSAGE_MIGRATION = "ALTER TABLE profiles ADD COLUMN messag
 export const PROFILE_NICKNAME_MIGRATION = "ALTER TABLE profiles ADD COLUMN nickname TEXT NOT NULL DEFAULT ''";
 export const PRESENCE_MODE_MIGRATION = "ALTER TABLE presence ADD COLUMN mode TEXT NOT NULL DEFAULT 'idle'";
 export const CHARACTER_PRESET_MIGRATION = "ALTER TABLE profiles ADD COLUMN character_preset TEXT NOT NULL DEFAULT 'sky'";
+export const GALLERY_HIDDEN_MIGRATION = "ALTER TABLE work_sessions ADD COLUMN gallery_hidden INTEGER NOT NULL DEFAULT 0";
+export const GALLERY_VISIBLE_INDEX = "CREATE INDEX IF NOT EXISTS idx_work_sessions_gallery_visible ON work_sessions(gallery_hidden, completed_at DESC)";
 
 export type ProfileRow = {
   id: string;
@@ -83,6 +86,7 @@ export type SessionRow = {
   category: string;
   artwork_key: string;
   note: string;
+  gallery_hidden?: number;
   completed_at: number;
   artist?: string;
   character_key?: string | null;

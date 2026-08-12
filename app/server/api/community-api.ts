@@ -32,8 +32,10 @@ function errorResponse(error: unknown) {
     invalid_profile: "이름과 캐릭터 파일을 확인해주세요.",
     invalid_session: "작업 기록을 확인해주세요.",
     invalid_image: "이미지 파일을 확인해주세요.",
+    artwork_not_found: "전시된 그림을 찾지 못했어요.",
+    gallery_delete_forbidden: "본인의 그림만 전시에서 내릴 수 있어요.",
   };
-  const status = code === "signin_required" ? 401 : code === "membership_required" || code === "host_only" ? 403 : code === "profile_not_found" ? 404 : 400;
+  const status = code === "signin_required" ? 401 : code === "membership_required" || code === "host_only" || code === "gallery_delete_forbidden" ? 403 : code === "profile_not_found" || code === "artwork_not_found" ? 404 : 400;
   return Response.json({ error: messages[code] ?? "공동 작업실에 연결하지 못했어요." }, { status });
 }
 
@@ -300,7 +302,8 @@ async function handleCommunity(request: Request, database: D1Database, member: M
       WHERE pr.updated_at >= ? ORDER BY pr.mode DESC, pr.started_at ASC LIMIT 100`).bind(Date.now() - 90_000).all<PresenceRow>(),
     database.prepare(`SELECT s.id, s.profile_id, s.seconds, s.category, s.artwork_key, s.note, s.completed_at,
       COALESCE(NULLIF(p.nickname, ''), p.name) AS artist, p.character_key
-      FROM work_sessions s JOIN profiles p ON p.id = s.profile_id ORDER BY s.completed_at DESC LIMIT 40`).all<SessionRow>(),
+      FROM work_sessions s JOIN profiles p ON p.id = s.profile_id
+      WHERE s.gallery_hidden = 0 ORDER BY s.completed_at DESC LIMIT 40`).all<SessionRow>(),
     database.prepare(`SELECT id, profile_id, seconds, category, artwork_key, note, completed_at
       FROM work_sessions WHERE profile_id = ? ORDER BY completed_at DESC LIMIT 180`).bind(member.profile_id).all<SessionRow>(),
     setting(database, TEACHER_NOTE_KEY),
@@ -319,6 +322,7 @@ async function handleCommunity(request: Request, database: D1Database, member: M
   const gallery: SharedArtwork[] = galleryResult.results.map((row) => ({
     ...mapSession(request, row),
     artist: row.artist ?? "작업친구",
+    artistProfileId: row.profile_id,
     artistCharacterDataUrl: mediaUrl(request, row.character_key),
   }));
   return Response.json({
@@ -396,6 +400,19 @@ async function handleSession(request: Request, database: D1Database, uploads: R2
   return Response.json({ session: mapSession(request, row) }, { status: 201 });
 }
 
+async function handleGallery(request: Request, database: D1Database, auth: RequestUser, member: Member) {
+  if (request.method !== "DELETE") return Response.json({ error: "method_not_allowed" }, { status: 405 });
+  const body = await request.json() as { sessionId?: string };
+  const sessionId = String(body.sessionId ?? "");
+  if (!profileIdPattern.test(sessionId)) throw new Error("artwork_not_found");
+  const artwork = await database.prepare("SELECT profile_id FROM work_sessions WHERE id = ?")
+    .bind(sessionId).first<{ profile_id: string }>();
+  if (!artwork) throw new Error("artwork_not_found");
+  if (artwork.profile_id !== member.profile_id && !isDesignatedAdmin(auth)) throw new Error("gallery_delete_forbidden");
+  await database.prepare("UPDATE work_sessions SET gallery_hidden = 1 WHERE id = ?").bind(sessionId).run();
+  return Response.json({ ok: true });
+}
+
 async function handleMedia(request: Request, uploads: R2Bucket) {
   if (request.method !== "GET") return Response.json({ error: "method_not_allowed" }, { status: 405 });
   const key = decodeURIComponent(new URL(request.url).pathname.replace("/api/media/", ""));
@@ -420,6 +437,7 @@ export async function handleCommunityApi(request: Request, env: CommunityEnv) {
     if (pathname === "/api/message") return handleMessage(request, env.DB, member);
     if (pathname === "/api/teacher-note") return handleTeacherNote(request, env.DB, auth);
     if (pathname === "/api/sessions") return handleSession(request, env.DB, env.UPLOADS, member);
+    if (pathname === "/api/gallery") return handleGallery(request, env.DB, auth, member);
     if (pathname.startsWith("/api/media/")) return handleMedia(request, env.UPLOADS);
     return new Response("Not found", { status: 404 });
   } catch (error) {

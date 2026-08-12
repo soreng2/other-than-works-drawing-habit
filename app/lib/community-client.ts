@@ -140,3 +140,11 @@ export async function saveCloudSession(identity: DeviceIdentity, session: WorkSe
   const payload = await responseJson<{ session: WorkSession }>(await fetch("/api/sessions", { method: "POST", body: form }));
   return payload.session;
 }
+
+export async function removeGalleryArtwork(sessionId: string): Promise<void> {
+  await responseJson<{ ok: true }>(await fetch("/api/gallery", {
+    method: "DELETE",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ sessionId }),
+  }));
+}

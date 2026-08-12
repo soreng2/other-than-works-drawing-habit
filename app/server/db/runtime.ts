@@ -1,5 +1,7 @@
 import {
   CHARACTER_PRESET_MIGRATION,
+  GALLERY_HIDDEN_MIGRATION,
+  GALLERY_VISIBLE_INDEX,
   PRESENCE_MODE_MIGRATION,
   PROFILE_MESSAGE_MIGRATION,
   PROFILE_NICKNAME_MIGRATION,
@@ -8,7 +10,7 @@ import {
 
 export async function ensureDatabase(database: D1Database) {
   await database.batch(SCHEMA_STATEMENTS.map((statement) => database.prepare(statement)));
-  for (const migration of [PROFILE_MESSAGE_MIGRATION, PROFILE_NICKNAME_MIGRATION, PRESENCE_MODE_MIGRATION, CHARACTER_PRESET_MIGRATION]) {
+  for (const migration of [PROFILE_MESSAGE_MIGRATION, PROFILE_NICKNAME_MIGRATION, PRESENCE_MODE_MIGRATION, CHARACTER_PRESET_MIGRATION, GALLERY_HIDDEN_MIGRATION]) {
     try {
       await database.prepare(migration).run();
     } catch (error) {
@@ -16,4 +18,5 @@ export async function ensureDatabase(database: D1Database) {
       if (!message.toLowerCase().includes("duplicate column")) throw error;
     }
   }
+  await database.prepare(GALLERY_VISIBLE_INDEX).run();
 }

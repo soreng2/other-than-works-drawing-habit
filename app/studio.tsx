@@ -14,6 +14,7 @@ import {
   fetchCommunity,
   fetchRoster,
   getDeviceIdentity,
+  removeGalleryArtwork,
   removeRosterStudent,
   saveCloudProfile,
   saveCloudSession,
@@ -695,17 +696,17 @@ type MapMember = SharedFriend & { mine?: boolean };
 type MapSpot = { x: number; y: number };
 
 const mapSpots: Record<MapPlace, MapSpot[]> = {
-  working: [{ x: 21, y: 29 }, { x: 39, y: 29 }, { x: 30, y: 39 }],
-  gallery: [{ x: 68, y: 29 }, { x: 82, y: 36 }, { x: 72, y: 43 }],
-  tips: [{ x: 19, y: 67 }, { x: 35, y: 65 }, { x: 27, y: 80 }],
-  lounge: [{ x: 65, y: 68 }, { x: 82, y: 69 }, { x: 74, y: 82 }],
+  working: [{ x: 40, y: 62 }, { x: 57, y: 65 }, { x: 68, y: 57 }],
+  gallery: [{ x: 67, y: 43 }, { x: 78, y: 46 }, { x: 60, y: 48 }],
+  tips: [{ x: 18, y: 73 }, { x: 29, y: 78 }, { x: 35, y: 68 }],
+  lounge: [{ x: 14, y: 49 }, { x: 84, y: 73 }, { x: 76, y: 82 }],
 };
 
 const mapAreaLabels: Array<{ place: MapPlace; title: string }> = [
-  { place: "working", title: "집중 책상" },
-  { place: "gallery", title: "작은 전시장" },
-  { place: "tips", title: "팁 게시판" },
-  { place: "lounge", title: "쉬는 자리" },
+  { place: "working", title: "집중 자리" },
+  { place: "gallery", title: "초록 창가" },
+  { place: "tips", title: "컬러 러그" },
+  { place: "lounge", title: "둥근 테이블" },
 ];
 
 function stringSeed(value: string) {
@@ -884,16 +885,94 @@ function RecordsPanel({ sessions }: { sessions: WorkSession[] }) {
   );
 }
 
-function GalleryPanel({ profile, sessions, sharedGallery }: { profile: Profile; sessions: WorkSession[]; sharedGallery: SharedArtwork[] }) {
-  const friendsGallery = sharedGallery.filter((piece) => piece.artist !== profile.name || !sessions.some((session) => session.id === piece.id));
+const galleryFrameSpots = [
+  { x: 2.6, y: 24.3, width: 6.9, height: 18.1 },
+  { x: 13.8, y: 24.9, width: 4.6, height: 16.8 },
+  { x: 22.6, y: 25.7, width: 3.8, height: 14.5 },
+  { x: 33.9, y: 24.2, width: 9.8, height: 17.4 },
+  { x: 48.8, y: 24.2, width: 9.3, height: 17.4 },
+  { x: 62.3, y: 24.2, width: 10, height: 17.4 },
+  { x: 76.3, y: 24.2, width: 9.5, height: 17.4 },
+] as const;
+
+const galleryVisitorSpots = [
+  { x: 25, y: 67, move: 18 }, { x: 46, y: 77, move: -22 }, { x: 67, y: 66, move: 16 }, { x: 78, y: 84, move: -14 },
+] as const;
+
+function GalleryVisitor({ friend, index }: { friend: MapMember; index: number }) {
+  const spot = galleryVisitorSpots[index % galleryVisitorSpots.length];
+  const style = {
+    "--visitor-x": `${spot.x}%`,
+    "--visitor-y": `${spot.y}%`,
+    "--visitor-move": `${spot.move}px`,
+    "--visitor-delay": `${-(stringSeed(friend.id) % 6_000)}ms`,
+    zIndex: 12 + index,
+  } as CSSProperties;
+  return (
+    <div className="gallery-visitor" style={style}>
+      <span>{friend.nickname || friend.name}{friend.mine ? " · 나" : ""}</span>
+      <Character profile={{ name: friend.name, nickname: friend.nickname, characterPreset: friend.characterPreset, characterDataUrl: friend.characterDataUrl }} />
+    </div>
+  );
+}
+
+function GalleryPanel({ profile, sessions, sharedGallery, activeFriends, isHost, onRemove }: {
+  profile: Profile;
+  sessions: WorkSession[];
+  sharedGallery: SharedArtwork[];
+  activeFriends: SharedFriend[];
+  isHost: boolean;
+  onRemove: (sessionId: string) => Promise<void>;
+}) {
+  const [room, setRoom] = useState(0);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [removing, setRemoving] = useState(false);
+  const [removeError, setRemoveError] = useState("");
+  const roomCount = Math.max(1, Math.ceil(sharedGallery.length / galleryFrameSpots.length));
+  const safeRoom = Math.min(room, roomCount - 1);
+  const artworks = sharedGallery.slice(safeRoom * galleryFrameSpots.length, (safeRoom + 1) * galleryFrameSpots.length);
+  const selected = artworks.find((piece) => piece.id === selectedId) ?? artworks[0];
+  const canRemove = selected && (isHost || selected.artistProfileId === profile.id || sessions.some((session) => session.id === selected.id));
+  const own: MapMember = {
+    id: profile.id ?? "mine",
+    name: profile.name,
+    nickname: profile.nickname,
+    characterPreset: profile.characterPreset,
+    characterDataUrl: profile.characterDataUrl,
+    mode: "idle",
+    category: "free",
+    startedAt: 0,
+    message: "",
+    mine: true,
+  };
+  const visitors: MapMember[] = [own, ...activeFriends.filter((friend) => friend.id !== profile.id)].slice(0, galleryVisitorSpots.length);
   return (
     <div className="panel-stack section-panel gallery-panel">
-      <section className="gallery-hero"><p className="eyebrow">이번 주 전시</p><h2>우리가 시작한<br />그림들</h2><span>완성도 대신 남긴 흔적을 전시해요.</span></section>
-      {sessions.length > 0 && <section><p className="eyebrow">내 벽</p><h2>내 그림</h2><div className="my-wall">{sessions.slice(0, 6).map((session) => <article key={session.id}><img src={session.artworkDataUrl} alt={session.note || "내 작업 그림"} /><b>{categoryTitle(session.category)}</b><span>{minutesFor(session.seconds)}분의 그림</span></article>)}</div></section>}
-      <section><div className="card-title-row heading-row"><div><p className="eyebrow">함께 남긴 그림</p><h2>친구들의 그림</h2></div><span>최근 기록</span></div>
-        {friendsGallery.length > 0 ? <div className="gallery-grid">{friendsGallery.map((piece) => <article key={piece.id}><img className="shared-artwork" src={piece.artworkDataUrl} alt={piece.note || `${piece.artist}의 그림`} /><b>{piece.note || categoryTitle(piece.category)}</b><p>{piece.artist} · {categoryTitle(piece.category)} · {minutesFor(piece.seconds)}분</p></article>)}</div> : <div className="empty-state gallery-empty"><span>▧</span><b>첫 전시를 기다리는 중</b><p>누군가 작업을 완료하고 그림을 올리면 이곳에 함께 걸려요.</p></div>}
+      <header className="section-header gallery-heading"><div><p className="eyebrow">OTHER THAN WORKS GALLERY</p><h2>우리가 시작한 그림들</h2></div><span>{sharedGallery.length}점 전시 중</span></header>
+      <p className="section-description">완성도 대신 오늘 남긴 흔적을 걸어요. 액자를 누르면 작품 이야기를 볼 수 있어요.</p>
+      <section className="gallery-map" aria-label="수강생 그림이 액자에 걸린 공동 전시장">
+        {artworks.map((piece, index) => {
+          const spot = galleryFrameSpots[index];
+          const style = {
+            "--frame-x": `${spot.x}%`, "--frame-y": `${spot.y}%`, "--frame-width": `${spot.width}%`, "--frame-height": `${spot.height}%`,
+          } as CSSProperties;
+          return <button className={`gallery-frame-art${selected?.id === piece.id ? " selected" : ""}`} style={style} type="button" key={piece.id} onClick={() => setSelectedId(piece.id)} aria-label={`${piece.artist}의 작품 보기`}><img src={piece.artworkDataUrl} alt="" /></button>;
+        })}
+        <div className="gallery-visitors">{visitors.map((friend, index) => <GalleryVisitor friend={friend} index={index} key={friend.id} />)}</div>
+        {!artworks.length && <p className="gallery-map-empty">첫 그림을 기다리는 빈 전시장이에요.</p>}
       </section>
-      {sessions.length === 0 && <p className="gallery-invite">첫 기록을 남기면 {profile.name}의 그림도 이 전시장에 걸려요.</p>}
+      {roomCount > 1 && <nav className="gallery-room-pager" aria-label="전시장 방 이동"><button type="button" disabled={safeRoom === 0} onClick={() => { setRoom((value) => Math.max(0, value - 1)); setSelectedId(null); }}>이전 방</button><span>{safeRoom + 1} / {roomCount}</span><button type="button" disabled={safeRoom === roomCount - 1} onClick={() => { setRoom((value) => Math.min(roomCount - 1, value + 1)); setSelectedId(null); }}>다음 방</button></nav>}
+      {selected ? <section className="paper-card gallery-caption">
+        <img src={selected.artworkDataUrl} alt={selected.note || `${selected.artist}의 그림`} />
+        <div><p className="eyebrow">선택한 작품</p><b>{selected.note || categoryTitle(selected.category)}</b><span>{selected.artist} · {categoryTitle(selected.category)} · {minutesFor(selected.seconds)}분</span></div>
+        {canRemove && <button type="button" disabled={removing} onClick={async () => {
+          if (!window.confirm("이 그림을 전시장에서 내릴까요? 작업 기록에는 그대로 남아요.")) return;
+          try { setRemoving(true); setRemoveError(""); await onRemove(selected.id); setSelectedId(null); }
+          catch (error) { setRemoveError(error instanceof Error ? error.message : "전시에서 내리지 못했어요."); }
+          finally { setRemoving(false); }
+        }}>{removing ? "내리는 중" : "전시에서 내리기"}</button>}
+      </section> : <p className="gallery-invite">집중을 마치고 오늘의 그림을 올리면 이 액자에 전시돼요.</p>}
+      {removeError && <p className="error-message" role="alert">{removeError}</p>}
     </div>
   );
 }
@@ -1088,7 +1167,10 @@ export default function Home() {
           { id: "demo-seeun", name: "콩이", nickname: "세은", characterPreset: "apricot", mode: "idle", category: "free", startedAt: Date.now(), message: "전시 구경 왔어요" },
           { id: "demo-ming", name: "토리", nickname: "밍쵸", characterPreset: "violet", mode: "idle", category: "emoticon", startedAt: Date.now(), message: "표정 세 개 그릴 예정" },
         ]);
-        setSharedGallery([{ ...demoSessions[1], artist: "세은" }]);
+        setSharedGallery([
+          { ...demoSessions[0], artist: "소랭", artistProfileId: "demo-moru" },
+          { ...demoSessions[1], artist: "세은", artistProfileId: "demo-seeun" },
+        ]);
         setTeacherNote("완성하려 애쓰기보다 오늘 마음에 든 선 하나를 찾아봐요.");
         setReady(true);
         return;
@@ -1273,6 +1355,15 @@ export default function Home() {
     setRoster(await removeRosterStudent(studentId));
   }
 
+  async function removeArtwork(sessionId: string) {
+    if (demoMode.current) {
+      setSharedGallery((current) => current.filter((piece) => piece.id !== sessionId));
+      return;
+    }
+    await removeGalleryArtwork(sessionId);
+    setSharedGallery((current) => current.filter((piece) => piece.id !== sessionId));
+  }
+
   if (!ready) return <main className="app-loading"><DefaultCharacter /><p>작업실 문을 여는 중…</p></main>;
   if (roster && (roster.needsSetup || !roster.linked)) return <Enrollment snapshot={roster} onComplete={() => setBootKey((value) => value + 1)} />;
   if (!profile) return <Onboarding onComplete={saveProfile} />;
@@ -1288,7 +1379,7 @@ export default function Home() {
         {tab === "home" && <HomePanel profile={profile} sessions={sessions} elapsed={elapsed} timerTarget={timerTarget} clock={clock} running={running} category={category} pauseNotice={pauseNotice} onCategory={setCategory} onTimerTarget={(target) => { if (!running && elapsed === 0) { setTimerTarget(target); goalReached.current = false; } }} onToggle={toggleTimer} onFinish={openFinish} onReset={resetTimer} />}
         {tab === "together" && <TogetherPanel profile={profile} activeFriends={activeFriends} running={running} elapsed={elapsed} category={category} clock={clock} onMessage={saveMessage} />}
         {tab === "records" && <RecordsPanel sessions={sessions} />}
-        {tab === "gallery" && <GalleryPanel profile={profile} sessions={sessions} sharedGallery={sharedGallery} />}
+        {tab === "gallery" && <GalleryPanel profile={profile} sessions={sessions} sharedGallery={sharedGallery} activeFriends={activeFriends} isHost={Boolean(roster?.isAdmin)} onRemove={removeArtwork} />}
         {tab === "mission" && <MissionPanel sessions={sessions} teacherNote={teacherNote} isHost={Boolean(roster?.isAdmin)} students={roster?.students ?? []} onTeacherNote={saveTeacherNote} onAddStudents={addStudents} onRemoveStudent={removeStudent} />}
       </div>
       <nav className="bottom-nav" aria-label="주요 메뉴">
