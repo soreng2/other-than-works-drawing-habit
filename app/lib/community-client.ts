@@ -74,6 +74,14 @@ export async function removeRosterStudent(studentId: string): Promise<RosterSnap
   }));
 }
 
+export async function updateClassCode(classCode: string): Promise<RosterSnapshot> {
+  return responseJson<RosterSnapshot>(await fetch("/api/roster", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "set_code", classCode }),
+  }));
+}
+
 export async function saveCloudProfile(identity: DeviceIdentity, profile: Profile): Promise<Profile> {
   const form = new FormData();
   form.set("profileId", identity.profileId);

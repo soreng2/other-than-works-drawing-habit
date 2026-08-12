@@ -22,6 +22,7 @@ import {
   sendPresenceOffline,
   setupRoster,
   updatePresence,
+  updateClassCode,
   updateSharedMessage,
   updateTeacherNote,
 } from "./lib/community-client";
@@ -969,20 +970,37 @@ function GalleryPanel({ profile, sessions, sharedGallery, activeFriends, isHost,
   );
 }
 
-function RosterManager({ students, onAdd, onRemove }: {
+function RosterManager({ students, classCode, onClassCode, onAdd, onRemove }: {
   students: RosterSnapshot["students"];
+  classCode?: string;
+  onClassCode: (classCode: string) => Promise<void>;
   onAdd: (names: string[]) => Promise<void>;
   onRemove: (studentId: string) => Promise<void>;
 }) {
   const [names, setNames] = useState("");
+  const [codeDraft, setCodeDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const addNames = names.split(/\r?\n/).map((name) => name.trim()).filter(Boolean);
   return (
     <section className="paper-card roster-manager">
-      <div className="card-title-row"><div><p className="eyebrow">HOST ONLY</p><h2>수강생 명단</h2></div><span>{students.length}명</span></div>
-      <p className="roster-guide">새 수강생은 한 줄에 한 명씩 추가하세요. 명단에서 빼도 그동안의 그림 기록은 지워지지 않아요.</p>
+      <div className="card-title-row"><div><p className="eyebrow">선생님 계정 전용</p><h2>수강생 관리</h2></div><span>{students.length}명</span></div>
+      <p className="roster-guide">이 영역은 mon.mut.friends@gmail.com 계정에만 보여요. 반 코드와 수강생 명단을 언제든 바꿀 수 있어요.</p>
+      <div className="class-code-manager">
+        <div><b>수강생 접속 코드</b><span>{classCode ? "아래 코드를 수강생에게 알려주세요." : "이전 코드는 보안 저장되어 다시 표시할 수 없어요. 새 코드로 바꾸면 확인·복사할 수 있어요."}</span></div>
+        {classCode && <div className="class-code-display"><code>{classCode}</code><button type="button" onClick={async () => { await navigator.clipboard.writeText(classCode); setNotice("반 코드를 복사했어요."); }}>복사</button></div>}
+        <label className="field-label" htmlFor="new-class-code">{classCode ? "반 코드 변경" : "새 반 코드 설정"}</label>
+        <div className="class-code-update"><input id="new-class-code" className="text-input" value={codeDraft} maxLength={20} onChange={(event) => setCodeDraft(event.target.value)} placeholder="4~20자" /><button className="secondary-button" type="button" disabled={saving || codeDraft.trim().length < 4} onClick={async () => {
+          try { setSaving(true); setError(""); setNotice(""); await onClassCode(codeDraft.trim()); setNotice(`반 코드를 ${codeDraft.trim()}(으)로 바꿨어요.`); setCodeDraft(""); }
+          catch (codeError) { setError(codeError instanceof Error ? codeError.message : "반 코드를 바꾸지 못했어요."); }
+          finally { setSaving(false); }
+        }}>{saving ? "변경 중" : "코드 저장"}</button></div>
+        <small>코드를 바꾸면 새로 들어오는 수강생부터 새 코드를 사용해요. 이미 연결된 수강생은 계속 접속할 수 있어요.</small>
+      </div>
+      <div className="roster-divider" />
+      <div className="roster-subheading"><b>수강생 추가</b><span>한 줄에 한 명씩</span></div>
+      <p className="roster-guide">명단에서 빼도 그동안의 그림 기록은 지워지지 않아요.</p>
       <textarea value={names} onChange={(event) => setNames(event.target.value)} placeholder={"새 수강생 이름\n한 줄에 한 명"} aria-label="추가할 수강생 이름" />
       <button className="primary-button wide" type="button" disabled={saving || !addNames.length} onClick={async () => {
         try {
@@ -1012,12 +1030,14 @@ function RosterManager({ students, onAdd, onRemove }: {
   );
 }
 
-function MissionPanel({ sessions, teacherNote, isHost, students, onTeacherNote, onAddStudents, onRemoveStudent }: {
+function MissionPanel({ sessions, teacherNote, isHost, students, classCode, onTeacherNote, onClassCode, onAddStudents, onRemoveStudent }: {
   sessions: WorkSession[];
   teacherNote: string;
   isHost: boolean;
   students: RosterSnapshot["students"];
+  classCode?: string;
   onTeacherNote: (note: string) => Promise<void>;
+  onClassCode: (classCode: string) => Promise<void>;
   onAddStudents: (names: string[]) => Promise<void>;
   onRemoveStudent: (studentId: string) => Promise<void>;
 }) {
@@ -1056,7 +1076,7 @@ function MissionPanel({ sessions, teacherNote, isHost, students, onTeacherNote, 
         </> : <><p>“{teacherNote}”</p>{isHost && <button className="teacher-edit-button" type="button" onClick={() => setEditingNote(true)}>한마디 수정</button>}</>}</div>
       </section>
       <section className="paper-card journey-card"><p className="eyebrow">작업실 성장</p><h2>조금씩 열리는 공간</h2>{milestones.map((milestone, index) => { const open = milestone.minutes <= totalMinutes; return <div className={`journey-row${open ? " open" : ""}`} key={milestone.title}><span>{milestone.icon}</span><div><b>{milestone.title}</b><p>{milestone.detail}</p></div><i>{milestone.minutes === 0 ? "기본" : `${milestone.minutes}분`}</i>{index < milestones.length - 1 && <em />}</div>; })}</section>
-      {isHost && <RosterManager students={students} onAdd={onAddStudents} onRemove={onRemoveStudent} />}
+      {isHost && <RosterManager students={students} classCode={classCode} onClassCode={onClassCode} onAdd={onAddStudents} onRemove={onRemoveStudent} />}
     </div>
   );
 }
@@ -1147,7 +1167,7 @@ export default function Home() {
           { id: "demo-1", completedAt: new Date().toISOString(), seconds: 720, category: "sketch", artworkDataUrl: "/studio-room.jpg", note: "창가의 작은 작업실" },
           { id: "demo-2", completedAt: new Date(Date.now() - 86_400_000 * 2).toISOString(), seconds: 1240, category: "color", artworkDataUrl: "/brand-character.png", note: "파란 폴더 친구 색연습" },
         ];
-        setRoster({ needsSetup: false, isAdmin: true, linked: true, nickname: "소랭", students: [
+        setRoster({ needsSetup: false, isAdmin: true, linked: true, nickname: "소랭", classCode: "OTW2026", students: [
           { id: "demo-student-1", legalName: "은지", nickname: "은지", claimed: true },
           { id: "demo-student-2", legalName: "세은", nickname: "세은", claimed: true },
           { id: "demo-student-3", legalName: "새 수강생", claimed: false },
@@ -1339,6 +1359,14 @@ export default function Home() {
     setRoster(await addRosterStudents(names));
   }
 
+  async function saveClassCode(classCode: string) {
+    if (demoMode.current) {
+      setRoster((current) => current ? { ...current, classCode } : current);
+      return;
+    }
+    setRoster(await updateClassCode(classCode));
+  }
+
   async function removeStudent(studentId: string) {
     if (demoMode.current) {
       setRoster((current) => current ? { ...current, students: current.students.filter((student) => student.id !== studentId) } : current);
@@ -1372,11 +1400,11 @@ export default function Home() {
         {tab === "together" && <TogetherPanel profile={profile} activeFriends={activeFriends} running={running} elapsed={elapsed} category={category} clock={clock} onMessage={saveMessage} />}
         {tab === "records" && <RecordsPanel sessions={sessions} />}
         {tab === "gallery" && <GalleryPanel profile={profile} sessions={sessions} sharedGallery={sharedGallery} activeFriends={activeFriends} isHost={Boolean(roster?.isAdmin)} onRemove={removeArtwork} />}
-        {tab === "mission" && <MissionPanel sessions={sessions} teacherNote={teacherNote} isHost={Boolean(roster?.isAdmin)} students={roster?.students ?? []} onTeacherNote={saveTeacherNote} onAddStudents={addStudents} onRemoveStudent={removeStudent} />}
+        {tab === "mission" && <MissionPanel sessions={sessions} teacherNote={teacherNote} isHost={Boolean(roster?.isAdmin)} students={roster?.students ?? []} classCode={roster?.classCode} onTeacherNote={saveTeacherNote} onClassCode={saveClassCode} onAddStudents={addStudents} onRemoveStudent={removeStudent} />}
       </div>
       <nav className="bottom-nav" aria-label="주요 메뉴">
         {([
-          ["home", "작업실"], ["together", "함께"], ["records", "기록"], ["gallery", "전시"], ["mission", "미션"],
+          ["home", "작업실"], ["together", "함께"], ["records", "기록"], ["gallery", "전시"], ["mission", roster?.isAdmin ? "관리" : "미션"],
         ] as Array<[TabKey, string]>).map(([key, label]) => <button type="button" key={key} className={tab === key ? "active" : ""} onClick={() => setTab(key)}><span aria-hidden="true" />{label}</button>)}
       </nav>
       {finishOpen && <CompletionModal seconds={elapsed} goalSeconds={timerTarget} category={category} onClose={() => setFinishOpen(false)} onSave={saveSession} />}

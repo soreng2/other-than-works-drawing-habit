@@ -11,6 +11,7 @@ const characterPresets = new Set<CharacterPresetKey>(["sky", "moss", "apricot", 
 const profileIdPattern = /^[0-9a-f-]{36}$/i;
 const ADMIN_KEY = "admin_user_hash";
 const CLASS_CODE_KEY = "class_code_hash";
+const CLASS_CODE_DISPLAY_KEY = "class_code_display";
 const TEACHER_NOTE_KEY = "teacher_note";
 const HOST_MEMBER_LABEL = "선생님";
 const DESIGNATED_ADMIN_EMAIL = "mon.mut.friends@gmail.com";
@@ -118,9 +119,10 @@ async function ensureAdminMember(database: D1Database, auth: RequestUser): Promi
 }
 
 async function rosterState(database: D1Database, auth: RequestUser, classCode = "") {
-  const [adminHash, codeHash, member] = await Promise.all([
+  const [adminHash, codeHash, savedClassCode, member] = await Promise.all([
     setting(database, ADMIN_KEY),
     setting(database, CLASS_CODE_KEY),
+    setting(database, CLASS_CODE_DISPLAY_KEY),
     database.prepare("SELECT id, legal_name, nickname, auth_user_hash, profile_id FROM students WHERE auth_user_hash = ?")
       .bind(auth.userHash).first<StudentRow>(),
   ]);
@@ -145,7 +147,14 @@ async function rosterState(database: D1Database, auth: RequestUser, classCode = 
       .all<{ id: string; legal_name: string }>();
     students = result.results.map((student) => ({ id: student.id, legalName: student.legal_name, claimed: false }));
   }
-  return { needsSetup, isAdmin, linked: Boolean(resolvedMember), nickname: resolvedMember?.nickname || undefined, students };
+  return {
+    needsSetup,
+    isAdmin,
+    linked: Boolean(resolvedMember),
+    nickname: resolvedMember?.nickname || undefined,
+    classCode: isAdmin ? savedClassCode || undefined : undefined,
+    students,
+  };
 }
 
 async function handleRoster(request: Request, database: D1Database, auth: RequestUser) {
@@ -176,6 +185,7 @@ async function handleRoster(request: Request, database: D1Database, auth: Reques
     const statements = [
       database.prepare("INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)").bind(ADMIN_KEY, auth.userHash, now),
       database.prepare("INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)").bind(CLASS_CODE_KEY, await hashSecret(classCode), now),
+      database.prepare("INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)").bind(CLASS_CODE_DISPLAY_KEY, classCode, now),
       database.prepare(`INSERT INTO students
         (id, legal_name, normalized_name, nickname, auth_user_hash, profile_id, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).bind(
@@ -222,6 +232,22 @@ async function handleRoster(request: Request, database: D1Database, auth: Reques
       "INSERT INTO students (id, legal_name, normalized_name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
     ).bind(crypto.randomUUID(), name, normalizeName(name), now, now)));
     return Response.json(await rosterState(database, auth), { status: 201 });
+  }
+
+  if (body.action === "set_code") {
+    if (!isDesignatedAdmin(auth)) throw new Error("host_only");
+    const classCode = String(body.classCode ?? "").trim();
+    if (classCode.length < 4 || classCode.length > 20) throw new Error("invalid_class_code");
+    const now = Date.now();
+    await database.batch([
+      database.prepare(`INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`)
+        .bind(CLASS_CODE_KEY, await hashSecret(classCode), now),
+      database.prepare(`INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`)
+        .bind(CLASS_CODE_DISPLAY_KEY, classCode, now),
+    ]);
+    return Response.json(await rosterState(database, auth));
   }
 
   if (body.action === "remove") {

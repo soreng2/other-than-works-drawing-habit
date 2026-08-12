@@ -101,11 +101,14 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(communityClient, /updateTeacherNote/);
   assert.match(communityClient, /addRosterStudents/);
   assert.match(communityClient, /removeRosterStudent/);
+  assert.match(communityClient, /updateClassCode/);
   assert.match(communityClient, /removeGalleryArtwork/);
   assert.match(communityApi, /admin_user_hash/);
   assert.match(communityApi, /mon\.mut\.friends@gmail\.com/);
   assert.match(communityApi, /action === "add"/);
   assert.match(communityApi, /action === "remove"/);
+  assert.match(communityApi, /action === "set_code"/);
+  assert.match(communityApi, /class_code_display/);
   assert.match(communityApi, /ensureAdminMember/);
   assert.match(communityApi, /INSERT OR IGNORE INTO students/);
   assert.match(communityApi, /student_already_claimed/);
@@ -144,6 +147,9 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(styles, /@media \(min-width: 700px\)/);
   assert.match(studio, /내 캐릭터 위 메시지/);
   assert.match(studio, /한마디 수정/);
+  assert.match(studio, /선생님 계정 전용/);
+  assert.match(studio, /수강생 접속 코드/);
+  assert.match(studio, /수강생 추가/);
   assert.doesNotMatch(studio, /function MapZone/);
   assert.doesNotMatch(studio, /옆으로 넘기면/);
   assert.doesNotMatch(studio, /desk-tablet|아이패드 책상/);

@@ -609,6 +609,20 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, label:has(inp
 .roster-manager { display: grid; gap: 12px; background: #fff4d8; }
 .roster-manager h2 { margin: 3px 0 0; font-size: 22px; }
 .roster-guide { margin: 0; color: #66645d; font-size: 11px; line-height: 1.6; }
+.class-code-manager { display: grid; gap: 9px; padding: 12px; border: 1.5px solid var(--ink); border-radius: 10px; background: #eef7cf; }
+.class-code-manager > div:first-child { display: grid; gap: 4px; }
+.class-code-manager > div:first-child b { font-size: 13px; }
+.class-code-manager > div:first-child span, .class-code-manager > small { color: #5f675c; font-size: 9px; line-height: 1.5; }
+.class-code-manager .field-label { margin: 3px 0 -2px; font-size: 10px; }
+.class-code-display { display: grid; grid-template-columns: 1fr auto; gap: 7px; }
+.class-code-display code { min-height: 46px; display: flex; align-items: center; padding: 0 13px; border: 1.5px solid var(--ink); border-radius: 8px; background: #fff; font: 900 17px/1 var(--font-sans); letter-spacing: .08em; }
+.class-code-display button, .class-code-update button { min-width: 64px; border: 1.5px solid var(--ink); border-radius: 8px; color: #192b4c; background: #9fb7ea; font-size: 10px; font-weight: 850; cursor: pointer; }
+.class-code-update { display: grid; grid-template-columns: 1fr auto; gap: 7px; }
+.class-code-update .secondary-button { min-height: 46px; box-shadow: none; }
+.roster-divider { height: 1.5px; margin: 3px 0; background: var(--ink); opacity: .18; }
+.roster-subheading { display: flex; align-items: baseline; justify-content: space-between; }
+.roster-subheading b { font-size: 13px; }
+.roster-subheading span { color: #77736a; font-size: 9px; }
 .roster-manager textarea { width: 100%; min-height: 90px; padding: 12px; resize: vertical; }
 .roster-list { display: grid; gap: 7px; max-height: 320px; overflow-y: auto; padding-top: 3px; }
 .roster-list article { min-height: 54px; display: grid; grid-template-columns: 36px 1fr auto; align-items: center; gap: 10px; padding: 7px; border: 1.5px solid var(--ink); border-radius: 9px; background: #fff; }

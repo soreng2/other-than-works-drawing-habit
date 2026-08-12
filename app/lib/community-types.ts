@@ -62,5 +62,6 @@ export type RosterSnapshot = {
   isAdmin: boolean;
   linked: boolean;
   nickname?: string;
+  classCode?: string;
   students: RosterStudent[];
 };
