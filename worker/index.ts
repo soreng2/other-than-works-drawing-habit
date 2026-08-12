@@ -2,11 +2,16 @@
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
 import { handleCommunityApi } from "../app/server/api/community-api";
+import { handleGoogleAuth } from "../app/server/auth/google-oauth";
+import { GOOGLE_SESSION_HEADER, googleSessionFromRequest } from "../app/server/auth/google-session";
 
 interface Env {
   ASSETS: Fetcher;
   DB?: D1Database;
   UPLOADS?: R2Bucket;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
+  AUTH_SESSION_SECRET?: string;
   IMAGES: {
     input(stream: ReadableStream): {
       transform(options: Record<string, unknown>): {
@@ -31,6 +36,11 @@ const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
+    if (url.pathname.startsWith("/auth/")) {
+      const authResponse = handleGoogleAuth(request, env);
+      if (authResponse) return authResponse;
+    }
+
     if (url.pathname.startsWith("/api/")) {
       return handleCommunityApi(request, env);
     }
@@ -46,7 +56,10 @@ const worker = {
       }, allowedWidths);
     }
 
-    return handler.fetch(request, env, ctx);
+    const forwardedHeaders = new Headers(request.headers);
+    forwardedHeaders.delete(GOOGLE_SESSION_HEADER);
+    if (await googleSessionFromRequest(request, env.AUTH_SESSION_SECRET)) forwardedHeaders.set(GOOGLE_SESSION_HEADER, "verified");
+    return handler.fetch(new Request(request, { headers: forwardedHeaders }), env, ctx);
   },
 };
 

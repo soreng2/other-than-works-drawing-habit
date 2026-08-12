@@ -1,8 +1,22 @@
 import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
 import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 
 const root = new URL("../", import.meta.url);
+const sessionSecret = "test-session-secret-that-is-more-than-32-characters";
+
+function googleSessionCookie() {
+  const payload = Buffer.from(JSON.stringify({
+    provider: "google",
+    sub: "test-google-user",
+    email: "test@example.com",
+    name: "테스트",
+    exp: Math.floor(Date.now() / 1000) + 3600,
+  })).toString("base64url");
+  const signature = createHmac("sha256", sessionSecret).update(payload).digest("base64url");
+  return `otw_google_session=${encodeURIComponent(`${payload}.${signature}`)}`;
+}
 
 async function render(authenticated = false) {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
@@ -14,11 +28,12 @@ async function render(authenticated = false) {
       headers: {
         accept: "text/html",
         host: "localhost",
-        ...(authenticated ? { "oai-authenticated-user-id": "test-user", "oai-authenticated-user-email": "test@example.com" } : {}),
+        ...(authenticated ? { cookie: googleSessionCookie() } : {}),
       },
     }),
     {
       ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) },
+      AUTH_SESSION_SECRET: sessionSecret,
     },
     { waitUntil() {}, passThroughOnException() {} },
   );
@@ -32,7 +47,9 @@ test("server-renders the stable account sign-in gate", async () => {
   const html = await response.text();
   assert.match(html, /OTHER THAN WORKS/);
   assert.match(html, /Google 계정으로 계속하기/);
-  assert.match(html, /signin-with-chatgpt/);
+  assert.match(html, /\/auth\/google\/start/);
+  assert.match(html, /ChatGPT 계정은 필요하지 않아요/);
+  assert.doesNotMatch(html, /signin-with-chatgpt/);
   assert.match(html, /같은 캐릭터와 그림 기록/);
   assert.match(html, /manifest\.webmanifest/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/);
@@ -46,8 +63,26 @@ test("server-renders the studio loader for a signed-in account", async () => {
   assert.doesNotMatch(html, />ChatGPT로 로그인</);
 });
 
+test("starts a direct Google OAuth flow without a ChatGPT sign-in hop", async () => {
+  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
+  workerUrl.searchParams.set("google-auth-test", `${process.pid}-${Date.now()}`);
+  const { default: worker } = await import(workerUrl.href);
+  const response = await worker.fetch(new Request("https://other-than-works.test/auth/google/start"), {
+    ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) },
+    GOOGLE_CLIENT_ID: "test-client.apps.googleusercontent.com",
+    GOOGLE_CLIENT_SECRET: "test-client-secret",
+    AUTH_SESSION_SECRET: sessionSecret,
+  }, { waitUntil() {}, passThroughOnException() {} });
+  assert.equal(response.status, 302);
+  const location = new URL(response.headers.get("location"));
+  assert.equal(location.origin, "https://accounts.google.com");
+  assert.equal(location.searchParams.get("redirect_uri"), "https://other-than-works.test/auth/google/callback");
+  assert.equal(location.searchParams.get("scope"), "openid email profile");
+  assert.match(response.headers.get("set-cookie") ?? "", /otw_google_oauth_state=/);
+});
+
 test("includes the complete shared MVP, roster, host controls and map assets", async () => {
-  const [page, studio, layout, styles, manifest, serviceWorker, packageJson, communityClient, communityApi, requestAuth, worker, hosting, migration, messageMigration, accountMigration, presetMigration, galleryMigration, classesMigration] = await Promise.all([
+  const [page, studio, layout, styles, manifest, serviceWorker, packageJson, communityClient, communityApi, requestAuth, googleSession, googleOauth, worker, hosting, migration, messageMigration, accountMigration, presetMigration, galleryMigration, classesMigration, googleAuthMigration] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/studio.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
@@ -58,6 +93,8 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
     readFile(new URL("../app/lib/community-client.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/server/api/community-api.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/server/auth/request-auth.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/server/auth/google-session.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/server/auth/google-oauth.ts", import.meta.url), "utf8"),
     readFile(new URL("../worker/index.ts", import.meta.url), "utf8"),
     readFile(new URL("../.openai/hosting.json", import.meta.url), "utf8"),
     readFile(new URL("../drizzle/0000_shared_studio.sql", import.meta.url), "utf8"),
@@ -66,10 +103,12 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
     readFile(new URL("../drizzle/0003_character_presets.sql", import.meta.url), "utf8"),
     readFile(new URL("../drizzle/0004_gallery_visibility.sql", import.meta.url), "utf8"),
     readFile(new URL("../drizzle/0005_classes.sql", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/0006_google_auth.sql", import.meta.url), "utf8"),
   ]);
 
-  assert.match(page, /getChatGPTUser/);
-  assert.match(page, /chatGPTSignInPath/);
+  assert.match(page, /hasGoogleSession/);
+  assert.match(page, /googleSignInPath/);
+  assert.doesNotMatch(page, /ChatGPTSignIn|chatGPTSignIn/);
   assert.match(studio, /visibilitychange/);
   assert.match(studio, /seconds: 300/);
   assert.match(studio, /자유 집중/);
@@ -124,7 +163,15 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(communityApi, /INSERT OR IGNORE INTO students/);
   assert.match(communityApi, /student_already_claimed/);
   assert.match(communityApi, /teacher_note/);
-  assert.match(requestAuth, /oai-authenticated-user-id/);
+  assert.match(requestAuth, /googleSessionFromRequest/);
+  assert.match(requestAuth, /google:\$\{session\.sub\}/);
+  assert.match(googleSession, /HttpOnly; SameSite=Lax/);
+  assert.match(googleSession, /HMAC/);
+  assert.match(googleOauth, /accounts\.google\.com\/o\/oauth2\/v2\/auth/);
+  assert.match(googleOauth, /oauth2\.googleapis\.com\/token/);
+  assert.match(googleOauth, /openidconnect\.googleapis\.com\/v1\/userinfo/);
+  assert.match(studio, /href="\/auth\/logout"/);
+  assert.doesNotMatch(studio, /signout-with-chatgpt/);
   assert.match(worker, /handleCommunityApi/);
   assert.match(hosting, /"d1": "DB"/);
   assert.match(hosting, /"r2": "UPLOADS"/);
@@ -138,6 +185,10 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(galleryMigration, /gallery_hidden/);
   assert.match(classesMigration, /CREATE TABLE `classes`/);
   assert.match(classesMigration, /ADD `class_id`/);
+  assert.match(googleAuthMigration, /auth_provider/);
+  assert.match(googleAuthMigration, /auth_email/);
+  assert.match(communityApi, /auth_provider = 'chatgpt'/);
+  assert.match(communityApi, /UPDATE profiles SET owner_token_hash/);
   assert.match(communityApi, /WHERE s\.gallery_hidden = 0/);
   assert.match(communityApi, /UPDATE work_sessions SET gallery_hidden = 1/);
   assert.match(styles, /preset-grid/);

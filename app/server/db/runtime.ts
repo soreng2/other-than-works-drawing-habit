@@ -8,13 +8,23 @@ import {
   SCHEMA_STATEMENTS,
   STUDENT_CLASS_INDEX,
   STUDENT_CLASS_MIGRATION,
+  STUDENT_AUTH_EMAIL_MIGRATION,
+  STUDENT_AUTH_PROVIDER_MIGRATION,
 } from "../../../db/schema";
 
 const DEFAULT_CLASS_ID = "00000000-0000-5000-8000-000000000001";
 
 export async function ensureDatabase(database: D1Database) {
   await database.batch(SCHEMA_STATEMENTS.map((statement) => database.prepare(statement)));
-  for (const migration of [PROFILE_MESSAGE_MIGRATION, PROFILE_NICKNAME_MIGRATION, PRESENCE_MODE_MIGRATION, CHARACTER_PRESET_MIGRATION, GALLERY_HIDDEN_MIGRATION]) {
+  for (const migration of [
+    PROFILE_MESSAGE_MIGRATION,
+    PROFILE_NICKNAME_MIGRATION,
+    PRESENCE_MODE_MIGRATION,
+    CHARACTER_PRESET_MIGRATION,
+    GALLERY_HIDDEN_MIGRATION,
+    STUDENT_AUTH_PROVIDER_MIGRATION,
+    STUDENT_AUTH_EMAIL_MIGRATION,
+  ]) {
     try {
       await database.prepare(migration).run();
     } catch (error) {

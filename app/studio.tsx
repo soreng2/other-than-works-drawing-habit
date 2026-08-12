@@ -367,7 +367,7 @@ function Enrollment({ snapshot, onComplete }: { snapshot: RosterSnapshot; onComp
               setSaving(false);
             }
           }}>{saving ? "작업실을 준비하는 중…" : "첫 반 만들고 내 작업실 열기"}</button>
-          <a className="signout-link" href="/signout-with-chatgpt?return_to=%2F">다른 계정으로 로그인</a>
+          <a className="signout-link" href="/auth/logout">다른 계정으로 로그인</a>
         </section>
       </main>
     );
@@ -404,7 +404,7 @@ function Enrollment({ snapshot, onComplete }: { snapshot: RosterSnapshot; onComp
             setSaving(false);
           }
         }}>{saving ? "내 작업실과 연결하는 중…" : "다음 · 내 작업실 열기"}</button>
-        <a className="signout-link" href="/signout-with-chatgpt?return_to=%2F">다른 Google 계정으로 로그인</a>
+        <a className="signout-link" href="/auth/logout">다른 Google 계정으로 로그인</a>
       </section>
     </main>
   );
@@ -570,22 +570,9 @@ function ProfileEditor({ profile, onClose, onSave }: { profile: Profile; onClose
           }}
         >{saving ? "친구들에게 알리는 중…" : "공동 작업실에 저장"}</button>
         <p className="device-note">Google 계정에 연결되어 다른 기기에서도 같은 작업실이 열려요.</p>
-        <a className="signout-link" href="/signout-with-chatgpt?return_to=%2F">로그아웃</a>
+        <a className="signout-link" href="/auth/logout">로그아웃</a>
       </section>
     </div>
-  );
-}
-
-function StudioScene({ profile, totalMinutes }: { profile: Profile; totalMinutes: number }) {
-  const lit = totalMinutes >= 10;
-  return (
-    <section className={`studio-scene${lit ? " is-lit" : ""}`} aria-label={`${profile.name}의 개인 작업실`}>
-      <span className="scene-label">{profile.name}의 작업실</span>
-      {lit && <span className="lamp-glow" aria-hidden="true" />}
-      <div className="character-shadow" />
-      <div className="scene-character"><Character profile={profile} /></div>
-      <span className="scene-nameplate">{profile.name}</span>
-    </section>
   );
 }
 

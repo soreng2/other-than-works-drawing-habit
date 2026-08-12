@@ -51,6 +51,8 @@ export const SCHEMA_STATEMENTS = [
     normalized_name TEXT NOT NULL,
     nickname TEXT NOT NULL DEFAULT '',
     auth_user_hash TEXT UNIQUE,
+    auth_provider TEXT NOT NULL DEFAULT 'chatgpt',
+    auth_email TEXT NOT NULL DEFAULT '',
     profile_id TEXT UNIQUE,
     class_id TEXT REFERENCES classes(id),
     created_at INTEGER NOT NULL,
@@ -67,6 +69,8 @@ export const GALLERY_HIDDEN_MIGRATION = "ALTER TABLE work_sessions ADD COLUMN ga
 export const GALLERY_VISIBLE_INDEX = "CREATE INDEX IF NOT EXISTS idx_work_sessions_gallery_visible ON work_sessions(gallery_hidden, completed_at DESC)";
 export const STUDENT_CLASS_MIGRATION = "ALTER TABLE students ADD COLUMN class_id TEXT REFERENCES classes(id)";
 export const STUDENT_CLASS_INDEX = "CREATE INDEX IF NOT EXISTS idx_students_class_id ON students(class_id)";
+export const STUDENT_AUTH_PROVIDER_MIGRATION = "ALTER TABLE students ADD COLUMN auth_provider TEXT NOT NULL DEFAULT 'chatgpt'";
+export const STUDENT_AUTH_EMAIL_MIGRATION = "ALTER TABLE students ADD COLUMN auth_email TEXT NOT NULL DEFAULT ''";
 
 export type ProfileRow = {
   id: string;
@@ -89,6 +93,8 @@ export type StudentRow = {
   legal_name: string;
   nickname: string;
   auth_user_hash: string | null;
+  auth_provider: string;
+  auth_email: string;
   profile_id: string | null;
   class_id: string | null;
 };

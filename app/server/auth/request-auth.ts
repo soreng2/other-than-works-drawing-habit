@@ -1,8 +1,11 @@
+import { googleSessionFromRequest } from "./google-session";
+
 export type RequestUser = {
   userHash: string;
   profileId: string;
   email: string;
   displayName: string;
+  provider: "google";
 };
 
 function hex(bytes: ArrayBuffer) {
@@ -17,22 +20,17 @@ function stableProfileId(digest: string) {
   return `${digest.slice(0, 8)}-${digest.slice(8, 12)}-5${digest.slice(13, 16)}-8${digest.slice(17, 20)}-${digest.slice(20, 32)}`;
 }
 
-function fullName(request: Request) {
-  const encoded = request.headers.get("oai-authenticated-user-full-name");
-  if (!encoded || request.headers.get("oai-authenticated-user-full-name-encoding") !== "percent-encoded-utf-8") return null;
-  try {
-    return decodeURIComponent(encoded);
-  } catch {
-    return null;
-  }
-}
-
-export async function requireRequestUser(request: Request): Promise<RequestUser> {
-  const userId = request.headers.get("oai-authenticated-user-id");
-  const email = request.headers.get("oai-authenticated-user-email");
-  if (!userId || !email) throw new Error("signin_required");
-  const userHash = await sha256(userId);
-  return { userHash, profileId: stableProfileId(userHash), email, displayName: fullName(request) ?? email };
+export async function requireRequestUser(request: Request, sessionSecret: string | undefined): Promise<RequestUser> {
+  const session = await googleSessionFromRequest(request, sessionSecret);
+  if (!session) throw new Error("signin_required");
+  const userHash = await sha256(`google:${session.sub}`);
+  return {
+    userHash,
+    profileId: stableProfileId(userHash),
+    email: session.email,
+    displayName: session.name,
+    provider: "google",
+  };
 }
 
 export async function hashSecret(value: string) {

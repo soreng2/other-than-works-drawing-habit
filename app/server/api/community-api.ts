@@ -3,7 +3,7 @@ import type { ClassRow, PresenceRow, ProfileRow, SessionRow, StudentRow } from "
 import { requireRequestUser, hashSecret, type RequestUser } from "../auth/request-auth";
 import { ensureDatabase } from "../db/runtime";
 
-type CommunityEnv = { DB?: D1Database; UPLOADS?: R2Bucket };
+type CommunityEnv = { DB?: D1Database; UPLOADS?: R2Bucket; AUTH_SESSION_SECRET?: string };
 type Member = StudentRow & { profile_id: string; class_name?: string | null };
 
 const categories = new Set<CategoryKey>(["sketch", "line", "color", "emoticon", "free"]);
@@ -93,7 +93,7 @@ async function setting(database: D1Database, key: string) {
 }
 
 async function memberFor(database: D1Database, auth: RequestUser): Promise<Member> {
-  const member = await database.prepare(`SELECT s.id, s.legal_name, s.nickname, s.auth_user_hash, s.profile_id, s.class_id, c.name AS class_name
+  const member = await database.prepare(`SELECT s.id, s.legal_name, s.nickname, s.auth_user_hash, s.auth_provider, s.auth_email, s.profile_id, s.class_id, c.name AS class_name
     FROM students s LEFT JOIN classes c ON c.id = s.class_id WHERE s.auth_user_hash = ?`)
     .bind(auth.userHash).first<Member>();
   if (!member?.profile_id) throw new Error("membership_required");
@@ -106,17 +106,33 @@ function hostNickname(auth: RequestUser) {
 }
 
 async function ensureAdminMember(database: D1Database, auth: RequestUser): Promise<Member> {
-  const existing = await database.prepare(`SELECT s.id, s.legal_name, s.nickname, s.auth_user_hash, s.profile_id, s.class_id, c.name AS class_name
+  const existing = await database.prepare(`SELECT s.id, s.legal_name, s.nickname, s.auth_user_hash, s.auth_provider, s.auth_email, s.profile_id, s.class_id, c.name AS class_name
     FROM students s LEFT JOIN classes c ON c.id = s.class_id WHERE s.auth_user_hash = ?`)
     .bind(auth.userHash).first<Member>();
   if (existing?.profile_id) return existing as Member;
   const now = Date.now();
+  const previousHost = await database.prepare("SELECT id, profile_id FROM students WHERE normalized_name = '__host__' LIMIT 1")
+    .first<Pick<StudentRow, "id" | "profile_id">>();
+  if (previousHost) {
+    const profileId = previousHost.profile_id || auth.profileId;
+    const statements = [
+      database.prepare(`UPDATE students SET nickname = ?, auth_user_hash = ?, auth_provider = ?, auth_email = ?, profile_id = ?, updated_at = ? WHERE id = ?`)
+        .bind(hostNickname(auth), auth.userHash, auth.provider, auth.email, profileId, now, previousHost.id),
+      database.prepare(`INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`)
+        .bind(ADMIN_KEY, auth.userHash, now),
+    ];
+    if (previousHost.profile_id) statements.push(database.prepare("UPDATE profiles SET owner_token_hash = ?, updated_at = ? WHERE id = ?")
+      .bind(auth.userHash, now, previousHost.profile_id));
+    await database.batch(statements);
+  } else {
   await database.prepare(`INSERT OR IGNORE INTO students
-    (id, legal_name, normalized_name, nickname, auth_user_hash, profile_id, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).bind(
-    crypto.randomUUID(), HOST_MEMBER_LABEL, "__host__", hostNickname(auth), auth.userHash, auth.profileId, now, now,
+    (id, legal_name, normalized_name, nickname, auth_user_hash, auth_provider, auth_email, profile_id, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(
+    crypto.randomUUID(), HOST_MEMBER_LABEL, "__host__", hostNickname(auth), auth.userHash, auth.provider, auth.email, auth.profileId, now, now,
   ).run();
-  const member = await database.prepare(`SELECT s.id, s.legal_name, s.nickname, s.auth_user_hash, s.profile_id, s.class_id, c.name AS class_name
+  }
+  const member = await database.prepare(`SELECT s.id, s.legal_name, s.nickname, s.auth_user_hash, s.auth_provider, s.auth_email, s.profile_id, s.class_id, c.name AS class_name
     FROM students s LEFT JOIN classes c ON c.id = s.class_id WHERE s.auth_user_hash = ?`)
     .bind(auth.userHash).first<Member>();
   if (!member?.profile_id) throw new Error("invalid_roster");
@@ -128,7 +144,7 @@ async function rosterState(database: D1Database, auth: RequestUser, classCode = 
     setting(database, ADMIN_KEY),
     setting(database, CLASS_CODE_KEY),
     setting(database, CLASS_CODE_DISPLAY_KEY),
-    database.prepare(`SELECT s.id, s.legal_name, s.nickname, s.auth_user_hash, s.profile_id, s.class_id, c.name AS class_name
+    database.prepare(`SELECT s.id, s.legal_name, s.nickname, s.auth_user_hash, s.auth_provider, s.auth_email, s.profile_id, s.class_id, c.name AS class_name
       FROM students s LEFT JOIN classes c ON c.id = s.class_id WHERE s.auth_user_hash = ?`)
       .bind(auth.userHash).first<Member>(),
     database.prepare("SELECT id, name, code_display FROM classes WHERE is_active = 1 ORDER BY created_at ASC LIMIT 50")
@@ -189,7 +205,7 @@ async function handleRoster(request: Request, database: D1Database, auth: Reques
     if (!isDesignatedAdmin(auth)) throw new Error("host_only");
     const [adminHash, studentCount] = await Promise.all([
       setting(database, ADMIN_KEY),
-      database.prepare("SELECT COUNT(*) AS count FROM students").first<{ count: number }>(),
+      database.prepare("SELECT COUNT(*) AS count FROM students WHERE normalized_name != '__host__'").first<{ count: number }>(),
     ]);
     if (adminHash || (studentCount?.count ?? 0) > 0) throw new Error("invalid_roster");
     const classCode = String(body.classCode ?? "").trim();
@@ -210,10 +226,10 @@ async function handleRoster(request: Request, database: D1Database, auth: Reques
       database.prepare("INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)").bind(CLASS_CODE_DISPLAY_KEY, classCode, now),
       database.prepare(`INSERT INTO classes (id, name, code_hash, code_display, is_active, created_at, updated_at)
         VALUES (?, ?, ?, ?, 1, ?, ?)`).bind(classId, className, await hashSecret(classCode), classCode, now, now),
-      database.prepare(`INSERT INTO students
-        (id, legal_name, normalized_name, nickname, auth_user_hash, profile_id, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).bind(
-        crypto.randomUUID(), HOST_MEMBER_LABEL, "__host__", hostNickname(auth), auth.userHash, auth.profileId, now, now,
+      database.prepare(`INSERT OR IGNORE INTO students
+        (id, legal_name, normalized_name, nickname, auth_user_hash, auth_provider, auth_email, profile_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(
+        crypto.randomUUID(), HOST_MEMBER_LABEL, "__host__", hostNickname(auth), auth.userHash, auth.provider, auth.email, auth.profileId, now, now,
       ),
       ...names.map((name) => database.prepare("INSERT INTO students (id, legal_name, normalized_name, class_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)")
         .bind(crypto.randomUUID(), name, normalizeName(name), classId, now, now)),
@@ -235,18 +251,33 @@ async function handleRoster(request: Request, database: D1Database, auth: Reques
     if (!selectedClass.code_hash || await hashSecret(classCode) !== selectedClass.code_hash) throw new Error("invalid_class_code");
 
     const now = Date.now();
+    const legacyAccount = await database.prepare(`SELECT id, profile_id FROM students
+      WHERE auth_user_hash IS NOT NULL AND auth_provider = 'chatgpt' AND class_id = ? AND nickname = ?
+      ORDER BY updated_at DESC LIMIT 1`).bind(classId, nickname).first<Pick<StudentRow, "id" | "profile_id">>();
+    if (legacyAccount) {
+      const profileId = legacyAccount.profile_id || auth.profileId;
+      const statements = [
+        database.prepare(`UPDATE students SET legal_name = ?, normalized_name = ?, nickname = ?, auth_user_hash = ?,
+          auth_provider = ?, auth_email = ?, profile_id = ?, updated_at = ? WHERE id = ?`)
+          .bind(nickname, `account-${auth.userHash}`, nickname, auth.userHash, auth.provider, auth.email, profileId, now, legacyAccount.id),
+      ];
+      if (legacyAccount.profile_id) statements.push(database.prepare("UPDATE profiles SET owner_token_hash = ?, updated_at = ? WHERE id = ?")
+        .bind(auth.userHash, now, legacyAccount.profile_id));
+      await database.batch(statements);
+      return Response.json(await rosterState(database, auth));
+    }
     const reclaim = await database.prepare(`SELECT id, profile_id FROM students
       WHERE auth_user_hash IS NULL AND class_id = ? AND nickname = ? AND normalized_name LIKE 'reclaim-%'
       ORDER BY updated_at DESC LIMIT 1`).bind(classId, nickname).first<Pick<StudentRow, "id" | "profile_id">>();
     if (reclaim) {
       await database.prepare(`UPDATE students SET legal_name = ?, normalized_name = ?, nickname = ?, auth_user_hash = ?,
-        profile_id = ?, updated_at = ? WHERE id = ?`)
-        .bind(nickname, `account-${auth.userHash}`, nickname, auth.userHash, reclaim.profile_id || auth.profileId, now, reclaim.id).run();
+        auth_provider = ?, auth_email = ?, profile_id = ?, updated_at = ? WHERE id = ?`)
+        .bind(nickname, `account-${auth.userHash}`, nickname, auth.userHash, auth.provider, auth.email, reclaim.profile_id || auth.profileId, now, reclaim.id).run();
     } else {
       await database.prepare(`INSERT INTO students
-        (id, legal_name, normalized_name, nickname, auth_user_hash, profile_id, class_id, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .bind(crypto.randomUUID(), nickname, `account-${auth.userHash}`, nickname, auth.userHash, auth.profileId, classId, now, now).run();
+        (id, legal_name, normalized_name, nickname, auth_user_hash, auth_provider, auth_email, profile_id, class_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .bind(crypto.randomUUID(), nickname, `account-${auth.userHash}`, nickname, auth.userHash, auth.provider, auth.email, auth.profileId, classId, now, now).run();
     }
     return Response.json(await rosterState(database, auth));
   }
@@ -265,8 +296,8 @@ async function handleRoster(request: Request, database: D1Database, auth: Reques
       .bind(studentId).first<Pick<StudentRow, "profile_id">>();
     if (!selected) throw new Error("student_already_claimed");
     const profileId = selected.profile_id || auth.profileId;
-    const result = await database.prepare(`UPDATE students SET nickname = ?, auth_user_hash = ?, profile_id = ?, updated_at = ?
-      WHERE id = ? AND auth_user_hash IS NULL`).bind(nickname, auth.userHash, profileId, Date.now(), studentId).run();
+    const result = await database.prepare(`UPDATE students SET nickname = ?, auth_user_hash = ?, auth_provider = ?, auth_email = ?, profile_id = ?, updated_at = ?
+      WHERE id = ? AND auth_user_hash IS NULL`).bind(nickname, auth.userHash, auth.provider, auth.email, profileId, Date.now(), studentId).run();
     if (!result.meta.changes) throw new Error("student_already_claimed");
     return Response.json(await rosterState(database, auth));
   }
@@ -338,7 +369,7 @@ async function handleRoster(request: Request, database: D1Database, auth: Reques
       .bind(studentId).first<Pick<StudentRow, "id" | "profile_id">>();
     if (!student) throw new Error("invalid_roster");
     const statements = [
-      database.prepare("UPDATE students SET auth_user_hash = NULL, normalized_name = ?, updated_at = ? WHERE id = ?")
+      database.prepare("UPDATE students SET auth_user_hash = NULL, auth_provider = 'none', auth_email = '', normalized_name = ?, updated_at = ? WHERE id = ?")
         .bind(`reclaim-${student.id}`, Date.now(), student.id),
     ];
     if (student.profile_id) statements.push(database.prepare("DELETE FROM presence WHERE profile_id = ?").bind(student.profile_id));
@@ -551,7 +582,7 @@ export async function handleCommunityApi(request: Request, env: CommunityEnv) {
     if (!env.DB) throw new Error("database_binding_missing");
     if (!env.UPLOADS) throw new Error("uploads_binding_missing");
     await ensureDatabase(env.DB);
-    const auth = await requireRequestUser(request);
+    const auth = await requireRequestUser(request, env.AUTH_SESSION_SECRET);
     const pathname = new URL(request.url).pathname;
     if (pathname === "/api/roster") return handleRoster(request, env.DB, auth);
     const member = await memberFor(env.DB, auth);
