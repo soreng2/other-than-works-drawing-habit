@@ -839,3 +839,594 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, label:has(inp
   .focus-character .character-image { width: 140px; height: 140px; }
   .focus-controls { padding: 14px; }
 }
+
+/*
+ * OTW card-news design system.
+ * White and cool blue are the canvas, lime is encouragement, and cobalt marks
+ * the next action. Warm cream is reserved for tiny illustrated props only.
+ */
+:root {
+  --paper: #eaf2fb;
+  --paper-deep: #eff7cf;
+  --ink: #17191b;
+  --green: #52a45c;
+  --moss: #4a9756;
+  --sage: #cfe7a7;
+  --blue: #4b75d1;
+  --apricot: #ff947a;
+  --pink: #f0a9b8;
+  --line: #17191b;
+  --white: #ffffff;
+  --shadow: none;
+  --otw-blue: #3270ce;
+  --otw-sky: #eaf2fb;
+  --otw-lime: #eff7cf;
+  --otw-gray: #f4f5f6;
+  --otw-coral: #ff947a;
+}
+
+html,
+body { background: #dfeaf7; }
+body::before { content: none; }
+body,
+button,
+input,
+textarea { color: var(--ink); }
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+label:has(input:focus-visible) { outline: 3px solid rgba(50,112,206,.34); }
+
+.eyebrow { color: var(--otw-blue); font-weight: 900; letter-spacing: .1em; }
+.subtle,
+.section-description,
+.village-heading p,
+.village-heading b,
+.focus-page-heading > span,
+.records-management-heading > span { color: #626971; }
+
+.app-shell {
+  border-color: var(--ink);
+  background: var(--otw-sky);
+}
+.app-content { background: var(--otw-sky); }
+.panel-stack,
+.village-home,
+.focus-page { background: transparent; }
+
+.brand-bar {
+  border-bottom: 2px solid var(--ink);
+  background: rgba(255,255,255,.98);
+  backdrop-filter: none;
+}
+.brand-mark {
+  width: 34px;
+  height: 30px;
+  border: 0;
+  border-radius: 6px;
+  color: #fff;
+  background: var(--ink);
+  box-shadow: none;
+}
+.brand-bar .profile-chip {
+  border: 1.5px solid var(--ink);
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: none;
+}
+.profile-chip small,
+.profile-chip em { color: #6a7078; }
+
+.paper-card,
+.signin-card,
+.enrollment-card,
+.onboarding-card,
+.session-row,
+.empty-state,
+.modal {
+  border: 1.5px solid var(--ink);
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: none;
+}
+.paper-card { padding: 18px; }
+
+.primary-button,
+.secondary-button,
+.signin-button,
+.finish-button {
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: none;
+}
+.primary-button,
+.signin-button {
+  color: #fff;
+  background: var(--otw-blue);
+}
+.secondary-button,
+.finish-button {
+  color: var(--ink);
+  background: var(--otw-lime);
+}
+.primary-button:active,
+.secondary-button:active { transform: translateY(1px); }
+.primary-button:disabled {
+  border-color: #8d9299;
+  color: #f7f8fa;
+  background: #a8afb8;
+}
+
+.text-input,
+.completion-modal textarea,
+.enrollment-card textarea,
+.teacher-note textarea,
+.roster-manager textarea,
+.focus-note input {
+  border: 1.5px solid var(--ink);
+  border-radius: 5px;
+  background: #fff;
+}
+.text-input::placeholder,
+textarea::placeholder { color: #8a9098; }
+
+.signin-shell,
+.enrollment-shell,
+.onboarding-shell {
+  background: linear-gradient(180deg, var(--otw-sky) 0 58%, var(--otw-lime) 58% 100%);
+}
+.signin-card,
+.enrollment-card,
+.onboarding-card { border-width: 2px; }
+.student-results button,
+.preset-grid button,
+.class-choice-grid button {
+  border: 1.5px solid var(--ink);
+  border-radius: 5px;
+  background: #fff;
+}
+.student-results button.selected,
+.preset-grid button.selected,
+.class-choice-grid button.selected {
+  border: 2px solid var(--ink);
+  background: var(--otw-lime);
+  box-shadow: none;
+}
+.enrollment-step > b,
+.onboarding-promise > span {
+  border-color: var(--ink);
+  color: #fff;
+  background: var(--otw-blue);
+  box-shadow: none;
+}
+.character-nameplate {
+  border-color: var(--ink);
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.category-pill {
+  border-color: var(--ink);
+  border-radius: 5px;
+  background: #fff;
+}
+.category-pill.active {
+  border-color: var(--ink);
+  color: #fff;
+  background: var(--otw-blue);
+  box-shadow: none;
+}
+.timer-presets {
+  border-color: var(--ink);
+  border-radius: 5px;
+  background: var(--otw-gray);
+}
+.timer-presets button { border-right-color: var(--ink); }
+.timer-presets button.active {
+  color: var(--ink);
+  background: var(--otw-lime);
+}
+
+.village-heading span,
+.today-count b { color: var(--otw-blue); }
+.village-map {
+  border-color: var(--ink);
+  border-radius: 8px;
+  background: #dceafa;
+  box-shadow: none;
+}
+.village-map > img {
+  opacity: .91;
+  filter: saturate(.88) brightness(1.035) contrast(.97);
+}
+.village-map::after,
+.together-map::after,
+.gallery-map::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(222,235,250,.2);
+  mix-blend-mode: color;
+}
+.village-hotspot {
+  border-color: var(--ink);
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: none;
+}
+.village-studio { background: #e6effd; }
+.village-gallery { background: #f3f4f6; }
+.village-clock { background: var(--otw-lime); }
+
+.private-focus {
+  border-color: var(--ink);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: none;
+}
+.focus-ribbon {
+  color: var(--ink);
+  background: var(--otw-coral);
+  box-shadow: none;
+}
+.focus-ribbon::before,
+.focus-ribbon::after { background: #ea806b; }
+.focus-desk-scene { background: var(--otw-sky); }
+.focus-room-back { background: linear-gradient(180deg, #fff 0 66%, #dfeafb 66%); }
+.focus-table-edge { background: #d9e6f8; }
+.focus-chair { background: var(--otw-coral); }
+.focus-tablet { background: #aeb4bd; }
+.focus-controls {
+  border-top-color: var(--ink);
+  background: #fff;
+}
+.focus-title i {
+  border-color: var(--ink);
+  border-radius: 5px;
+  color: var(--ink);
+  background: var(--otw-lime);
+}
+.focus-clock {
+  background: conic-gradient(var(--otw-blue) var(--timer-progress), #e1eaf6 0);
+  box-shadow: none;
+}
+.focus-clock::before { background: #fff; }
+.focus-note input:focus { box-shadow: 3px 3px 0 var(--otw-blue); }
+.focus-note input:disabled { background: var(--otw-gray); }
+
+.message-composer,
+.calendar-card,
+.journey-card { background: #fff; }
+.live-orbit,
+.quiet-rule,
+.news-card,
+.mission-card { background: var(--otw-lime); }
+.teacher-note { background: #e6effd; }
+.teacher-note > span {
+  border-radius: 6px;
+  color: #fff;
+  background: var(--otw-blue);
+}
+.journey-row.open > span,
+.days span.worked {
+  color: #fff;
+  background: var(--otw-blue);
+}
+.progress-track { border-color: var(--ink); background: #fff; }
+.progress-track i { background: var(--otw-blue); }
+.progress-track.orange i { background: var(--green); }
+
+.together-map {
+  border-color: var(--ink);
+  border-radius: 8px;
+  background-color: #dceafa;
+  box-shadow: none;
+}
+.together-map .floating-name,
+.together-map .map-speech,
+.map-area-label {
+  border-color: var(--ink);
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: none;
+}
+.together-map .map-speech.personal { color: #245dab; background: var(--otw-lime); }
+.together-map .map-friend.working .map-desk > span { background: #d8e5f7; }
+.together-map .map-friend.working .map-desk > i { background: var(--otw-blue); }
+.map-strip-hint { color: #536c91; }
+
+.news-card,
+.calendar-card,
+.mission-card,
+.teacher-note,
+.journey-card { border-radius: 7px; }
+.award-row > span {
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  color: var(--otw-blue);
+  background: #fff;
+}
+.calendar-card { background: #fff; }
+.days span.today { background: var(--otw-gray); }
+.session-row img { border-radius: 4px; }
+.session-row > i { color: var(--ink); background: var(--otw-lime); }
+
+.gallery-heading > span,
+.gallery-room-pager button {
+  border-color: var(--ink);
+  border-radius: 5px;
+  color: var(--ink);
+  background: var(--otw-lime);
+}
+.gallery-map {
+  border-color: var(--ink);
+  border-radius: 8px;
+  background-color: #edf3fb;
+}
+.gallery-frame-art img { background: #fff; }
+.gallery-frame-art.selected { outline-color: var(--otw-blue); }
+.gallery-visitor > span,
+.gallery-map-empty,
+.gallery-caption {
+  border-color: var(--ink);
+  border-radius: 5px;
+  background: #fff;
+}
+.gallery-caption > img { border-radius: 4px; }
+.gallery-invite {
+  border: 1.5px solid var(--ink);
+  border-radius: 5px;
+  color: var(--ink);
+  background: var(--otw-lime);
+}
+
+.roster-manager { background: #fff; }
+.class-code-manager,
+.class-manager-list > article {
+  border-color: var(--ink);
+  border-radius: 5px;
+  background: var(--otw-lime);
+}
+.class-code-display code,
+.class-code-display button,
+.class-code-update button,
+.new-class-form .primary-button,
+.roster-list article,
+.roster-list article button {
+  border-radius: 5px;
+}
+.class-code-display button,
+.class-code-update button { color: #fff; background: var(--otw-blue); }
+.roster-list article > span { background: #e5effd; }
+.records-management { border-top-color: var(--ink); }
+
+.modal { background: var(--otw-sky); }
+.artwork-picker,
+.template-preview,
+.guide-list {
+  border-color: var(--ink);
+  border-radius: 6px;
+  background: #fff;
+}
+.bottom-nav {
+  border-top: 2px solid var(--ink);
+  background: rgba(255,255,255,.98);
+  backdrop-filter: none;
+}
+.bottom-nav button { color: #727880; }
+.bottom-nav button.active { color: var(--otw-blue); }
+.bottom-nav button.active span {
+  width: 15px;
+  height: 3px;
+  border-radius: 0;
+  background: var(--otw-blue);
+}
+.connection-banner {
+  color: var(--ink);
+  background: var(--otw-lime);
+  border-bottom: 1.5px solid var(--ink);
+}
+
+/* Generated illustration layers replace the earlier CSS-built focus props. */
+.focus-ribbon {
+  width: min(82%, 370px);
+  height: 64px;
+  display: grid;
+  place-items: center;
+  margin: 8px auto -17px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.focus-ribbon::before,
+.focus-ribbon::after { content: none; }
+.focus-ribbon img { position: absolute; z-index: 0; width: 100%; height: 100%; object-fit: contain; }
+.focus-ribbon span { position: relative; z-index: 1; padding-bottom: 4px; color: #17191b; font-size: 14px; font-weight: 950; text-shadow: 0 1px 0 rgba(255,255,255,.25); }
+.focus-desk-scene { aspect-ratio: 1; background: #f7fbff; }
+.focus-room-back {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  background: #fff;
+}
+.focus-room-back::after { content: none; }
+.focus-chair {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 37%;
+  width: 38%;
+  height: 45%;
+  object-fit: contain;
+  transform: translate(-50%, -50%);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.focus-character {
+  z-index: 3;
+  top: 42%;
+  width: 45%;
+  height: 45%;
+}
+.focus-character .character-image,
+.focus-character .focus-preset { width: 100%; height: 100%; object-fit: contain; }
+.focus-character .character-image.custom { width: 86%; height: 86%; }
+.focus-desk-front {
+  position: absolute;
+  z-index: 4;
+  inset: auto 0 0;
+  width: 100%;
+  height: 61%;
+  display: block;
+  object-fit: contain;
+  object-position: center bottom;
+  pointer-events: none;
+}
+
+/* The village itself is the landing experience: note, mission, and destinations live in the map. */
+.village-me {
+  position: absolute;
+  z-index: 8;
+  left: 48%;
+  top: 72%;
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.village-me .character-image { width: 52px; height: 52px; object-fit: contain; }
+.village-teacher-speech {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% - 3px);
+  width: 142px;
+  max-height: 50px;
+  display: -webkit-box;
+  overflow: hidden;
+  padding: 7px 9px;
+  transform: translateX(-50%);
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  color: var(--ink);
+  background: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.village-teacher-speech::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 9px;
+  height: 9px;
+  transform: translateX(-50%) rotate(45deg);
+  border-right: 1.5px solid var(--ink);
+  border-bottom: 1.5px solid var(--ink);
+  background: #fff;
+}
+.village-mission-board {
+  position: absolute;
+  z-index: 9;
+  left: 6%;
+  bottom: 4%;
+  width: 42%;
+  display: grid;
+  gap: 2px;
+  padding: 8px 9px;
+  border: 1.5px solid var(--ink);
+  border-radius: 5px;
+  color: var(--ink);
+  background: var(--otw-lime);
+  text-align: left;
+  cursor: pointer;
+}
+.village-mission-board small { color: var(--otw-blue); font-size: 6px; font-weight: 950; letter-spacing: .08em; }
+.village-mission-board b { overflow: hidden; font-size: 9px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.village-mission-board span { color: #646b73; font-size: 6.5px; font-weight: 800; }
+
+/* Two-floor gallery with responsive frameless art, wire hanging, and partition shadows. */
+.gallery-map {
+  background: #cbd9e7 url("/gallery-room-2f.png") center / cover no-repeat;
+}
+.gallery-map::after { content: none; }
+.gallery-folder-statue {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  top: 70.5%;
+  width: 32%;
+  max-height: 27%;
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+  pointer-events: none;
+}
+.gallery-frame-art {
+  display: grid;
+  place-items: center;
+  overflow: visible;
+  background: transparent;
+}
+.gallery-frame-art img {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  background: transparent;
+  filter: drop-shadow(0 5px 4px rgba(23,25,27,.22));
+}
+.gallery-frame-art.art-wire::before,
+.gallery-frame-art.art-wire::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  top: -23%;
+  width: 1.5px;
+  height: 28%;
+  background: var(--ink);
+}
+.gallery-frame-art.art-wire::before { left: 22%; transform: rotate(5deg); transform-origin: bottom; }
+.gallery-frame-art.art-wire::after { right: 22%; transform: rotate(-5deg); transform-origin: bottom; }
+.gallery-frame-art.art-partition img { filter: drop-shadow(0 7px 5px rgba(23,25,27,.26)); }
+.gallery-frame-art.selected { outline: 0; }
+.gallery-frame-art.selected img { outline: 2px solid var(--otw-blue); outline-offset: 3px; }
+
+/* Keep every preset's own clear PNG color instead of dull hue filters. */
+.character-image.official.preset-sky,
+.character-image.official.preset-moss,
+.character-image.official.preset-apricot,
+.character-image.official.preset-rose,
+.character-image.official.preset-violet,
+.character-image.official.preset-lemon {
+  filter: saturate(1.12) contrast(1.04) drop-shadow(0 4px 0 rgba(0,0,0,.08)) !important;
+}
+.focus-character .focus-preset.preset-sky { filter: saturate(1.18) contrast(1.04) drop-shadow(0 4px 0 rgba(0,0,0,.1)) !important; }
+.focus-character .focus-preset.preset-moss { filter: hue-rotate(66deg) saturate(1.12) brightness(1.05) contrast(1.04) drop-shadow(0 4px 0 rgba(0,0,0,.1)) !important; }
+.focus-character .focus-preset.preset-apricot { filter: hue-rotate(164deg) saturate(1.2) brightness(1.08) contrast(1.04) drop-shadow(0 4px 0 rgba(0,0,0,.1)) !important; }
+.focus-character .focus-preset.preset-rose { filter: hue-rotate(108deg) saturate(1.18) brightness(1.07) contrast(1.04) drop-shadow(0 4px 0 rgba(0,0,0,.1)) !important; }
+.focus-character .focus-preset.preset-violet { filter: hue-rotate(34deg) saturate(1.16) brightness(1.04) contrast(1.04) drop-shadow(0 4px 0 rgba(0,0,0,.1)) !important; }
+.focus-character .focus-preset.preset-lemon { filter: hue-rotate(190deg) saturate(1.18) brightness(1.12) contrast(1.04) drop-shadow(0 4px 0 rgba(0,0,0,.1)) !important; }
+
+@media (min-width: 700px) {
+  .village-teacher-speech { width: 180px; padding: 8px 11px; font-size: 10px; }
+  .village-mission-board b { font-size: 11px; }
+  .village-mission-board span { font-size: 8px; }
+}

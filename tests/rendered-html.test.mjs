@@ -119,7 +119,8 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(studio, /이번 집중에 할 일/);
   assert.match(studio, /otw-village\.png/);
   assert.match(studio, /focus-desk-front/);
-  assert.match(studio, /apple-mark/);
+  assert.match(studio, /focus-desk-front\.png/);
+  assert.match(studio, /focus-ribbon\.png/);
   assert.match(styles, /\.focus-room-back[\s\S]*?z-index: 1/);
   assert.match(styles, /\.focus-chair[\s\S]*?z-index: 2/);
   assert.match(styles, /\.focus-character[\s\S]*?z-index: 3/);
@@ -138,7 +139,9 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(studio, /\["records", roster\?\.isAdmin \? "기록·관리" : "기록"\]/);
   assert.match(studio, /GalleryPanel/);
   assert.match(studio, /galleryFrameSpots/);
-  assert.match(studio, /\{ x: 76\.6, y: 44\.6, width: 16\.2, height: 19\.5 \}/);
+  assert.match(studio, /surface: "partition"/);
+  assert.match(studio, /GalleryArtwork/);
+  assert.match(studio, /naturalWidth/);
   assert.match(studio, /GalleryVisitor/);
   assert.match(studio, /전시에서 내리기/);
   assert.match(studio, /MissionPanel/);
@@ -199,7 +202,7 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(styles, /preset-grid/);
   assert.match(styles, /studio-room\.jpg/);
   assert.match(styles, /shared-lounge\.png/);
-  assert.match(styles, /gallery-room\.png/);
+  assert.match(styles, /gallery-room-2f\.png/);
   assert.match(styles, /\.gallery-frame-art img[\s\S]*?object-fit: contain/);
   assert.match(styles, /timer-presets/);
   assert.match(styles, /\.focus-page/);
@@ -241,6 +244,12 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   await access(new URL("../public/shared-studio.jpg", import.meta.url));
   await access(new URL("../public/shared-lounge.png", import.meta.url));
   await access(new URL("../public/gallery-room.png", import.meta.url));
+  await access(new URL("../public/gallery-room-2f.png", import.meta.url));
+  await access(new URL("../public/gallery-folder-statue.png", import.meta.url));
+  await access(new URL("../public/focus-room-backdrop.png", import.meta.url));
+  await access(new URL("../public/focus-chair.png", import.meta.url));
+  await access(new URL("../public/focus-desk-front.png", import.meta.url));
+  await access(new URL("../public/focus-ribbon.png", import.meta.url));
   for (const color of ["blue", "green", "orange", "pink", "purple", "yellow"]) {
     await access(new URL(`../public/folder-${color}.png`, import.meta.url));
   }

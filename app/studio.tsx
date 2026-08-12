@@ -579,16 +579,18 @@ function ProfileEditor({ profile, onClose, onSave }: { profile: Profile; onClose
 function HomePanel({
   profile,
   sessions,
+  teacherNote,
   onNavigate,
 }: {
   profile: Profile;
   sessions: WorkSession[];
+  teacherNote: string;
   onNavigate: (tab: TabKey) => void;
 }) {
   const totalMinutes = sessions.reduce((sum, session) => sum + minutesFor(session.seconds), 0);
   const todayMinutes = sessions.filter((session) => isSameDay(new Date(session.completedAt), new Date())).reduce((sum, session) => sum + minutesFor(session.seconds), 0);
+  const missionProgress = sessions.filter((session) => session.category === "sketch" && isThisWeek(new Date(session.completedAt))).length;
   const villageFriends = [
-    { id: "village-me", profile, x: 48, y: 70, delay: "-1.2s" },
     { id: "village-green", profile: { name: "green", characterPreset: "moss" as CharacterPresetKey }, x: 23, y: 76, delay: "-3.8s" },
     { id: "village-orange", profile: { name: "orange", characterPreset: "apricot" as CharacterPresetKey }, x: 76, y: 75, delay: "-5.4s" },
   ];
@@ -605,6 +607,8 @@ function HomePanel({
         <button className="village-hotspot village-studio" type="button" onClick={() => onNavigate("together")}><span>아더댄웍스</span><small>친구들과 작업하기</small></button>
         <button className="village-hotspot village-gallery" type="button" onClick={() => onNavigate("gallery")}><span>전시장</span><small>그림 보러 가기</small></button>
         <button className="village-hotspot village-clock" type="button" onClick={() => onNavigate("focus")}><span>집중 시계</span><small>지금부터 집중 시작!</small></button>
+        <button className="village-mission-board" type="button" onClick={() => onNavigate("records")}><small>이번 주 미션</small><b>못생긴 첫 스케치 3번</b><span>{Math.min(missionProgress, 3)} / 3 · 눌러서 확인</span></button>
+        <span className="village-me"><span className="village-teacher-speech">{teacherNote}</span><Character profile={profile} /></span>
         {villageFriends.map((friend) => <span className="village-walker" style={{ "--walker-x": `${friend.x}%`, "--walker-y": `${friend.y}%`, "--walker-delay": friend.delay } as CSSProperties} key={friend.id}><Character profile={friend.profile} /></span>)}
       </section>
 
@@ -650,12 +654,12 @@ function FocusPanel({
       <header className="focus-page-heading"><p className="eyebrow">MY FOCUS ROOM</p><h2>그림에만 머무는 시간</h2><span>앱을 벗어나면 타이머가 잠시 멈춰요.</span></header>
 
       <section className={`private-focus${running ? " is-running" : ""}`} id="focus-room">
-        <div className="focus-ribbon">지금부터 집중 시작!</div>
+        <div className="focus-ribbon"><img src="/focus-ribbon.png" alt="" /><span>지금부터 집중 시작!</span></div>
         <div className="focus-desk-scene">
-          <div className="focus-room-back" aria-hidden="true"><span className="focus-lamp" /><span className="focus-wall-art" /><span className="focus-plant" /></div>
-          <div className="focus-chair" aria-hidden="true" />
+          <img className="focus-room-back" src="/focus-room-backdrop.png" alt="" aria-hidden="true" />
+          <img className="focus-chair" src="/focus-chair.png" alt="" aria-hidden="true" />
           <div className="focus-character"><FocusCharacter profile={profile} /></div>
-          <div className="focus-desk-front" aria-hidden="true"><span className="focus-tablet"><i className="apple-mark">●</i></span><span className="focus-table-edge" /><span className="focus-pencil-cup" /><span className="focus-notebook" /></div>
+          <img className="focus-desk-front" src="/focus-desk-front.png" alt="" aria-hidden="true" />
           <span className="focus-blink" aria-hidden="true" />
         </div>
 
@@ -884,19 +888,48 @@ function RecordsPanel({ sessions, teacherNote, isHost, students, classes, onTeac
 }
 
 const galleryFrameSpots = [
-  { x: 7.2, y: 18.2, width: 16.1, height: 19.6 },
-  { x: 30.2, y: 18.2, width: 16.5, height: 19.6 },
-  { x: 53.3, y: 18.2, width: 16.5, height: 19.6 },
-  { x: 76.6, y: 18.2, width: 16.2, height: 19.6 },
-  { x: 7.2, y: 44.6, width: 16.1, height: 19.5 },
-  { x: 30.2, y: 44.6, width: 16.5, height: 19.5 },
-  { x: 53.3, y: 44.6, width: 16.5, height: 19.5 },
-  { x: 76.6, y: 44.6, width: 16.2, height: 19.5 },
+  { x: 8, y: 13, width: 17, height: 21, surface: "wall" },
+  { x: 31, y: 12, width: 17, height: 22, surface: "wall" },
+  { x: 54, y: 13, width: 17, height: 21, surface: "wall" },
+  { x: 77, y: 12, width: 17, height: 22, surface: "wall" },
+  { x: 4, y: 63, width: 13, height: 18, surface: "partition" },
+  { x: 25, y: 61, width: 15, height: 19, surface: "wall" },
+  { x: 61, y: 61, width: 15, height: 19, surface: "wall" },
+  { x: 83, y: 63, width: 13, height: 18, surface: "partition" },
 ] as const;
 
 const galleryVisitorSpots = [
   { x: 22, y: 84, move: 18 }, { x: 43, y: 89, move: -22 }, { x: 64, y: 83, move: 16 }, { x: 81, y: 90, move: -14 },
 ] as const;
+
+type GalleryFrameSpot = (typeof galleryFrameSpots)[number];
+type ArtworkShape = "portrait" | "square" | "landscape";
+
+function GalleryArtwork({ piece, spot, selected, onSelect }: {
+  piece: SharedArtwork;
+  spot: GalleryFrameSpot;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const [shape, setShape] = useState<ArtworkShape>("square");
+  const widthFactor = shape === "landscape" ? 1.23 : shape === "portrait" ? .76 : .95;
+  const heightFactor = shape === "landscape" ? .7 : shape === "portrait" ? 1.1 : .94;
+  const presentation = spot.surface === "partition" ? "shadow" : stringSeed(piece.id) % 2 ? "wire" : "shadow";
+  const style = {
+    "--frame-x": `${spot.x}%`,
+    "--frame-y": `${spot.y}%`,
+    "--frame-width": `${spot.width * widthFactor}%`,
+    "--frame-height": `${spot.height * heightFactor}%`,
+  } as CSSProperties;
+  return (
+    <button className={`gallery-frame-art art-${spot.surface} art-${presentation} art-shape-${shape}${selected ? " selected" : ""}`} style={style} type="button" onClick={onSelect} aria-label={`${piece.artist}의 작품 보기`}>
+      <img src={piece.artworkDataUrl} alt="" onLoad={(event) => {
+        const ratio = event.currentTarget.naturalWidth / Math.max(1, event.currentTarget.naturalHeight);
+        setShape(ratio > 1.18 ? "landscape" : ratio < .84 ? "portrait" : "square");
+      }} />
+    </button>
+  );
+}
 
 function GalleryVisitor({ friend, index }: { friend: MapMember; index: number }) {
   const spot = galleryVisitorSpots[index % galleryVisitorSpots.length];
@@ -952,12 +985,10 @@ function GalleryPanel({ profile, sessions, sharedGallery, activeFriends, isHost,
       <header className="section-header gallery-heading"><div><p className="eyebrow">OTHER THAN WORKS GALLERY</p><h2>우리가 시작한 그림들</h2></div><span>{sharedGallery.length}점 전시 중</span></header>
       <p className="section-description">완성도 대신 오늘 남긴 흔적을 걸어요. 액자를 누르면 작품 이야기를 볼 수 있어요.</p>
       <section className="gallery-map" aria-label="수강생 그림이 액자에 걸린 공동 전시장">
+        <img className="gallery-folder-statue" src="/gallery-folder-statue.png" alt="아더댄웍스 폴더 친구 동상" />
         {artworks.map((piece, index) => {
           const spot = galleryFrameSpots[index];
-          const style = {
-            "--frame-x": `${spot.x}%`, "--frame-y": `${spot.y}%`, "--frame-width": `${spot.width}%`, "--frame-height": `${spot.height}%`,
-          } as CSSProperties;
-          return <button className={`gallery-frame-art${selected?.id === piece.id ? " selected" : ""}`} style={style} type="button" key={piece.id} onClick={() => setSelectedId(piece.id)} aria-label={`${piece.artist}의 작품 보기`}><img src={piece.artworkDataUrl} alt="" /></button>;
+          return <GalleryArtwork piece={piece} spot={spot} selected={selected?.id === piece.id} onSelect={() => setSelectedId(piece.id)} key={piece.id} />;
         })}
         <div className="gallery-visitors">{visitors.map((friend, index) => <GalleryVisitor friend={friend} index={index} key={friend.id} />)}</div>
         {!artworks.length && <p className="gallery-map-empty">첫 그림을 기다리는 빈 전시장이에요.</p>}
@@ -1427,7 +1458,7 @@ export default function Home() {
       </header>
       {connectionMessage && <div className="connection-banner">{connectionMessage}</div>}
       <div className="app-content">
-        {tab === "home" && <HomePanel profile={profile} sessions={sessions} onNavigate={setTab} />}
+        {tab === "home" && <HomePanel profile={profile} sessions={sessions} teacherNote={teacherNote} onNavigate={setTab} />}
         {tab === "focus" && <FocusPanel profile={profile} elapsed={elapsed} timerTarget={timerTarget} running={running} category={category} focusNote={focusNote} pauseNotice={pauseNotice} onCategory={setCategory} onFocusNote={setFocusNote} onTimerTarget={(target) => { if (!running && elapsed === 0) { setTimerTarget(target); goalReached.current = false; } }} onToggle={toggleTimer} onFinish={openFinish} onReset={resetTimer} />}
         {tab === "together" && <TogetherPanel profile={profile} activeFriends={activeFriends} running={running} elapsed={elapsed} category={category} clock={clock} onMessage={saveMessage} />}
         {tab === "records" && <RecordsPanel sessions={sessions} teacherNote={teacherNote} isHost={Boolean(roster?.isAdmin)} students={roster?.students ?? []} classes={roster?.classes ?? []} onTeacherNote={saveTeacherNote} onClassCode={saveClassCode} onAddClass={addClass} onResetStudent={resetStudent} onRemoveStudent={removeStudent} />}
