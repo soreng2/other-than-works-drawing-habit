@@ -173,25 +173,43 @@ async function validateCharacter(file: File): Promise<string> {
   sourceContext.drawImage(image, 0, 0);
   const pixels = sourceContext.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height).data;
   let transparentPixelFound = false;
-  const sampleStep = Math.max(4, Math.floor(pixels.length / 200_000 / 4) * 4);
-  for (let index = 3; index < pixels.length; index += sampleStep) {
-    if (pixels[index] < 250) {
-      transparentPixelFound = true;
-      break;
+  let minX = sourceCanvas.width;
+  let minY = sourceCanvas.height;
+  let maxX = -1;
+  let maxY = -1;
+  const scanStride = Math.max(1, Math.ceil(Math.max(sourceCanvas.width, sourceCanvas.height) / 2048));
+  for (let y = 0; y < sourceCanvas.height; y += scanStride) {
+    for (let x = 0; x < sourceCanvas.width; x += scanStride) {
+      const alpha = pixels[(y * sourceCanvas.width + x) * 4 + 3];
+      if (alpha < 250) transparentPixelFound = true;
+      if (alpha > 24) {
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
     }
   }
   if (!transparentPixelFound) {
     throw new Error("배경이 투명한 PNG로 저장해 주세요.");
+  }
+  if (maxX < minX || maxY < minY) {
+    throw new Error("캐릭터가 보이는 PNG로 올려주세요.");
   }
   const canvas = document.createElement("canvas");
   canvas.width = 1024;
   canvas.height = 1024;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("이미지를 확인하지 못했어요.");
-  const scale = 900 / Math.max(image.naturalWidth, image.naturalHeight);
-  const width = image.naturalWidth * scale;
-  const height = image.naturalHeight * scale;
-  context.drawImage(image, (1024 - width) / 2, (1024 - height) / 2, width, height);
+  const sourceX = Math.max(0, minX - scanStride);
+  const sourceY = Math.max(0, minY - scanStride);
+  const sourceWidth = Math.min(sourceCanvas.width - sourceX, maxX - minX + scanStride * 2);
+  const sourceHeight = Math.min(sourceCanvas.height - sourceY, maxY - minY + scanStride * 2);
+  const scale = Math.min(760 / sourceWidth, 800 / sourceHeight);
+  const width = sourceWidth * scale;
+  const height = sourceHeight * scale;
+  const feetLine = 914;
+  context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, (1024 - width) / 2, feetLine - height, width, height);
   return canvas.toDataURL("image/png");
 }
 
@@ -292,7 +310,7 @@ function DefaultCharacter({ compact = false, preset = "sky" }: { compact?: boole
 
 function Character({ profile, compact = false }: { profile: Profile; compact?: boolean }) {
   if (profile.characterDataUrl) {
-    return <img className={`character-image${compact ? " compact" : ""}`} src={profile.characterDataUrl} alt={`${profile.name} 캐릭터`} />;
+    return <img className={`character-image custom${compact ? " compact" : ""}`} src={profile.characterDataUrl} alt={`${profile.name} 캐릭터`} />;
   }
   return <DefaultCharacter compact={compact} preset={profile.characterPreset ?? "sky"} />;
 }
@@ -699,6 +717,7 @@ function MapFriend({ friend, clock, spot, order }: { friend: MapMember; clock: n
     ? `${categoryTitle(friend.category)} · ${Math.max(0, Math.floor((clock - friend.startedAt) / 60_000))}분째`
     : idleLines[(seed + Math.floor(clock / 120_000)) % idleLines.length];
   const direction = seed % 2 === 0 ? 1 : -1;
+  const displayName = `${friend.nickname || friend.name}${friend.mine ? " · 나" : ""}`;
   const mapStyle = {
     "--map-x": `${spot.x}%`,
     "--map-y": `${spot.y}%`,
@@ -711,7 +730,7 @@ function MapFriend({ friend, clock, spot, order }: { friend: MapMember; clock: n
   } as CSSProperties;
   return (
     <article style={mapStyle} className={`map-friend${working ? " working" : " idle"}${friend.mine ? " mine" : ""}`}>
-      <span className="floating-name">{friend.className && <small>{friend.className}</small>}<b>{friend.nickname || friend.name}{friend.mine ? " · 나" : ""}</b></span>
+      <span className="floating-name" title={`${friend.className ? `${friend.className} · ` : ""}${displayName}`}>{friend.className && <small>{friend.className}</small>}<b>{displayName}</b></span>
       <span className={`map-speech${friend.message ? " personal" : ""}`}>{friend.message || fallback}</span>
       <div className="map-avatar"><Character profile={{ name: friend.name, nickname: friend.nickname, characterPreset: friend.characterPreset, characterDataUrl: friend.characterDataUrl }} /></div>
       {working && <div className="map-chair"><span /><i /></div>}
@@ -882,9 +901,10 @@ function GalleryVisitor({ friend, index }: { friend: MapMember; index: number })
     "--visitor-delay": `${-(stringSeed(friend.id) % 6_000)}ms`,
     zIndex: 12 + index,
   } as CSSProperties;
+  const displayName = `${friend.nickname || friend.name}${friend.mine ? " · 나" : ""}`;
   return (
     <div className="gallery-visitor" style={style}>
-      <span>{friend.className && <small>{friend.className}</small>}<b>{friend.nickname || friend.name}{friend.mine ? " · 나" : ""}</b></span>
+      <span title={`${friend.className ? `${friend.className} · ` : ""}${displayName}`}>{friend.className && <small>{friend.className}</small>}<b>{displayName}</b></span>
       <Character profile={{ name: friend.name, nickname: friend.nickname, characterPreset: friend.characterPreset, characterDataUrl: friend.characterDataUrl }} />
     </div>
   );

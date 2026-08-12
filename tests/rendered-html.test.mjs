@@ -76,6 +76,8 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(studio, /timerTargets/);
   assert.match(studio, /분 바로 시작/);
   assert.match(studio, /validateCharacter/);
+  assert.match(studio, /const sourceWidth =/);
+  assert.match(studio, /character-image custom/);
   assert.match(studio, /PresetPicker/);
   assert.match(studio, /canvas\.toDataURL\("image\/png"\)/);
   assert.match(studio, /1024 × 1024px/);
@@ -153,6 +155,10 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(styles, /aspect-ratio: 1/);
   assert.match(styles, /\.together-map \.map-friend\.mine::after \{ content: none; \}/);
   assert.match(styles, /\.together-map \.floating-name[\s\S]*?animation: none;/);
+  assert.match(styles, /\.together-map \.floating-name b[\s\S]*?text-overflow: ellipsis;/);
+  assert.match(styles, /\.together-map \.map-avatar \.character-image\.custom/);
+  assert.match(styles, /\.gallery-visitor > span b[\s\S]*?text-overflow: ellipsis;/);
+  assert.match(styles, /\.gallery-visitor \.character-image\.custom/);
   assert.match(styles, /@media \(min-width: 700px\)/);
   assert.match(studio, /내 캐릭터 위 메시지/);
   assert.match(studio, /한마디 수정/);
