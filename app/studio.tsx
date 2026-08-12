@@ -9,10 +9,12 @@ import {
   type CSSProperties,
 } from "react";
 import {
+  addRosterStudents,
   claimRoster,
   fetchCommunity,
   fetchRoster,
   getDeviceIdentity,
+  removeRosterStudent,
   saveCloudProfile,
   saveCloudSession,
   sendPresenceStop,
@@ -54,13 +56,22 @@ const categories: Array<{
 ];
 
 const characterPresets: Array<{ key: CharacterPresetKey; name: string }> = [
-  { key: "sky", name: "하늘 폴더" },
-  { key: "moss", name: "이끼 폴더" },
-  { key: "apricot", name: "살구 폴더" },
-  { key: "rose", name: "장미 폴더" },
-  { key: "violet", name: "보라 폴더" },
-  { key: "lemon", name: "레몬 폴더" },
+  { key: "sky", name: "blue" },
+  { key: "moss", name: "green" },
+  { key: "apricot", name: "orange" },
+  { key: "rose", name: "pink" },
+  { key: "violet", name: "purple" },
+  { key: "lemon", name: "yellow" },
 ];
+
+const presetCharacterAssets: Record<CharacterPresetKey, string> = {
+  sky: "/folder-blue.png",
+  moss: "/folder-green.png",
+  apricot: "/folder-orange.png",
+  rose: "/folder-pink.png",
+  violet: "/folder-purple.png",
+  lemon: "/folder-yellow.png",
+};
 
 const milestones = [
   { minutes: 0, title: "작은 책상", detail: "나만의 작업실이 생겼어요.", icon: "1" },
@@ -270,8 +281,8 @@ function DefaultCharacter({ compact = false, preset = "sky" }: { compact?: boole
   return (
     <img
       className={`character-image official preset-${preset}${compact ? " compact" : ""}`}
-      src="/brand-character.png"
-      alt="아더댄웍스 공식 폴더 캐릭터"
+      src={presetCharacterAssets[preset]}
+      alt={`${characterPresets.find((item) => item.key === preset)?.name ?? "blue"} 폴더 캐릭터`}
     />
   );
 }
@@ -336,7 +347,7 @@ function Enrollment({ snapshot, onComplete }: { snapshot: RosterSnapshot; onComp
           <p className="eyebrow">HOST SETUP</p>
           <DefaultCharacter />
           <h1>수강생 작업실을<br />처음 열어주세요</h1>
-          <p>이 화면을 먼저 설정한 계정이 호스트가 됩니다. 수강생 이름은 한 줄에 한 명씩 적어주세요.</p>
+          <p>선생님 계정(mon.mut.friends@gmail.com)에서만 명단을 만들고 수정할 수 있어요. 수강생 이름은 한 줄에 한 명씩 적어주세요.</p>
           <label className="field-label" htmlFor="student-list">수강생 명단</label>
           <textarea id="student-list" value={names} onChange={(event) => setNames(event.target.value)} placeholder={"소랭\n은지\n세은\n밍쵸"} />
           <label className="field-label" htmlFor="class-code">수강생에게 알려줄 반 코드</label>
@@ -711,9 +722,6 @@ function MapZone({ title, place, members, clock }: { title: string; place: MapPl
   return (
     <section className={`map-zone ${place}-zone`}>
       <span className="map-zone-title">{title}</span>
-      {place === "gallery" && <div className="map-gallery-wall"><i /><i /><i /></div>}
-      {place === "tips" && <div className="map-tip-board">PROCREATE<br /><b>TIP BOARD</b></div>}
-      {place === "lounge" && <div className="map-sofa"><span /><i /><i /></div>}
       <div className="map-people">{members.map((member) => <MapFriend key={member.id} friend={member} clock={clock} />)}</div>
       {members.length === 0 && <small className="map-empty">아직 조용해요</small>}
     </section>
@@ -845,7 +853,58 @@ function GalleryPanel({ profile, sessions, sharedGallery }: { profile: Profile; 
   );
 }
 
-function MissionPanel({ sessions, teacherNote, isHost, onTeacherNote }: { sessions: WorkSession[]; teacherNote: string; isHost: boolean; onTeacherNote: (note: string) => Promise<void> }) {
+function RosterManager({ students, onAdd, onRemove }: {
+  students: RosterSnapshot["students"];
+  onAdd: (names: string[]) => Promise<void>;
+  onRemove: (studentId: string) => Promise<void>;
+}) {
+  const [names, setNames] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const addNames = names.split(/\r?\n/).map((name) => name.trim()).filter(Boolean);
+  return (
+    <section className="paper-card roster-manager">
+      <div className="card-title-row"><div><p className="eyebrow">HOST ONLY</p><h2>수강생 명단</h2></div><span>{students.length}명</span></div>
+      <p className="roster-guide">새 수강생은 한 줄에 한 명씩 추가하세요. 명단에서 빼도 그동안의 그림 기록은 지워지지 않아요.</p>
+      <textarea value={names} onChange={(event) => setNames(event.target.value)} placeholder={"새 수강생 이름\n한 줄에 한 명"} aria-label="추가할 수강생 이름" />
+      <button className="primary-button wide" type="button" disabled={saving || !addNames.length} onClick={async () => {
+        try {
+          setSaving(true); setError(""); setNotice("");
+          await onAdd(addNames);
+          setNames(""); setNotice(`${addNames.length}명을 명단에 추가했어요.`);
+        } catch (addError) {
+          setError(addError instanceof Error ? addError.message : "수강생을 추가하지 못했어요.");
+        } finally { setSaving(false); }
+      }}>{saving ? "명단을 바꾸는 중…" : "수강생 추가"}</button>
+      {notice && <p className="success-message">{notice}</p>}
+      {error && <p className="error-message" role="alert">{error}</p>}
+      <div className="roster-list">
+        {students.map((student) => <article key={student.id}>
+          <span>{student.legalName.slice(0, 1)}</span>
+          <div><b>{student.legalName}</b><small>{student.claimed ? `${student.nickname || "닉네임 미입력"} · 연결됨` : "초대 전"}</small></div>
+          <button type="button" disabled={saving} onClick={async () => {
+            if (!window.confirm(`${student.legalName}님을 명단에서 뺄까요?\n기존 그림 기록은 지워지지 않아요.`)) return;
+            try { setSaving(true); setError(""); setNotice(""); await onRemove(student.id); }
+            catch (removeError) { setError(removeError instanceof Error ? removeError.message : "수강생을 빼지 못했어요."); }
+            finally { setSaving(false); }
+          }}>빼기</button>
+        </article>)}
+        {!students.length && <p>아직 등록된 수강생이 없어요.</p>}
+      </div>
+    </section>
+  );
+}
+
+function MissionPanel({ sessions, teacherNote, isHost, students, onTeacherNote, onAddStudents, onRemoveStudent }: {
+  sessions: WorkSession[];
+  teacherNote: string;
+  isHost: boolean;
+  students: RosterSnapshot["students"];
+  onTeacherNote: (note: string) => Promise<void>;
+  onAddStudents: (names: string[]) => Promise<void>;
+  onRemoveStudent: (studentId: string) => Promise<void>;
+}) {
   const progress = sessions.filter((session) => session.category === "sketch" && isThisWeek(new Date(session.completedAt))).length;
   const totalMinutes = sessions.reduce((sum, session) => sum + minutesFor(session.seconds), 0);
   const [editingNote, setEditingNote] = useState(false);
@@ -881,6 +940,7 @@ function MissionPanel({ sessions, teacherNote, isHost, onTeacherNote }: { sessio
         </> : <><p>“{teacherNote}”</p>{isHost && <button className="teacher-edit-button" type="button" onClick={() => setEditingNote(true)}>한마디 수정</button>}</>}</div>
       </section>
       <section className="paper-card journey-card"><p className="eyebrow">작업실 성장</p><h2>조금씩 열리는 공간</h2>{milestones.map((milestone, index) => { const open = milestone.minutes <= totalMinutes; return <div className={`journey-row${open ? " open" : ""}`} key={milestone.title}><span>{milestone.icon}</span><div><b>{milestone.title}</b><p>{milestone.detail}</p></div><i>{milestone.minutes === 0 ? "기본" : `${milestone.minutes}분`}</i>{index < milestones.length - 1 && <em />}</div>; })}</section>
+      {isHost && <RosterManager students={students} onAdd={onAddStudents} onRemove={onRemoveStudent} />}
     </div>
   );
 }
@@ -971,7 +1031,11 @@ export default function Home() {
           { id: "demo-1", completedAt: new Date().toISOString(), seconds: 720, category: "sketch", artworkDataUrl: "/studio-room.jpg", note: "창가의 작은 작업실" },
           { id: "demo-2", completedAt: new Date(Date.now() - 86_400_000 * 2).toISOString(), seconds: 1240, category: "color", artworkDataUrl: "/brand-character.png", note: "파란 폴더 친구 색연습" },
         ];
-        setRoster({ needsSetup: false, isAdmin: true, linked: true, nickname: "소랭", students: [] });
+        setRoster({ needsSetup: false, isAdmin: true, linked: true, nickname: "소랭", students: [
+          { id: "demo-student-1", legalName: "은지", nickname: "은지", claimed: true },
+          { id: "demo-student-2", legalName: "세은", nickname: "세은", claimed: true },
+          { id: "demo-student-3", legalName: "새 수강생", claimed: false },
+        ] });
         setProfile(demoProfile);
         setSessions(demoSessions);
         setActiveFriends([
@@ -1148,6 +1212,22 @@ export default function Home() {
     setTeacherNote(await updateTeacherNote(note));
   }
 
+  async function addStudents(names: string[]) {
+    if (demoMode.current) {
+      setRoster((current) => current ? { ...current, students: [...current.students, ...names.map((name) => ({ id: crypto.randomUUID(), legalName: name, claimed: false }))] } : current);
+      return;
+    }
+    setRoster(await addRosterStudents(names));
+  }
+
+  async function removeStudent(studentId: string) {
+    if (demoMode.current) {
+      setRoster((current) => current ? { ...current, students: current.students.filter((student) => student.id !== studentId) } : current);
+      return;
+    }
+    setRoster(await removeRosterStudent(studentId));
+  }
+
   if (!ready) return <main className="app-loading"><DefaultCharacter /><p>작업실 문을 여는 중…</p></main>;
   if (roster && (roster.needsSetup || !roster.linked)) return <Enrollment snapshot={roster} onComplete={() => setBootKey((value) => value + 1)} />;
   if (!profile) return <Onboarding onComplete={saveProfile} />;
@@ -1164,7 +1244,7 @@ export default function Home() {
         {tab === "together" && <TogetherPanel profile={profile} activeFriends={activeFriends} running={running} elapsed={elapsed} category={category} clock={clock} onMessage={saveMessage} />}
         {tab === "records" && <RecordsPanel sessions={sessions} />}
         {tab === "gallery" && <GalleryPanel profile={profile} sessions={sessions} sharedGallery={sharedGallery} />}
-        {tab === "mission" && <MissionPanel sessions={sessions} teacherNote={teacherNote} isHost={Boolean(roster?.isAdmin)} onTeacherNote={saveTeacherNote} />}
+        {tab === "mission" && <MissionPanel sessions={sessions} teacherNote={teacherNote} isHost={Boolean(roster?.isAdmin)} students={roster?.students ?? []} onTeacherNote={saveTeacherNote} onAddStudents={addStudents} onRemoveStudent={removeStudent} />}
       </div>
       <nav className="bottom-nav" aria-label="주요 메뉴">
         {([

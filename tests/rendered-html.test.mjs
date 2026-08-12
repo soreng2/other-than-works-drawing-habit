@@ -95,7 +95,12 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(communityClient, /setupRoster/);
   assert.match(communityClient, /claimRoster/);
   assert.match(communityClient, /updateTeacherNote/);
+  assert.match(communityClient, /addRosterStudents/);
+  assert.match(communityClient, /removeRosterStudent/);
   assert.match(communityApi, /admin_user_hash/);
+  assert.match(communityApi, /mon\.mut\.friends@gmail\.com/);
+  assert.match(communityApi, /action === "add"/);
+  assert.match(communityApi, /action === "remove"/);
   assert.match(communityApi, /ensureAdminMember/);
   assert.match(communityApi, /INSERT OR IGNORE INTO students/);
   assert.match(communityApi, /student_already_claimed/);
@@ -113,6 +118,7 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
   assert.match(presetMigration, /character_preset/);
   assert.match(styles, /preset-grid/);
   assert.match(styles, /studio-room\.jpg/);
+  assert.match(styles, /shared-studio\.jpg/);
   assert.match(styles, /timer-presets/);
   assert.match(studio, /예시 캐릭터/);
   assert.match(studio, /명단 저장하고 내 작업실 열기/);
@@ -126,6 +132,10 @@ test("includes the complete shared MVP, roster, host controls and map assets", a
 
   await access(new URL("../public/brand-character.png", import.meta.url));
   await access(new URL("../public/studio-room.jpg", import.meta.url));
+  await access(new URL("../public/shared-studio.jpg", import.meta.url));
+  for (const color of ["blue", "green", "orange", "pink", "purple", "yellow"]) {
+    await access(new URL(`../public/folder-${color}.png`, import.meta.url));
+  }
   await access(new URL("../public/og.jpg", import.meta.url));
   await assert.rejects(access(new URL("../app/_sites-preview/SkeletonPreview.tsx", import.meta.url)));
   await access(new URL(".openai/hosting.json", root));

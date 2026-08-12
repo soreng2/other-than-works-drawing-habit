@@ -52,6 +52,8 @@ export type DeviceIdentity = {
 export type RosterStudent = {
   id: string;
   legalName: string;
+  nickname?: string;
+  claimed: boolean;
 };
 
 export type RosterSnapshot = {

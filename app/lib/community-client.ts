@@ -58,6 +58,22 @@ export async function claimRoster(studentId: string, nickname: string, classCode
   }));
 }
 
+export async function addRosterStudents(names: string[]): Promise<RosterSnapshot> {
+  return responseJson<RosterSnapshot>(await fetch("/api/roster", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "add", names }),
+  }));
+}
+
+export async function removeRosterStudent(studentId: string): Promise<RosterSnapshot> {
+  return responseJson<RosterSnapshot>(await fetch("/api/roster", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "remove", studentId }),
+  }));
+}
+
 export async function saveCloudProfile(identity: DeviceIdentity, profile: Profile): Promise<Profile> {
   const form = new FormData();
   form.set("profileId", identity.profileId);

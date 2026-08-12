@@ -13,6 +13,7 @@ const ADMIN_KEY = "admin_user_hash";
 const CLASS_CODE_KEY = "class_code_hash";
 const TEACHER_NOTE_KEY = "teacher_note";
 const HOST_MEMBER_LABEL = "선생님";
+const DESIGNATED_ADMIN_EMAIL = "mon.mut.friends@gmail.com";
 
 function errorResponse(error: unknown) {
   const code = error instanceof Error ? error.message : "unexpected_error";
@@ -24,13 +25,15 @@ function errorResponse(error: unknown) {
     invalid_identity: "이전 기기의 프로필 정보를 확인하지 못했어요.",
     invalid_roster: "수강생 명단과 반 코드를 확인해주세요.",
     invalid_class_code: "반 코드가 맞지 않아요.",
+    host_only: "수강생 명단은 선생님 계정에서만 바꿀 수 있어요.",
+    no_new_students: "새로 추가할 수강생 이름이 없어요.",
     student_already_claimed: "이미 다른 계정에 연결된 이름이에요. 선생님에게 연결 해제를 요청해주세요.",
     profile_not_found: "프로필을 먼저 만들어주세요.",
     invalid_profile: "이름과 캐릭터 파일을 확인해주세요.",
     invalid_session: "작업 기록을 확인해주세요.",
     invalid_image: "이미지 파일을 확인해주세요.",
   };
-  const status = code === "signin_required" ? 401 : code === "membership_required" ? 403 : code === "profile_not_found" ? 404 : 400;
+  const status = code === "signin_required" ? 401 : code === "membership_required" || code === "host_only" ? 403 : code === "profile_not_found" ? 404 : 400;
   return Response.json({ error: messages[code] ?? "공동 작업실에 연결하지 못했어요." }, { status });
 }
 
@@ -44,6 +47,10 @@ function validCharacterPreset(value: string): value is CharacterPresetKey {
 
 function normalizeName(value: string) {
   return value.normalize("NFKC").replace(/\s+/g, "").toLocaleLowerCase("ko-KR");
+}
+
+function isDesignatedAdmin(auth: RequestUser) {
+  return auth.email.trim().toLowerCase() === DESIGNATED_ADMIN_EMAIL;
 }
 
 async function tokenHash(token: string) {
@@ -115,16 +122,26 @@ async function rosterState(database: D1Database, auth: RequestUser, classCode = 
     database.prepare("SELECT id, legal_name, nickname, auth_user_hash, profile_id FROM students WHERE auth_user_hash = ?")
       .bind(auth.userHash).first<StudentRow>(),
   ]);
-  const isAdmin = adminHash === auth.userHash;
-  const needsSetup = !adminHash;
+  const isAdmin = isDesignatedAdmin(auth);
+  const needsSetup = !adminHash && isAdmin;
   const resolvedMember = isAdmin && !member ? await ensureAdminMember(database, auth) : member;
   let codeMatches = false;
   if (classCode.trim() && codeHash) codeMatches = await hashSecret(classCode) === codeHash;
-  let students: Array<{ id: string; legalName: string }> = [];
-  if (!resolvedMember && (isAdmin || codeMatches)) {
-    const result = await database.prepare("SELECT id, legal_name FROM students WHERE auth_user_hash IS NULL ORDER BY normalized_name ASC LIMIT 200")
+  let students: Array<{ id: string; legalName: string; nickname?: string; claimed: boolean }> = [];
+  if (isAdmin) {
+    const result = await database.prepare(`SELECT id, legal_name, nickname, auth_user_hash FROM students
+      WHERE normalized_name != '__host__' ORDER BY normalized_name ASC LIMIT 200`)
+      .all<Pick<StudentRow, "id" | "legal_name" | "nickname" | "auth_user_hash">>();
+    students = result.results.map((student) => ({
+      id: student.id,
+      legalName: student.legal_name,
+      nickname: student.nickname || undefined,
+      claimed: Boolean(student.auth_user_hash),
+    }));
+  } else if (!resolvedMember && codeMatches) {
+    const result = await database.prepare("SELECT id, legal_name FROM students WHERE auth_user_hash IS NULL AND normalized_name != '__host__' ORDER BY normalized_name ASC LIMIT 200")
       .all<{ id: string; legal_name: string }>();
-    students = result.results.map((student) => ({ id: student.id, legalName: student.legal_name }));
+    students = result.results.map((student) => ({ id: student.id, legalName: student.legal_name, claimed: false }));
   }
   return { needsSetup, isAdmin, linked: Boolean(resolvedMember), nickname: resolvedMember?.nickname || undefined, students };
 }
@@ -138,6 +155,7 @@ async function handleRoster(request: Request, database: D1Database, auth: Reques
 
   const body = await request.json() as { action?: string; names?: string[]; classCode?: string; studentId?: string; nickname?: string };
   if (body.action === "setup") {
+    if (!isDesignatedAdmin(auth)) throw new Error("host_only");
     const [adminHash, studentCount] = await Promise.all([
       setting(database, ADMIN_KEY),
       database.prepare("SELECT COUNT(*) AS count FROM students").first<{ count: number }>(),
@@ -171,8 +189,8 @@ async function handleRoster(request: Request, database: D1Database, auth: Reques
   if (body.action === "claim") {
     const existing = await database.prepare("SELECT id FROM students WHERE auth_user_hash = ?").bind(auth.userHash).first();
     if (existing) return Response.json(await rosterState(database, auth));
-    const [adminHash, codeHash] = await Promise.all([setting(database, ADMIN_KEY), setting(database, CLASS_CODE_KEY)]);
-    const isAdmin = adminHash === auth.userHash;
+    const codeHash = await setting(database, CLASS_CODE_KEY);
+    const isAdmin = isDesignatedAdmin(auth);
     const classCode = String(body.classCode ?? "").trim();
     if (!isAdmin && (!codeHash || await hashSecret(classCode) !== codeHash)) throw new Error("invalid_class_code");
     const nickname = String(body.nickname ?? "").trim().slice(0, 12);
@@ -181,6 +199,40 @@ async function handleRoster(request: Request, database: D1Database, auth: Reques
     const result = await database.prepare(`UPDATE students SET nickname = ?, auth_user_hash = ?, profile_id = ?, updated_at = ?
       WHERE id = ? AND auth_user_hash IS NULL`).bind(nickname, auth.userHash, auth.profileId, Date.now(), studentId).run();
     if (!result.meta.changes) throw new Error("student_already_claimed");
+    return Response.json(await rosterState(database, auth));
+  }
+
+  if (body.action === "add") {
+    if (!isDesignatedAdmin(auth)) throw new Error("host_only");
+    const existingResult = await database.prepare("SELECT normalized_name FROM students").all<{ normalized_name: string }>();
+    const existing = new Set(existingResult.results.map((student) => student.normalized_name));
+    const seen = new Set<string>();
+    const names = (body.names ?? []).map((value) => String(value).trim().slice(0, 30)).filter((value) => {
+      const normalized = normalizeName(value);
+      if (!normalized || normalized === "__host__" || existing.has(normalized) || seen.has(normalized)) return false;
+      seen.add(normalized);
+      return true;
+    });
+    if (!names.length) throw new Error("no_new_students");
+    if (existing.size - 1 + names.length > 200) throw new Error("invalid_roster");
+    const now = Date.now();
+    await database.batch(names.map((name) => database.prepare(
+      "INSERT INTO students (id, legal_name, normalized_name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+    ).bind(crypto.randomUUID(), name, normalizeName(name), now, now)));
+    return Response.json(await rosterState(database, auth), { status: 201 });
+  }
+
+  if (body.action === "remove") {
+    if (!isDesignatedAdmin(auth)) throw new Error("host_only");
+    const studentId = String(body.studentId ?? "");
+    if (!profileIdPattern.test(studentId)) throw new Error("invalid_roster");
+    const student = await database.prepare("SELECT id, profile_id FROM students WHERE id = ? AND normalized_name != '__host__'")
+      .bind(studentId).first<Pick<StudentRow, "id" | "profile_id">>();
+    if (!student) throw new Error("invalid_roster");
+    const statements = [];
+    if (student.profile_id) statements.push(database.prepare("DELETE FROM presence WHERE profile_id = ?").bind(student.profile_id));
+    statements.push(database.prepare("DELETE FROM students WHERE id = ?").bind(student.id));
+    await database.batch(statements);
     return Response.json(await rosterState(database, auth));
   }
 
@@ -280,7 +332,7 @@ async function handleCommunity(request: Request, database: D1Database, member: M
 
 async function handleTeacherNote(request: Request, database: D1Database, auth: RequestUser) {
   if (request.method !== "POST") return Response.json({ error: "method_not_allowed" }, { status: 405 });
-  if (await setting(database, ADMIN_KEY) !== auth.userHash) return Response.json({ error: "host_only" }, { status: 403 });
+  if (!isDesignatedAdmin(auth)) return Response.json({ error: "host_only" }, { status: 403 });
   const body = await request.json() as { note?: string };
   const note = String(body.note ?? "").trim().slice(0, 180);
   if (!note) throw new Error("invalid_profile");
