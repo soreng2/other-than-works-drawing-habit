@@ -1,0 +1,17 @@
+{
+  "name": "OTHER THAN WORKS 그림 작업실",
+  "short_name": "OTW 작업실",
+  "description": "하루 5분부터 그림을 시작하는 작은 작업실",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f2e8",
+  "theme_color": "#f7f2e8",
+  "icons": [
+    {
+      "src": "/brand-character.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
