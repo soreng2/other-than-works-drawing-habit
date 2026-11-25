@@ -44,6 +44,7 @@
   --char-body: #A9B4F2; --char-tab: #8F9CEA; --char-limb: #9AA1AE; color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6; }
 .wrap { max-width: 1180px; margin: 0 auto; padding-block: 20px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -214,6 +215,14 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 72ch
 .gap-legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
 .gap-legend .l-ai::before { background: var(--accent); }
 .gap-legend .l-me::before { border: 2px solid var(--warn); box-sizing: border-box; }
+.report-cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; border: 2px solid var(--accent); padding: 14px 16px; background: var(--ice); }
+.report-cta b { display: block; font-family: var(--font-display); font-weight: 400; font-size: 20px; }
+.report-cta span { font-size: 13px; color: var(--muted); }
+.report-view { grid-column: 1 / -1; background: #FFFFFF; color: #16181D; }
+.report-bar { position: sticky; top: env(safe-area-inset-top, 0px); background: #FFFFFF; padding-block: 8px; z-index: 2; border-bottom: 1px solid #E2E7F0; }
+.report-bar .btn.ghost { color: #16181D; border-color: #E2E7F0; }
+.report-bar .hint { color: #5F6A80; }
+.typetag { display: inline-block; font-size: 12px; font-weight: 700; color: var(--green); border: 1.5px solid currentColor; padding: 1px 8px; margin-top: 4px; }
 .spinner { width: 16px; height: 16px; border: 3px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
@@ -321,6 +330,18 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 72ch
       <div class="hist" id="hist"><div class="empty">기록을 불러오는 중이에요.</div></div>
     </section>
 
+    <section class="panel report-view" id="report-view" hidden aria-label="유료 리포트 전체">
+      <div class="row report-bar">
+        <button class="btn ghost" id="btn-report-close">← 결과지로</button>
+        <span class="hint" id="report-meta"></span>
+        <span style="flex:1"></span>
+        <button class="btn ghost" id="btn-report-text">텍스트 복사</button>
+        <button class="btn lime" id="btn-report-html">HTML 파일 저장</button>
+      </div>
+      <p class="status" id="report-status" role="status"></p>
+      <article class="otw-report" id="report-body"></article>
+    </section>
+
     <!-- 결과지 -->
     <section class="panel" id="result" aria-live="polite">
       <div class="row" style="justify-content:space-between">
@@ -349,6 +370,7 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 72ch
           <div class="who" id="res-who"></div>
           <label class="sr" for="res-summary">그림체 한 줄 정의</label>
           <textarea class="summary" id="res-summary" maxlength="28" rows="1"></textarea>
+          <span class="typetag" id="res-type"></span>
         </div>
       </div>
 
@@ -380,6 +402,14 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 72ch
       <div class="reco" id="reco"></div>
 
       <div class="paid-only market" id="market" data-paid></div>
+
+      <div class="paid-only report-cta" data-paid>
+        <div>
+          <b>유료 리포트 전체</b>
+          <span id="report-size">길별 상세 분석, 수익 계산, 12주 로드맵, 수업 소개까지</span>
+        </div>
+        <button class="btn" id="btn-report">리포트 전체 보기</button>
+      </div>
 
       <div>
         <h3>2주 처방</h3>
@@ -415,173 +445,15 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 72ch
   </div>
 </div>
 
+<script src="otw-core.js"></script>
 <script>
 (() => {
 "use strict";
-/* ═════════ 1. 아더댄웍스 규칙 (대표의 실제 기준으로 교체하는 곳) ═════════ */
-const AXES = [
-  { key: "line",    name: "선",   en: "LINE",        left: "러프·스케치",    right: "정돈·클린",
-    q: "내 그림의 선은?", lq: "여러 번 겹쳐 긋고 흔적을 남긴다", rq: "한 번에 깔끔하게 정리한다",
-    anchor: "0~15 = 연필 크로키처럼 여러 번 겹친 선, 85~100 = 이모티콘처럼 굵기가 일정한 단일 윤곽선" },
-  { key: "form",    name: "형태", en: "FORM",        left: "데포르메·단순화", right: "사실·구조",
-    q: "사람과 사물의 모양은?", lq: "크게 줄이고 귀엽게 바꾼다", rq: "비율과 구조를 실제에 가깝게 잡는다",
-    anchor: "0~15 = 2~3등신, 손발 생략, 85~100 = 해부학 비율과 원근이 정확한 인물" },
-  { key: "color",   name: "색",   en: "COLOR",       left: "절제·톤온톤",    right: "대비·고채도",
-    q: "색을 고를 때는?", lq: "비슷한 색 몇 개로 조용하게", rq: "보색과 진한 색으로 또렷하게",
-    anchor: "0~15 = 흑백이나 한 계열 3색 이하, 85~100 = 원색·보색이 화면 대부분" },
-  { key: "texture", name: "질감", en: "TEXTURE",     left: "플랫·디지털",    right: "아날로그·재료감",
-    q: "화면의 표면은?", lq: "면을 평평하게 채운다", rq: "종이·붓·연필 결이 보인다",
-    anchor: "0~15 = 벡터처럼 균일한 면, 85~100 = 수채 번짐·종이 결·붓자국이 뚜렷" },
-  { key: "comp",    name: "구성", en: "COMPOSITION", left: "정적·중앙",      right: "동적·여백·대각",
-    q: "한 장을 배치할 때는?", lq: "주인공을 가운데 안정적으로", rq: "치우치거나 기울여 움직임을 만든다",
-    anchor: "0~15 = 흰 배경 중앙 단독 캐릭터, 85~100 = 대각 구도·과감한 여백·잘린 프레임" },
-  { key: "mood",    name: "정서", en: "MOOD",        left: "담백·관찰",      right: "서사·감정",
-    q: "그림이 전하는 건?", lq: "보이는 장면을 차분히 기록", rq: "이야기와 감정이 먼저 보인다",
-    anchor: "0~15 = 사물·풍경 관찰 기록, 85~100 = 한 장만 봐도 앞뒤 사건과 감정이 읽힘" },
-];
-
-/* 상업 신호: 그림체가 아니라 '팔 수 있는 형태인가' */
-const SIGNALS = [
-  { key: "craft",      name: "완성도",       fix: "선 정리와 채색 경계 마감", desc: "선 정리, 채색 경계, 마감이 상업물 수준인가", sq: "마감(선 정리·채색 경계)이 깔끔한 편이다" },
-  { key: "character",  name: "캐릭터 고정성", fix: "반복 등장시킬 고정 캐릭터 만들기", desc: "반복 등장시킬 수 있는 알아보기 쉬운 캐릭터가 있는가", sq: "같은 캐릭터를 여러 장 그려 봤고 매번 알아볼 수 있다" },
-  { key: "expression", name: "표정·감정 폭", fix: "표정과 몸짓으로 감정 폭 넓히기", desc: "표정과 몸짓으로 감정을 여러 가지로 나눠 보여 주는가", sq: "기쁨·슬픔·화남 같은 표정을 여러 가지로 그릴 수 있다" },
-  { key: "narrative",  name: "장면 서사",     fix: "한 장에 앞뒤 이야기 담기", desc: "한 장이 이야기의 한 순간으로 읽히는가", sq: "내 그림 한 장에는 앞뒤 이야기가 있다" },
-  { key: "production", name: "상품화 적합",   fix: "윤곽 정리와 작은 크기 식별성", desc: "윤곽이 분명하고 작게 줄여도 알아보며 색 면이 분리되는가 (스티커·인쇄·커팅)", sq: "작게 줄여도 알아볼 수 있고 윤곽이 분명하다" },
-];
-
-/* 길: target = 6축 목표 위치, w = 6축 가중치, ready = 준비도 가중치 (완성도, 캐릭터, 표정, 서사, 상품화, 일관성) */
-const GENRES = [
-  { key: "picturebook", name: "그림책", target: [45, 40, 50, 65, 62, 78], w: [.4, .5, .5, .8, .8, 1],
-    ready: [.25, .15, .1, .3, 0, .2], product: "픽처포지(그림책반)", extra: "그림책 만들기 자습서 2장 '캐릭터와 스타일'부터" },
-  { key: "emoticon", name: "이모티콘", target: [72, 20, 65, 25, 35, 78], w: [.8, 1, .5, .7, .4, .6],
-    ready: [.15, .25, .35, 0, .1, .15], product: "이모티콘반", extra: "표정 24컷 시트로 선 두께부터 통일" },
-  { key: "goods", name: "캐릭터 굿즈", target: [75, 28, 62, 30, 38, 45], w: [1, .8, .6, .7, .4, .5],
-    ready: [.2, .3, .05, 0, .3, .15], product: "굿즈반 + 캐릭터 키트", extra: "크리컷 스티커 키트로 첫 샘플 제작" },
-  { key: "instatoon", name: "인스타툰", target: [58, 32, 45, 35, 48, 80], w: [.4, .7, .5, .6, .4, 1.4],
-    ready: [.1, .25, .2, .3, 0, .15], product: "콘텐츠반(릴스·협찬)", extra: "4컷 3편으로 캐릭터 고정부터" },
-  { key: "portfolio", name: "포트폴리오·외주", target: [62, 62, 52, 50, 58, 52], w: [.5, 1.2, .5, .5, .7, .6],
-    ready: [.35, .05, .05, .1, .1, .35], product: "포트폴리오반", extra: "같은 그림체로 6장 묶음 만들기" },
-];
-const MIX = { style: .45, ready: .35, market: .20 };
-const ROUTINE = { name: "드로잉 루틴반", why: "위치보다 반복이 먼저예요. 같은 선택을 4주 반복하면 그림체가 생깁니다." };
-
-/* 시장 브리프 (2026.11 조사 기준, 출처 표시. attract = 시장 매력 점수, 대표 판단으로 조정) */
-const MARKET = {
-  picturebook: { attract: 55, asOf: "2026.11",
-    size: "2025년 국내 신간 6만 4,991종. 아동 분야 평균 발행 부수는 전년보다 7.4% 줄었어요. 대신 볼로냐 아동도서전에 국내 39개 출판사가 나가는 등 해외 판권 쪽이 커지고 있어요.",
-    money: "인세 방식. 흔히 정가의 10%를 글·그림 작가가 나눕니다. 정가 15,000원 책이 3,000부 팔리면 작가 몫은 약 450만 원 (글그림을 혼자 하면 전부).",
-    entry: "출판사 투고·공모전. 기획부터 출간까지 1~2년이 흔해서 돈이 늦게 들어와요 (추정).",
-    speed: "느림 · 브랜드와 강의 레버리지는 가장 큼",
-    first: "더미북 1권 (12~16장면) → 출판사 투고 3곳 + 독립출판 소량 인쇄",
-    src: [["출협 2025 출판생산 통계 (뉴시스)", "https://mobile.newsis.com/view/NISX20260529_0003649654"], ["볼로냐아동도서전 K-그림책 (헤럴드경제)", "https://www.heraldk.com/article/2026041217583347719"], ["작가 인세 10% 관행 (경인일보)", "https://www.kyeongin.com/article/1632537"]] },
-  emoticon: { attract: 70, asOf: "2026.11",
-    size: "카카오 이모티콘 누적 거래 7,000억 원 돌파. 누적 매출 1억 원 이상 이모티콘 2,885개, 10억 원 이상 146개로 보도됐어요. 창작자는 약 1만 명.",
-    money: "판매 수익 + 이모티콘 플러스 구독 사용량에 따른 분배. 승인되면 바로 매출이 생겨요.",
-    entry: "제안 경쟁이 셉니다. 매주 약 2,000건이 제안되고 100여 건이 출시돼 약 20:1로 보도됐어요.",
-    speed: "중간 · 승인까지 반복 제안 필요",
-    first: "표정 시안 세트 1종 → 카카오·라인·OGQ 동시 제안",
-    src: [["카카오 이모티콘 시장 (조선비즈/다음)", "https://v.daum.net/v/20250530144051820?f=p"], ["7000억 이모티콘 시장 (디아이투데이)", "https://ditoday.com/?p=91918"], ["카카오 이모티콘 10주년 (카카오)", "https://www.kakaocorp.com/page/detail/9609"]] },
-  goods: { attract: 65, asOf: "2026.11",
-    size: "국내 캐릭터 산업 매출 2024년 7조 958억 원 (2021년 5조 39억 원에서 증가, 문체부 콘텐츠산업조사 인용 보도). 캐릭터 수출도 2025년 12.8% 늘었어요.",
-    money: "개당 마진. 재고 부담이 핵심 리스크인데, 3D프린터·크리컷으로 소량 생산하면 재고 없이 시작할 수 있어요.",
-    entry: "진입은 쉽고 경쟁이 큽니다. POD 플랫폼 마플샵에만 크리에이터 9만 명 이상 (앱스토어 설명).",
-    speed: "빠름 · 첫 판매까지 수주 가능",
-    first: "스티커 시트 1종 + 키링 1종 → 플리마켓·마플샵 테스트 판매",
-    src: [["캐릭터 산업 7조 958억 (뉴시스)", "https://mobile.newsis.com/view/NISX20260716_0003713011"], ["2025 콘텐츠산업 동향 (아시아경제)", "https://view.asiae.co.kr/article/2026043008302523575"], ["마플샵 (앱스토어)", "https://apps.apple.com/us/app/id1571108536"]] },
-  instatoon: { attract: 60, asOf: "2026.11",
-    size: "웹툰을 주로 보는 채널로 인스타그램을 꼽은 비중 23.9% (2025 만화산업백서 인용 보도). 뷰티·식품·라이프스타일 브랜드 협업이 늘고 있어요.",
-    money: "브랜드 협찬·광고툰 제작. 제작 대행 사례로 컷당 3만 5천~5만 5천 원, 월 4편 패키지 200만 원 (크몽).",
-    entry: "팔로워가 쌓여야 협찬이 옵니다. 주 2~3회 연재를 6개월 이상 버티는 게 관건이에요 (추정).",
-    speed: "중간 · 연재 지속력이 곧 매출",
-    first: "4컷 12편 연재 → 협찬 제안서용 미디어킷",
-    src: [["인스타툰 협업 동향 (고구마팜)", "https://gogumafarm.kr/?p=2724"], ["인스타툰 제작 단가 사례 (크몽)", "https://kmong.com/gig/739349"]] },
-  portfolio: { attract: 50, asOf: "2026.11",
-    size: "외주 일러스트 거래 단가 (크몽 5년 거래 데이터): 간단 캐릭터 2만 원, 배경 포함 12만 원, 브랜딩·복잡 33만 원 이상. 숨고 평균 건당 10만 원.",
-    money: "건당·시간 노동형. 단가는 포트폴리오의 일관성과 전문 분야가 정해요.",
-    entry: "플랫폼 진입은 쉽지만 저가 경쟁이 심해요. 같은 그림체 6장 이상 묶음이 있어야 단가를 올릴 수 있어요 (추정).",
-    speed: "빠름 · 대신 시간을 파는 구조",
-    first: "한 분야(출판·브랜드·교육) 포트폴리오 6장 → 크몽 등록 + 출판사 메일 10곳",
-    src: [["일러스트 가격 데이터 (크몽)", "https://kmong.com/prices/%EC%9D%BC%EB%9F%AC%EC%8A%A4%ED%8A%B8"], ["일러스트 디자인 평균 비용 (숨고)", "https://soomgo.com/a.%EB%B6%80%EC%82%B0-%EB%8F%99%EA%B5%AC/%EC%9D%BC%EB%9F%AC%EC%8A%A4%ED%8A%B8-%EB%94%94%EC%9E%90%EC%9D%B8"]] },
-};
-
-const RX_LIB = {
-  line:    { title: "선 한 가지로 7일", how: "브러시 1종·두께 1종으로 매일 사물 3개. 지우개 없이 그린다." },
-  form:    { title: "도형 3개로 줄이기", how: "주인공을 원·사각·삼각 3개 도형으로만 다시 그려 비율을 고정한다." },
-  color:   { title: "팔레트 4색 고정", how: "주색 1, 보조 2, 포인트 1. 2주 동안 이 4색 밖으로 나가지 않는다." },
-  texture: { title: "표면 하나 정하기", how: "플랫이든 연필 결이든 하나만 골라 7장 연속 같은 브러시 세팅으로." },
-  comp:    { title: "썸네일 9칸", how: "같은 장면을 3×3 작은 칸에 배치만 바꿔 9번. 가장 마음에 드는 것만 완성." },
-  mood:    { title: "한 줄 문장 먼저", how: "그리기 전에 장면의 감정을 한 문장으로 적고, 그 문장에 맞는 표정만 남긴다." },
-  craft:      { title: "마감 체크 5분", how: "완성 전 윤곽 끊김·삐져나온 채색·지저분한 경계 3곳을 찾아 고치고 끝낸다." },
-  character:  { title: "턴어라운드 1장", how: "주인공을 앞·옆·뒤·3/4 네 방향으로 그려 특징 3가지를 고정한다." },
-  expression: { title: "표정 12칸", how: "같은 캐릭터로 기쁨·슬픔·화남·놀람 등 12표정을 한 장에. 눈썹과 입만 바꾼다." },
-  narrative:  { title: "앞뒤 한 컷씩", how: "완성한 그림의 바로 앞 장면과 뒷장면을 러프로 한 컷씩 그려 세 컷으로 만든다." },
-  production: { title: "2cm 테스트", how: "그림을 2cm로 줄여 출력해 알아보는지 확인하고, 안 보이는 디테일은 지운다." },
-};
-
-/* ═════════ 2. 계산 ═════════ */
+/* ═════════ 1~2. 규칙과 계산은 otw-core.js (공개 무료 진단과 공유) ═════════ */
+const OTW = window.OTW;
+const { CONFIG, AXES, SIGNALS, GENRES, MARKET, RX_LIB, GRADE_TXT, MERGE, AGREE_TXT, clamp, avg, hasBatchim, josa, rng, gauss,
+  scorePaths, recommendation, gapsFor, weakest, summarize, sideOf, typeOf, computeGaps, gapSentence, buildResult, buildReport, freeTeaser } = OTW;
 const $ = (id) => document.getElementById(id);
-const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
-const avg = (arr) => arr.reduce((s, x) => s + x, 0) / (arr.length || 1);
-function hasBatchim(word) {
-  const m = String(word).match(/[가-힣](?=[^가-힣]*$)/);
-  if (!m) return false;
-  return (m[0].charCodeAt(0) - 0xAC00) % 28 !== 0;
-}
-const josa = (w, withB, noB) => w + (hasBatchim(w) ? withB : noB);
-
-/* 스타일 적합도 보정: 그림체 분포(평균 50, 표준편차 22)에서 각 길의 거리 평균·편차를 구해 표준점수로 바꾼다.
-   이렇게 해야 목표 위치가 가운데인 길이 무조건 유리해지는 쏠림이 사라진다. */
-function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-function gauss(r) { let u = 0, v = 0; while (!u) u = r(); while (!v) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
-const styleDist = (g, pos) => { let n = 0, d = 0; pos.forEach((p, i) => { n += g.w[i] * Math.abs(p - g.target[i]); d += g.w[i]; }); return n / d; };
-const CAL = (() => { const r = rng(7); return GENRES.map(g => { let s = 0, s2 = 0; const N = 4000;
-  for (let i = 0; i < N; i++) { const p = AXES.map(() => clamp(50 + 22 * gauss(r), 0, 100)); const d = styleDist(g, p); s += d; s2 += d * d; }
-  const m = s / N; return { m, sd: Math.sqrt(s2 / N - m * m) }; }); })();
-
-function scorePaths(s) {
-  const pos = AXES.map(a => s.axes[a.key].position);
-  const consAvg = avg(AXES.map(a => s.axes[a.key].consistency));
-  const sig = SIGNALS.map(x => (s.signals && s.signals[x.key] ? s.signals[x.key].score : 3));
-  const readyVals = [...sig, consAvg].map(v => (v - 1) / 4 * 100);
-  return GENRES.map((g, i) => {
-    const style = Math.round(clamp(50 + 18 * (CAL[i].m - styleDist(g, pos)) / CAL[i].sd, 0, 100));
-    const ready = Math.round(readyVals.reduce((t, v, j) => t + v * g.ready[j], 0));
-    const market = MARKET[g.key].attract;
-    const total = Math.round(MIX.style * style + MIX.ready * ready + MIX.market * market);
-    const grade = total >= 75 ? "A" : total >= 62 ? "B" : total >= 50 ? "C" : "D";
-    return { ...g, style, ready, market, total, grade };
-  }).sort((a, b) => b.total - a.total || b.style - a.style);
-}
-const GRADE_TXT = { A: "바로 상품화 가능", B: "3개월 준비하면 상품화", C: "기초를 다진 뒤 도전", D: "지금은 다른 길이 유리" };
-
-function recommendation(s, paths) {
-  const cons = avg(AXES.map(a => s.axes[a.key].consistency));
-  const top = paths[0];
-  const goal = paths.find(p => p.key === s.goal);
-  if (cons < 2.6) return { title: ROUTINE.name, line: ROUTINE.why, then: `루틴 4주 뒤 ${top.name} 쪽으로 다시 진단`, target: goal || top };
-  if (goal && goal.key !== top.key) {
-    if (goal.total >= top.total - 8) return { title: goal.product, line: `하고 싶은 ${josa(goal.name, "과", "와")} 지금 그림이 충분히 가까워요 (${goal.total}점, ${goal.grade}등급).`, then: goal.extra, target: goal };
-    return { title: goal.product, line: `${josa(goal.name, "은", "는")} ${goal.total}점, 지금 그림으로 가장 빨리 돈이 되는 길은 ${top.name}(${top.total}점)이에요. ${josa(goal.name, "을", "를")} 목표로 두고 ${josa(top.name, "으로", "로")} 먼저 매출을 만드는 순서도 가능해요.`, then: `아래 시장분석의 '이 길로 가려면 바꿀 것'부터`, target: goal };
-  }
-  return { title: top.product, line: `지금 그림에 가장 맞는 길은 ${top.name}이에요 (${top.total}점, ${top.grade}등급 · ${GRADE_TXT[top.grade]}).`, then: top.extra, target: top };
-}
-function gapsFor(s, g) {
-  const out = [];
-  AXES.forEach((a, i) => {
-    const d = g.target[i] - s.axes[a.key].position;
-    if (Math.abs(d) >= 22 && g.w[i] >= .5) out.push(`${a.name}: 지금 ${s.axes[a.key].position} → ${g.name}에 맞는 위치 ${g.target[i]} 근처 (${d > 0 ? a.right : a.left} 쪽으로)`);
-  });
-  SIGNALS.forEach((x, j) => {
-    const v = s.signals && s.signals[x.key] ? s.signals[x.key].score : 3;
-    if (v <= 2 && g.ready[j] >= .2) out.push(`${x.name} ${v}/5 → ${x.fix}`);
-  });
-  return out.slice(0, 4);
-}
-function weakest(s, n) {
-  const items = AXES.map(a => ({ key: a.key, name: a.name, v: s.axes[a.key].consistency }))
-    .concat(SIGNALS.map(x => ({ key: x.key, name: x.name, v: s.signals && s.signals[x.key] ? s.signals[x.key].score : 3 })));
-  return items.sort((a, b) => a.v - b.v).slice(0, n);
-}
 
 /* ═════════ 3. 상태 ═════════ */
 const sig = (craft, character, expression, narrative, production) => ({
@@ -686,6 +558,7 @@ let cardTimer = 0;
 function refresh() {
   $("res-who").textContent = `${state.name || "이름 없음"}님의 그림체`;
   renderSources(); renderGap();
+  const ty = typeOf(state); $("res-type").textContent = `${ty.name}형 · ${ty.hook}`;
   const paths = scorePaths(state);
   const rec = recommendation(state, paths);
   // 점수표
@@ -795,28 +668,79 @@ function renderGap() {
 }
 function dmText(paths, rec) {
   const name = state.name || "작가";
-  const w = weakest(state, 1)[0];
+  const ty = typeOf(state);
   const sumLine = `한 줄로 정리하면 "${state.summary}"${hasBatchim(state.summary) ? "이에요" : "예요"}.`;
-  const lines = [`${name}님, 6축 그림체 진단 결과 보내드려요.`, ``, sumLine];
   const gp = computeGaps(state);
-  if (gp && gp.items.length) {
-    const n = tier === "paid" ? 2 : 1;
-    lines.push(``, `[본인 생각 vs 실제 그림] 일치도 ${gp.score}점`, ...gp.items.slice(0, n).map(it => { const { head, tail } = gapSentence(it); return `• ${head} → ${tail}`; }));
-  }
   if (tier === "free") {
-    const st = [...paths].sort((a, b) => b.style - a.style)[0];
-    lines.push(`그림체만 보면 ${st.name} 쪽에 가장 가깝고(${st.style}점), 가장 흔들리는 곳은 ${josa(w.name, "이에요", "예요")}.`, ``, `이번 주 처방`, `1. ${state.rx[0]?.title || ""} — ${state.rx[0]?.how || ""}`, ``,
-      `상업성 평가(어느 길이 돈이 되는지)와 해당 시장분석, 2주 처방 전체는 유료 리포트에서 받아 보실 수 있어요.`);
-  } else {
-    const g = rec.target, m = MARKET[g.key];
-    lines.push(`길별 상업성은 ${paths.slice(0, 3).map(p => `${p.name} ${p.total}점(${p.grade})`).join(", ")} 순이에요.`,
-      `가장 흔들리는 곳은 ${josa(w.name, "이에요", "예요")}.`, ``,
-      `[${g.name} 시장 한눈에]`, `• 규모: ${m.size}`, `• 돈 버는 방식: ${m.money}`, `• 진입: ${m.entry}`, `• 먼저 만들 것: ${m.first}`, ``,
-      `2주 처방`, ...state.rx.map((r, i) => `${i + 1}. ${r.title} — ${r.how}`));
+    const tz = freeTeaser(state);
+    const lines = [`${name}님, 6축 그림체 진단 결과예요.`, ``, `${name}님 그림은 '${ty.name}'형이에요.`, `→ ${ty.hook}`, ``, sumLine, ``, `의외였던 점 하나: ${tz.surprise}`];
+    if (gp && gp.items.length) { const g = gapSentence(gp.items[0]); lines.push(``, `그리고 본인 생각과 실제 그림이 가장 다른 곳은 ${g.head.split(":")[0]}예요. 왜 그런지는 리포트에서 풀어 드려요.`); }
+    lines.push(``, `이번 주에 바로 해 볼 것`, `• ${state.rx[0]?.title || ""}: ${state.rx[0]?.how || ""}`, ``,
+      `여기까지가 무료 결과예요. 유료 리포트(약 ${tz.approxChars.toLocaleString("ko-KR")}자)에는 이런 내용이 들어가요.`,
+      `• 지금 그림으로 돈이 되는 길 1~3위와 등급 (1위: ${tz.top.name}, 2·3위는 리포트에서)`,
+      `• 길마다 시장 규모, 수익 계산, 12주 로드맵, 포트폴리오 체크리스트`,
+      `• 6축 하나하나의 의미와 연습법, 본인 생각과 그림의 차이 해석`,
+      `• 2주 처방 3개와 4주 연습표`, ``,
+      `리포트는 ${OTW.won(CONFIG.price.report)}이고, 지금은 런칭가 ${OTW.won(CONFIG.price.launch)}예요.${CONFIG.links.report ? " 신청: " + CONFIG.links.report : " 신청은 이 DM으로 '리포트'라고 보내 주세요."}`,
+      `— 아더댄웍스 소랭`);
+    return lines.join("\n");
   }
-  lines.push(``, `다음 단계로는 ${josa(rec.title, "을", "를")} 추천드려요. 2주 뒤 같은 그림 3장 다시 보내주시면 축이 얼마나 움직였는지 비교해 드릴게요.`, `— 아더댄웍스 소랭`);
+  const g = rec.target;
+  const lines = [`${name}님, 6축 그림체 유료 리포트 보내드려요.`, ``, `그림체 유형은 '${ty.name}'형, ${sumLine.replace("한 줄로 정리하면 ", "한 줄 정의는 ")}`,
+    `길별 상업성은 ${paths.slice(0, 3).map(p => `${p.name} ${p.total}점(${p.grade})`).join(", ")} 순이에요.`];
+  if (gp) lines.push(`본인 생각과 그림의 일치도는 ${gp.score}점(${AGREE_TXT[gp.level]})이에요.`);
+  lines.push(``, `리포트 파일에는 아래 내용이 길별로 자세히 들어 있어요.`,
+    `• ${paths.slice(0, 3).map(p => p.name).join(" · ")}${paths.slice(0, 3).some(p => p.key === g.key) ? "" : " · " + g.name}: 시장, 수익 계산, 12주 로드맵, 체크리스트, 흔한 실수`,
+    `• 6축과 상업 신호 5가지 하나하나의 해설과 연습법`,
+    `• 2주 처방 3개와 4주 연습표`, ``,
+    `가장 먼저 할 일은 '${state.rx[0]?.title || ""}'이에요. ${state.rx[0]?.how || ""}`, ``,
+    `리포트 마지막 장에 이 분석을 바탕으로 한 ${rec.title} 과정도 정리해 뒀어요. 4주 뒤 같은 그림 3장 보내주시면 재진단해서 변화를 숫자로 보여 드릴게요.`,
+    `— 아더댄웍스 소랭`);
   return lines.join("\n");
 }
+
+/* ═════════ 4-1. 유료 리포트 전체 ═════════ */
+let currentReport = null;
+function ensureReportCSS() {
+  if (document.getElementById("report-css")) return;
+  const st = document.createElement("style"); st.id = "report-css"; st.textContent = OTW.REPORT_CSS; document.head.appendChild(st);
+}
+function openReport() {
+  ensureReportCSS();
+  currentReport = buildReport(state);
+  $("report-body").innerHTML = OTW.reportBodyHTML(currentReport);
+  const chars = OTW.reportToText(currentReport).length;
+  $("report-meta").textContent = `${currentReport.sections.length}개 장 · 약 ${Math.round(chars / 100) * 100}자`;
+  $("report-status").textContent = state.isSample ? "예시 결과로 만든 리포트예요. 실제 진단 후 다시 열면 그 사람 기준으로 바뀝니다." : "";
+  document.querySelectorAll("#pane-ai, #pane-lab, #pane-hist, #result, .tabs").forEach(el => { el.dataset.wasHidden = el.hidden ? "1" : ""; el.hidden = true; });
+  $("main-grid").classList.add("wide");
+  $("report-view").hidden = false;
+  $("report-view").scrollIntoView({ block: "start" });
+}
+function closeReport() {
+  $("report-view").hidden = true;
+  document.querySelectorAll("#pane-ai, #pane-lab, #pane-hist, #result, .tabs").forEach(el => { el.hidden = el.dataset.wasHidden === "1"; });
+  $("main-grid").classList.toggle("wide", !$("pane-lab").hidden || !$("pane-hist").hidden);
+  $("result").scrollIntoView({ block: "start" });
+}
+$("btn-report").addEventListener("click", openReport);
+$("btn-report-close").addEventListener("click", closeReport);
+$("btn-report-text").addEventListener("click", () => {
+  const st = $("report-status"); const txt = OTW.reportToText(currentReport || buildReport(state));
+  navigator.clipboard.writeText(txt).then(() => { st.className = "status ok"; st.textContent = `텍스트 ${txt.length.toLocaleString("ko-KR")}자를 복사했어요. 카톡·메일에 붙여 넣으면 됩니다.`; })
+    .catch(() => { st.className = "status err"; st.textContent = "복사가 막혀 있어요. HTML 파일로 저장해 보내 주세요."; });
+});
+$("btn-report-html").addEventListener("click", async () => {
+  const st = $("report-status");
+  const r = currentReport || buildReport(state);
+  const html = OTW.reportToHTMLDoc(r);
+  const fname = `아더댄웍스-6축리포트-${(state.name || "작가").replace(/[^\w가-힣-]/g, "")}-${r.date.replaceAll(".", "")}.html`;
+  if (downloadsApi) {
+    try { await downloadsApi.save({ filename: fname, data: html }); st.className = "status ok"; st.textContent = "저장했어요. 파일을 수강생에게 보내면 휴대폰 브라우저에서 바로 열려요."; return; }
+    catch (e) { if (e && e.code === "declined") { st.className = "status"; st.textContent = "저장을 취소했어요."; return; } }
+  }
+  st.className = "status err"; st.textContent = "이 화면에서는 파일 저장이 막혀 있어요. '텍스트 복사'를 쓰거나 claude.ai에서 열어 주세요.";
+});
 
 /* ═════════ 5. 카드 ═════════ */
 let fontsReady = null;
@@ -851,7 +775,7 @@ function cardFooter(ctx, by) {
 async function drawCard(paths, rec) {
   await loadFonts();
   const c = $("card"), ctx = c.getContext("2d"); const W = 1080, PX = 78;
-  cardBase(ctx, "6축 그림체 진단");
+  cardBase(ctx, `6축 그림체 진단 · ${typeOf(state).name}형`);
   ctx.fillStyle = "#16181D"; ctx.font = '44px "Jua", sans-serif'; ctx.fillText(`${state.name || "작가"}님의 그림체는`, PX, 290);
   ctx.fillStyle = "#1F3D8F"; ctx.font = '74px "Jua", sans-serif';
   let sl = wrapLines(ctx, state.summary || "", W - PX * 2, 2);
@@ -928,8 +852,6 @@ tabs.forEach(([t]) => $(t).addEventListener("click", () => selectTab(t)));
 /* ═════════ 7. 본인 체크 · 합치기 ═════════ */
 const selfAns = {};
 const SELF_TOTAL = AXES.length * 2 + SIGNALS.length;
-/* AI 비중. 위치·신호는 그림을 직접 본 AI를, 일관성은 평소 습관을 아는 본인을 더 믿는다 */
-const MERGE = { position: .6, consistency: .5, signal: .6 };
 function segHTML(label) { return `<div class="seg" role="group" aria-label="${label}">${[1,2,3,4,5].map(n => `<button type="button" data-v="${n}" aria-pressed="false">${n}</button>`).join("")}</div>`; }
 function bindSeg(seg, onPick) { seg.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; onPick(+b.dataset.v); seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); updatePlan(); }); }
 function buildSelf() {
@@ -986,84 +908,6 @@ function updatePlan() {
   $("plan-line").textContent = plan;
   $("btn-analyze").disabled = !ok || busy;
 }
-function summarize(s) {
-  const pick = (k, l, r) => s.axes[k].position >= 55 ? r : s.axes[k].position <= 45 ? l : null;
-  const adj = pick("line", "자유로운 선의", "단정한 선의") || pick("texture", "평면적인", "손맛 있는") || "균형 잡힌";
-  const noun = pick("mood", "관찰자", "이야기꾼") || pick("form", "캐릭터 메이커", "묘사가") || "실험가";
-  const mid = pick("color", "담백한", "선명한") || pick("comp", "차분한", "역동적인") || "";
-  return [adj, mid, noun].filter(Boolean).join(" ");
-}
-const sideOf = (a, v) => v <= 40 ? a.left : v >= 60 ? a.right : "중간";
-/* 본인 생각 vs 실제 그림 */
-function computeGaps(s) {
-  const src = s.sources; if (!src || !src.ai || !src.self) return null;
-  const items = [], dA = [], dS = [];
-  AXES.forEach(a => {
-    const A = src.ai.axes[a.key].position, S = src.self.axes[a.key] && src.self.axes[a.key].position;
-    if (S == null) return; const d = Math.abs(A - S); dA.push(d);
-    if (d >= 25) items.push({ kind: "axis", key: a.key, name: a.name, ai: A, self: S, diff: d, w: d });
-  });
-  SIGNALS.forEach(x => {
-    const A = src.ai.signals[x.key], S = src.self.signals[x.key];
-    if (S == null) return; const d = Math.abs(A - S); dS.push(d);
-    if (d >= 2) items.push({ kind: "signal", key: x.key, name: x.name, ai: A, self: S, diff: d, w: d * 20 });
-  });
-  if (!dA.length && !dS.length) return null;
-  const score = Math.round(clamp(100 - (dA.length ? avg(dA) : 0) * 1.6 - (dS.length ? avg(dS) : 0) * 12, 0, 100));
-  items.sort((x, y) => y.w - x.w);
-  return { score, level: score >= 75 ? "hi" : score >= 55 ? "mid" : "lo", items };
-}
-const AGREE_TXT = { hi: "높음", mid: "보통", lo: "낮음" };
-function gapSentence(it) {
-  if (it.kind === "axis") {
-    const a = AXES.find(x => x.key === it.key);
-    const sS = sideOf(a, it.self), sA = sideOf(a, it.ai);
-    const head = `${a.name}: 본인은 ${sS}(${it.self}), 그림은 ${sA}(${it.ai})`;
-    const tail = sS !== sA && sS !== "중간" && sA !== "중간" ? "의도한 방향이 그림에 아직 안 나와요." : "방향은 비슷한데 정도 차이가 커요.";
-    return { head, tail };
-  }
-  const head = `${it.name}: 본인 ${it.self}/5 · 그림 ${it.ai}/5`;
-  const tail = it.self > it.ai ? "스스로 더 높게 보고 있어요. 상품으로 낼 때 먼저 걸리는 곳이에요." : "그림이 본인 생각보다 나아요. 강점으로 써도 됩니다.";
-  return { head, tail };
-}
-function buildResult(base, ai, self) {
-  const s = ai ? structuredClone(ai) : { axes: {}, signals: {}, rx: [] };
-  s.name = base.name; s.goal = base.goal; s.isSample = false;
-  s.mode = ai && self ? "both" : ai ? "ai" : "self";
-  s.sources = {
-    ai: ai ? { axes: Object.fromEntries(AXES.map(a => [a.key, { position: ai.axes[a.key].position, consistency: ai.axes[a.key].consistency }])), signals: Object.fromEntries(SIGNALS.map(x => [x.key, ai.signals[x.key].score])) } : null,
-    self: self ? { axes: Object.fromEntries(AXES.map(a => [a.key, { ...self.axes[a.key] }])), signals: { ...self.signals } } : null,
-  };
-  AXES.forEach(a => {
-    const A = ai && ai.axes[a.key], S = self && self.axes[a.key];
-    if (A) {
-      const pos = S && S.position != null ? Math.round(MERGE.position * A.position + (1 - MERGE.position) * S.position) : A.position;
-      const cons = S && S.consistency != null ? Math.round(MERGE.consistency * A.consistency + (1 - MERGE.consistency) * S.consistency) : A.consistency;
-      s.axes[a.key] = { position: pos, consistency: clamp(cons, 1, 5), evidence: A.evidence };
-    } else {
-      s.axes[a.key] = { position: S.position, consistency: S.consistency, evidence: `본인 응답: ${sideOf(a, S.position)} 쪽, 일관성 ${S.consistency}/5` };
-    }
-  });
-  SIGNALS.forEach(x => {
-    const A = ai && ai.signals[x.key], S = self && self.signals[x.key];
-    if (A) s.signals[x.key] = { score: S != null ? clamp(Math.round(MERGE.signal * A.score + (1 - MERGE.signal) * S), 1, 5) : A.score, note: A.note };
-    else s.signals[x.key] = { score: S, note: "본인 응답" };
-  });
-  if (!ai) {
-    s.summary = summarize(s);
-    s.strengths = AXES.filter(a => s.axes[a.key].consistency >= 4).map(a => `• ${a.name}: ${s.axes[a.key].position >= 50 ? a.right : a.left} 쪽 선택이 안정적이에요`).concat(SIGNALS.filter(x => s.signals[x.key].score >= 4).map(x => `• ${josa(x.name, "이", "가")} 강점이에요`)).slice(0, 3).join("\n") || "• 아직 확실히 굳은 축은 없어요. 고를 수 있는 폭이 넓다는 뜻이기도 해요";
-    const weak = weakest(s, 3);
-    s.blockers = weak.slice(0, 2).map(w => `• ${josa(w.name, "이", "가")} 약해요 (${w.v}/5)`).join("\n");
-    s.rx = weak.map(w => ({ ...RX_LIB[w.key] }));
-  }
-  const g = computeGaps(s);
-  const topAxis = g && g.items.find(it => it.kind === "axis");
-  if (topAxis && !s.rx.some(r => r.title === RX_LIB[topAxis.key].title)) {
-    s.rx = [{ title: RX_LIB[topAxis.key].title, how: `${RX_LIB[topAxis.key].how} (본인 생각과 그림이 ${topAxis.diff}점 달라서 1순위)` }, ...s.rx].slice(0, 3);
-  }
-  return s;
-}
-
 /* ═════════ 8. 이미지 입력 ═════════ */
 let files = [];
 function renderThumbs() {
@@ -1439,6 +1283,6 @@ function renderHistUnavailable(msg) {
   const e = document.createElement("div"); e.className = "empty"; e.textContent = msg || "이 화면에서는 진단 기록을 쓸 수 없어요. 소유자 계정으로 claude.ai에서 열면 보여요.";
   box.appendChild(e);
 }
-window.__otw = { buildResult, computeGaps, MERGE, scorePaths, recommendation, summarize, coerceAI, renderSim, gapsFor, hasBatchim, dmText: () => $("dm").value, setTier, get state() { return state; }, set state(v) { state = v; renderAll(); } };
+window.__otw = { openReport, buildReport, freeTeaser, buildResult, computeGaps, MERGE, scorePaths, recommendation, summarize, coerceAI, renderSim, gapsFor, hasBatchim, dmText: () => $("dm").value, setTier, get state() { return state; }, set state(v) { state = v; renderAll(); } };
 })();
 </script>

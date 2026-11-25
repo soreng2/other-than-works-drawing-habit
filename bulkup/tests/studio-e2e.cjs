@@ -7,6 +7,7 @@ const path = require('path');
 const S = require('os').tmpdir() + '/otw-e2e';
 fs.mkdirSync(S, { recursive: true });
 fs.writeFileSync(S + '/studio.html', wrap(path.join(__dirname, '..', 'six-axis-studio.html')));
+fs.copyFileSync(path.join(__dirname, '..', 'otw-core.js'), S + '/otw-core.js');
 
 const MOCK = `
 window.__calls = 0;
@@ -32,7 +33,7 @@ sample.json = async (prompt, opts)=>{ window.__calls++; window.__lastPrompt = pr
   const ax = {}; for (const [k,[pos,c]] of Object.entries(p.axes)) ax[k] = {position: pos + jitter(), consistency: c, evidence: k+" 근거"};
   const sg = {}; for (const [k,v] of Object.entries(p.signals)) sg[k] = {score: v, note: k+" 메모"};
   return { summary: p.summary, axes: ax, signals: sg, strengths:["강점1","강점2"], blockers:["막힘1","막힘2"], prescriptions:[{title:"선 한 가지로 7일",how:"브러시 하나"}] }; };
-window.claude = { use: async (n)=> n==='sample'? sample : n==='downloads'? {save: async(r)=>{window.__saved=r.filename; return {status:'saved'}}} : n==='db'? {collection:()=>coll} : null };
+window.claude = { use: async (n)=> n==='sample'? sample : n==='downloads'? {save: async(r)=>{window.__saved=r.filename; window.__savedData = typeof r.data === 'string' ? r.data : ''; return {status:'saved'}}} : n==='db'? {collection:()=>coll} : null };
 `;
 let fails = 0;
 const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!ok) fails++; };
@@ -76,6 +77,15 @@ const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!o
   });
   check(flip[0] === 'emoticon' && flip[1] === 'goods', `같은 그림체에서 표정 폭↑ → ${flip[0]}, 상품화↑ → ${flip[1]}`);
 
+  // 3-2) 이모티콘 문턱: 귀엽고 깔끔해도 표정 폭·캐릭터가 약하면 굿즈로
+  const gateRes = await p.evaluate(() => {
+    const keys = ['line', 'form', 'color', 'texture', 'comp', 'mood'], sk = ['craft', 'character', 'expression', 'narrative', 'production'];
+    const mk = (pos, sg) => { const s = { axes: {}, signals: {} }; keys.forEach((k, i) => s.axes[k] = { position: pos[i], consistency: 4 }); sk.forEach((k, i) => s.signals[k] = { score: sg[i] }); return window.__otw.scorePaths(s); };
+    return { looksEmoticon: mk([80, 15, 70, 20, 30, 70], [4, 4, 3, 2, 4])[0].key, realEmoticon: mk([82, 10, 75, 15, 30, 85], [4, 5, 5, 2, 4])[0].key, storyCute: mk([55, 20, 50, 70, 60, 80], [4, 4, 3, 4, 2])[0].key };
+  });
+  check(gateRes.looksEmoticon === 'goods' && gateRes.realEmoticon === 'emoticon' && gateRes.storyCute === 'picturebook', `이모티콘처럼 보이는 그림 → ${gateRes.looksEmoticon}, 진짜 이모티콘 → ${gateRes.realEmoticon}, 이야기 있는 귀여운 그림 → ${gateRes.storyCute}`);
+  check(sim.emoticon / 50 < 10, `무작위 입력에서 이모티콘 1위 비율 ${(sim.emoticon / 50).toFixed(1)}% (10% 미만)`);
+
   // 4) 조사
   const josa = await p.evaluate(() => ['정서', '선', '완성도', '이야기꾼', '포근한 이야기꾼', '픽처포지(그림책반)', '굿즈반 + 캐릭터 키트'].map(w => w + ':' + window.__otw.hasBatchim(w)));
   console.log('batchim:', josa.join(' '));
@@ -98,17 +108,30 @@ const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!o
   const mk2 = await p.$eval('#market h4', e => e.textContent);
   check(mk2 === `${top} 시장분석`, `목표 모름이면 1위(${top}) 시장분석`);
   const dmPaid = await p.$eval('#dm', e => e.value);
-  check(dmPaid.includes('시장 한눈에') && !/을\(를\)|이\(가\)|은\(는\)/.test(dmPaid), '유료 DM에 시장 요약, 을(를) 같은 깨진 조사 없음');
+  check(dmPaid.includes('12주 로드맵') && dmPaid.includes('리포트') && !/을\(를\)|이\(가\)|은\(는\)/.test(dmPaid), '유료 DM: 리포트 안내, 깨진 조사 없음');
   console.log('--- DM(유료) ---\n' + dmPaid + '\n---');
   await p.click('#tier-free'); await p.waitForTimeout(200);
   const dmFree = await p.$eval('#dm', e => e.value);
-  check(!dmFree.includes('시장 한눈에') && dmFree.includes('유료 리포트'), '무료 DM은 시장분석 없이 유료 안내');
+  console.log('--- DM(무료) ---\n' + dmFree + '\n---');
+  check(dmFree.includes('형이에요') && dmFree.includes('의외였던 점') && dmFree.includes('런칭가') && !dmFree.includes('12주 로드맵을'), '무료 DM: 유형 공개 + 의외의 한 가지 + 잠긴 목차 + 가격');
   check(await p.$eval('#market', e => e.hidden) && await p.$eval('#signals', e => e.closest('[data-paid]').hidden), '무료 카드에서 상업 신호·시장분석 숨김');
   await p.click('#tier-paid'); await p.waitForTimeout(400);
   await p.click('#btn-png2'); await p.waitForTimeout(200);
   check((await p.evaluate(() => window.__saved || '')).includes('market'), '카드 2 저장');
   await p.click('#btn-save'); await p.waitForTimeout(200);
   check((await p.$eval('#save-status', e => e.innerText)).includes('저장했어요'), '기록 저장');
+  // 장문 리포트
+  await p.click('#btn-report'); await p.waitForTimeout(300);
+  const rep = await p.evaluate(() => ({ visible: !document.getElementById('report-view').hidden, resultHidden: document.getElementById('result').hidden, h2: [...document.querySelectorAll('#report-body h2')].map(h => h.textContent), len: document.getElementById('report-body').innerText.length, meta: document.getElementById('report-meta').textContent }));
+  console.log('report:', rep.meta, '|', rep.h2.join(' / '));
+  check(rep.visible && rep.resultHidden && rep.h2.length >= 10 && rep.len > 8000, `유료 리포트 전체 화면: ${rep.h2.length}개 장, ${rep.len}자`);
+  check(rep.h2.some(h => h.includes('이 분석으로 배우면')) && rep.h2.filter(h => h.includes('위') || h.includes('하고 싶은 길')).length >= 3, '길별 상세 3개 이상 + 수업 소개 장');
+  await p.screenshot({ path: S + '/report-view.png', fullPage: false });
+  await p.click('#btn-report-html'); await p.waitForTimeout(200);
+  check((await p.evaluate(() => window.__saved || '')).endsWith('.html') && (await p.evaluate(() => (window.__savedData || '').startsWith('<!doctype html>'))), 'HTML 파일 저장 (완결된 문서)');
+  fs.writeFileSync(S + '/report.html', await p.evaluate(() => window.__savedData));
+  await p.click('#btn-report-close'); await p.waitForTimeout(200);
+  check(await p.evaluate(() => document.getElementById('report-view').hidden && !document.getElementById('result').hidden && !document.getElementById('pane-ai').hidden), '리포트 닫으면 결과지로 복귀');
   const c1 = await p.evaluate(() => document.getElementById('card').toDataURL('image/png').split(',')[1]);
   const c2 = await p.evaluate(() => document.getElementById('card2').toDataURL('image/png').split(',')[1]);
   fs.writeFileSync(S + '/card1.png', Buffer.from(c1, 'base64')); fs.writeFileSync(S + '/card2.png', Buffer.from(c2, 'base64'));
@@ -155,7 +178,7 @@ const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!o
   check(/일치도 \d+/.test(gapTxt) && (gapTxt.match(/의도한 방향|정도 차이|본인 생각보다|더 높게/g) || []).length >= 2, '일치도와 차이 항목·해석 표시');
   check((await p.$eval('#src-line', e => e.textContent)).includes('합산'), '축마다 AI·본인·합산 출처 줄');
   check(st7.rx[0].how.includes('1순위'), '차이 가장 큰 축이 처방 1순위: ' + st7.rx[0].title);
-  check((await p.$eval('#dm', e => e.value)).includes('[본인 생각 vs 실제 그림]'), 'DM에 인식 차이 포함');
+  check((await p.$eval('#dm', e => e.value)).includes('일치도는'), '유료 DM에 일치도 포함');
   await p.waitForTimeout(300);
   fs.writeFileSync(S + '/card-merged.png', Buffer.from(await p.evaluate(() => document.getElementById('card').toDataURL('image/png').split(',')[1]), 'base64'));
   await p.screenshot({ path: S + '/desk-merged.png', fullPage: true });

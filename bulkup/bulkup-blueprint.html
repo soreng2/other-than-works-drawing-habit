@@ -170,6 +170,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     <a href="#ai">AI 서비스 기획안</a>
     <a href="#prompt">프롬프트 설계</a>
     <a href="#traction">0원 트랙션 90일</a>
+    <a href="#funnel">마케팅 퍼널</a>
     <a href="#grants">2027 지원사업 연결</a>
     <a href="#setup">이번 달 정비 목록</a>
     <a href="#risk">리스크</a>
@@ -276,7 +277,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
         <table>
           <thead><tr><th></th><th>무료 그림체 카드</th><th>유료 리포트 (29,000원)</th><th>자동 리포트 (2단계 웹앱 이후)</th></tr></thead>
           <tbody>
-            <tr><td>담는 것</td><td>6축 위치, 한 줄 정의, 그림체가 가까운 길, 처방 1개</td><td>무료 내용 + 상업 신호 5가지, 길별 상업성 점수·등급, 목표 길(없으면 1위 길) 시장분석, 처방 3개, 카드 2장</td><td>유료와 같음, 감수 없음</td></tr>
+            <tr><td>담는 것</td><td>그림체 유형(8종) 공개, 의외의 한 가지, 6축 위치, 1위 길, 처방 1개. 2·3위·등급·시장분석은 잠김. 연락처와 궁금한 점을 받은 뒤 공개</td><td>장문 리포트 파일(약 9천~1만 2천 자): 6축·상업 신호 하나하나의 해설과 연습법, 본인 생각 vs 실제 그림, 상위 3개 길마다 시장·수익 계산·12주 로드맵·체크리스트·흔한 실수, 4주 연습표, 수업 소개 + 카드 2장</td><td>유료와 같음, 감수 없음</td></tr>
             <tr><td>대표 손</td><td>0분 (자가진단) 또는 1~2분 (AI 카드 발송만)</td><td>5~10분: AI 초안 확인, 점·문장 수정, 발송</td><td>0분</td></tr>
             <tr><td>Claude 비용</td><td>자가진단은 없음. AI 카드는 대표 Claude 요금제 사용량</td><td>대표 Claude 요금제 사용량</td><td>API 호출비, 건당 수백 원 이하 추정</td></tr>
             <tr><td>역할</td><td>유입, 인스타 공유</td><td>첫 결제, 대표 보증</td><td>물량, 저가 상품</td></tr>
@@ -493,6 +494,76 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
           </tbody>
         </table>
       </div>
+    </section>
+
+    <!-- 4-1 -->
+    <section id="funnel">
+      <span class="eyebrow">04-1 · 마케팅 퍼널</span>
+      <h2>무료 진단이 연락처와 질문을 모으고, 질문이 다음 콘텐츠가 되는 구조</h2>
+      <p>무료 진단은 '공짜로 알려 주는 것'이 아니라 <strong>연락처·고민·유입 경로를 받는 대가로 '오?'를 주는 것</strong>이에요. 유형과 1위 길은 보여 주고, 2·3위 길과 등급, 길마다의 시장·수익·로드맵은 잠가 둡니다. 결과 화면에 유료 리포트 목차가 다 보이기 때문에, 무엇이 잠겨 있는지 알아서 더 궁금해져요.</p>
+      <figure class="fig">
+        <div class="svg-scroll"><svg viewBox="0 0 760 210" role="img" aria-labelledby="fn-t">
+          <title id="fn-t">콘텐츠에서 무료 진단, 연락처, 결과 메일, 유료 리포트, 수업, 재진단 후기로 이어지고 후기가 다시 콘텐츠가 되는 순환</title>
+          <defs><marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker></defs>
+          <g stroke="var(--muted)" stroke-width="2" marker-end="url(#ar3)"><path d="M112 60H134"/><path d="M240 60H262"/><path d="M368 60H390"/><path d="M496 60H518"/><path d="M624 60H646"/></g>
+          <g font-size="13" text-anchor="middle">
+            <rect x="8" y="30" width="104" height="60" fill="var(--bg)" stroke="var(--line)" stroke-width="2"/><text x="60" y="56" font-weight="700" fill="var(--ink)">콘텐츠</text><text x="60" y="76" font-size="11" fill="var(--muted)">캐러셀·릴스·QR</text>
+            <rect x="136" y="30" width="104" height="60" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/><text x="188" y="56" font-weight="700" fill="var(--ink)">무료 진단</text><text x="188" y="76" font-size="11" fill="var(--muted)">17문항 3분</text>
+            <rect x="264" y="30" width="104" height="60" fill="var(--navy-bg)"/><text x="316" y="56" font-weight="700" fill="#A8D96A">연락처·고민</text><text x="316" y="76" font-size="11" fill="#C3D0F0">결과 보기 전 게이트</text>
+            <rect x="392" y="30" width="104" height="60" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/><text x="444" y="56" font-weight="700" fill="var(--ink)">'오?' 결과</text><text x="444" y="76" font-size="11" fill="var(--muted)">유형 공개·잠긴 목차</text>
+            <rect x="520" y="30" width="104" height="60" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/><text x="572" y="56" font-weight="700" fill="var(--ink)">유료 리포트</text><text x="572" y="76" font-size="11" fill="var(--muted)">AI + 대표 감수</text>
+            <rect x="648" y="30" width="104" height="60" fill="var(--bg)" stroke="var(--line)" stroke-width="2"/><text x="700" y="56" font-weight="700" fill="var(--ink)">수업</text><text x="700" y="76" font-size="11" fill="var(--muted)">4주 뒤 재진단</text>
+          </g>
+          <path d="M700 92 V150 H60 V96" stroke="var(--green)" stroke-width="2.5" fill="none" stroke-dasharray="6 6" marker-end="url(#ar3)"/>
+          <text x="380" y="174" text-anchor="middle" font-size="13" fill="var(--green)" font-weight="700">재진단 전후 카드와 '많이 받은 질문'이 다음 주 콘텐츠가 된다</text>
+          <text x="380" y="198" text-anchor="middle" font-size="12" fill="var(--muted)">관심사 집계 시트 상위 3개 = 다음 주 캐러셀 주제</text>
+        </svg></div>
+      </figure>
+
+      <h3>퍼널 숫자 <span class="tag est">추정 목표</span></h3>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>단계</th><th style="text-align:right">전환율</th><th style="text-align:right">방문 1,000명 기준</th><th>이 숫자를 올리는 장치</th></tr></thead>
+          <tbody>
+            <tr><td>방문 → 17문항 완료</td><td class="num">50%</td><td class="num">500명</td><td>질문 1개 = 1화면, 진행 바, 유형 8가지 미리 보기</td></tr>
+            <tr><td>완료 → 연락처 남김</td><td class="num">70%</td><td class="num">350명</td><td>결과가 이미 나왔다는 문구, 이메일·휴대폰 중 하나만</td></tr>
+            <tr><td>연락처 → 유료 리포트</td><td class="num">6%</td><td class="num">21명 · 약 40~60만 원</td><td>잠긴 목차, 의외의 한 가지, 런칭가 마감, D7 메일</td></tr>
+            <tr><td>리포트 → 수업</td><td class="num">25%</td><td class="num">5명</td><td>리포트 마지막 장의 수업 소개, 4주 뒤 재진단 약속</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small muted">퍼널 첫 달에는 숫자보다 '어느 단계에서 가장 많이 빠지나'를 봅니다. 시트에 utm_source가 함께 쌓이니 채널별로 비교할 수 있어요.</p>
+
+      <h3>콘텐츠 루프 8가지</h3>
+      <div class="cols">
+        <div class="box"><h4>1. 유형 8종 시리즈</h4><p class="small">"8가지 그림체 유형, 당신은?" 캐러셀 한 편에 유형 하나씩. 마지막 장은 무료 진단 링크. 게시물마다 utm_campaign을 다르게 달아 어떤 유형 글이 유입을 만드는지 봅니다.</p></div>
+        <div class="box"><h4>2. 반전 콘텐츠</h4><p class="small">"이모티콘처럼 보이는데 사실 굿즈형인 그림" 같은 결과의 '의외였던 점'이 그대로 릴스 훅이 돼요. 실제 진단 사례는 동의받고 씁니다.</p></div>
+        <div class="box"><h4>3. 질문이 다음 주 주제</h4><p class="small">관심사 집계 시트 상위 3개를 매주 월요일에 확인해 캐러셀·라이브 주제로. "지난주 가장 많이 받은 질문"이라는 제목 자체가 참여를 부릅니다.</p></div>
+        <div class="box"><h4>4. 재진단 전후 카드</h4><p class="small">수업 4주 뒤 같은 그림 3장으로 재진단해서 축이 움직인 카드를 나란히. 후기보다 설득력이 큰 숫자 후기예요.</p></div>
+        <div class="box"><h4>5. 친구 공유 루프</h4><p class="small">결과 화면의 '친구도 해 보기' 링크에 ref=share가 붙어요. 시트에서 공유로 들어온 사람 수를 세면 입소문 계수가 나옵니다.</p></div>
+        <div class="box"><h4>6. 오프라인 QR</h4><p class="small">원흥 작업실 입구, 플리마켓 부스, 기관 수업 마지막 장에 QR (utm_source=offline). 현장에서 3분이면 끝나는 게 장점이에요.</p></div>
+        <div class="box"><h4>7. 기관 버전</h4><p class="small">학교·청소년센터 수업 첫 시간에 반 전체가 무료 진단 → 반의 유형 분포를 보여 주며 키트·후속 수업을 제안. B2G 제안서의 근거 자료가 됩니다.</p></div>
+        <div class="box"><h4>8. 제휴 쿠폰</h4><p class="small">화방·문구 브랜드, 미술학원과 "진단 결과 화면 제시 시 할인" 제휴. 상대는 고객을, 아더댄웍스는 연락처를 얻어요.</p></div>
+      </div>
+
+      <h3>연락처를 남긴 사람에게 보내는 순서</h3>
+      <div class="timeline">
+        <div class="tl hot"><span class="m">D0</span><ul><li>결과 메일 자동 발송 (Apps Script). 질문을 남겼다면 대표가 직접 답장</li></ul></div>
+        <div class="tl"><span class="m">D2</span><ul><li>"○○형이 실제로 많이 가는 길" 사례 1개 (마케팅 동의자만)</li></ul></div>
+        <div class="tl"><span class="m">D5</span><ul><li>유형별 첫 상품 만드는 팁 1개, 리포트 목차 다시 보기</li></ul></div>
+        <div class="tl hot"><span class="m">D7</span><ul><li>리포트 런칭가 마감 안내</li></ul></div>
+        <div class="tl"><span class="m">D14</span><ul><li>다음 수업 기수 오픈 소식</li></ul></div>
+      </div>
+      <p class="small muted">마케팅 수신에 동의하지 않은 사람에게는 D0 결과와 질문 답장만 보냅니다. 광고성 메일·문자에는 '(광고)' 표기와 수신 거부 방법을 넣어야 해요 (정보통신망법상 의무, 문구는 발송 전에 한 번 확인하세요).</p>
+
+      <h3>공개까지 5단계</h3>
+      <ol>
+        <li>구글 시트를 만들고 <code>lead-collector.gs</code>를 Apps Script로 배포해 웹 앱 주소를 받는다 (파일 맨 위에 순서가 있어요)</li>
+        <li><code>otw-core.js</code>의 CONFIG에 웹 앱 주소, 결제·수업·카카오 링크, 가격을 채운다</li>
+        <li><code>node bulkup/tools/build-public.cjs</code>로 <code>public</code> 폴더를 만든다</li>
+        <li><code>public</code> 폴더를 Netlify Drop에 끌어다 놓거나 GitHub Pages로 올린다</li>
+        <li>인스타 프로필 링크에 걸고, 게시물마다 utm_campaign을 바꿔 단다</li>
+      </ol>
     </section>
 
     <!-- 5 -->

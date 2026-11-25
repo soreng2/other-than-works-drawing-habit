@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>내 그림체 6축 진단</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="17년 차 디자이너가 만든 6축 기준으로 내 그림체 유형과 돈이 되는 길을 3분 만에 확인하세요.">
+<meta property="og:title" content="내 그림, 어디서 돈이 될까? · 6축 그림체 진단">
+<meta property="og:description" content="17문항 3분. 그림체 유형 8가지 중 나는 어디? 아더댄웍스 무료 진단">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&family=Gothic+A1:wght@400;500;700&family=Jua&display=swap">
+</head>
+<body style="margin:0">
+<style>
+/* Layout: 휴대폰 한 손 기준 한 단 흐름. 질문은 한 화면에 한 축씩, 결과는 위에서 아래로 '공개 → 잠김 → 행동' 순서. */
+:root {
+  --bg: #F4F6FA;
+  --surface: #FFFFFF;
+  --ice: #E6EDFA;
+  --ink: #16181D;
+  --muted: #5F6A80;
+  --line: #E2E7F0;
+  --navy: #1F3D8F;
+  --accent: #1F3D8F;
+  --accent-ink: #FFFFFF;
+  --lime: #A8D96A;
+  --green: #3F8A3F;
+  --warn: #B4531F;
+  --font-display: "Jua", "Gothic A1", system-ui, sans-serif;
+  --font-body: "Gothic A1", system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-hand: "Gaegu", "Gothic A1", cursive;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0D1430; --surface: #16204A; --ice: #1E2B5E; --ink: #EEF2FB; --muted: #A9B8E4; --line: #2C3B72; --accent: #A8BDF7; --accent-ink: #0D1430; --lime: #B5E27A; --green: #8BCB7E; --warn: #F2A37A; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #0D1430; --surface: #16204A; --ice: #1E2B5E; --ink: #EEF2FB; --muted: #A9B8E4; --line: #2C3B72; --accent: #A8BDF7; --accent-ink: #0D1430; --lime: #B5E27A; --green: #8BCB7E; --warn: #F2A37A; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--bg); }
+body { color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.65; word-break: keep-all; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+.app { max-width: 560px; margin: 0 auto; padding-block: 16px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.pill { font-family: var(--font-hand); font-size: 15px; letter-spacing: .18em; background: var(--ink); color: var(--bg); border-radius: 60px; padding: 5px 15px 4px; white-space: nowrap; }
+.top a { font-size: 13px; color: var(--muted); }
+.notice { font-size: 12.5px; background: #FFE9A8; color: #4A3A00; padding: 8px 12px; }
+.screen { display: grid; gap: 18px; }
+h1, h2 { font-family: var(--font-display); font-weight: 400; margin: 0; line-height: 1.3; text-wrap: balance; }
+h1 { font-size: clamp(30px, 8vw, 40px); }
+h2 { font-size: 24px; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+.btn { border: 0; padding: 14px 18px; font-weight: 700; background: var(--accent); color: var(--accent-ink); display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; width: 100%; font-size: 16px; text-decoration: none; text-align: center; }
+.btn.lime { background: var(--lime); color: #16181D; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+.btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
+.row { display: flex; gap: 10px; }
+.row > * { flex: 1; }
+
+/* 훅 */
+.hero { background: var(--navy); color: #FFFFFF; padding: 26px 22px; display: grid; gap: 14px; }
+.hero h1 { color: #FFFFFF; }
+.hero h1 em { font-style: normal; color: #A8D96A; }
+.hero p { color: #C3D0F0; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.facts div { border-top: 3px solid #A8D96A; padding-top: 6px; font-size: 13px; color: #C3D0F0; }
+.facts b { display: block; color: #FFFFFF; font-family: var(--font-display); font-weight: 400; font-size: 20px; }
+.types { display: flex; flex-wrap: wrap; gap: 6px; }
+.types span { font-size: 13px; padding: 4px 10px; border: 1.5px solid var(--line); background: var(--surface); }
+
+/* 질문 */
+.progress { height: 6px; background: var(--line); }
+.progress i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .25s; }
+.step-label { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: .04em; }
+.qcard { background: var(--surface); border: 1px solid var(--line); padding: 18px; display: grid; gap: 12px; }
+.qcard h3 { margin: 0; font-size: 17px; }
+.poles { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--muted); }
+.poles span:last-child { text-align: right; }
+.seg { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.seg button { border: 1.5px solid var(--line); background: var(--bg); padding: 10px 0; font-weight: 700; min-height: 48px; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.err { color: var(--warn); font-size: 14px; min-height: 1.4em; }
+
+/* 연락처 */
+.form { background: var(--surface); border: 1px solid var(--line); padding: 18px; display: grid; gap: 14px; }
+.field { display: grid; gap: 6px; }
+.field label, .field legend { font-weight: 700; font-size: 14px; }
+.field input, .field select, .field textarea { width: 100%; border: 1.5px solid var(--line); background: var(--bg); padding: 12px; border-radius: 0; }
+.field input[aria-invalid="true"] { border-color: var(--warn); }
+.field textarea { min-height: 84px; resize: vertical; }
+.req { color: var(--warn); font-size: 12px; margin-left: 4px; }
+fieldset { border: 0; padding: 0; margin: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { border: 1.5px solid var(--line); background: var(--bg); padding: 7px 11px; font-size: 13.5px; }
+.chips button[aria-pressed="true"] { background: var(--ice); border-color: var(--accent); color: var(--ink); font-weight: 700; }
+.consent { display: grid; gap: 8px; font-size: 14px; }
+.consent label { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; align-items: start; font-weight: 500; }
+.consent input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--navy); }
+.consent details { font-size: 13px; color: var(--muted); padding-left: 32px; }
+.consent details summary { cursor: pointer; }
+
+/* 결과 */
+.reveal { background: var(--navy); color: #FFFFFF; padding: 24px 22px; display: grid; gap: 10px; justify-items: start; }
+.reveal .lbl { color: #A9B8E4; font-size: 14px; font-weight: 700; }
+.reveal h1 { color: #A8D96A; }
+.reveal p { color: #C3D0F0; }
+.reveal svg { width: 96px; height: 88px; }
+.card { background: var(--surface); border: 1px solid var(--line); padding: 18px; display: grid; gap: 12px; }
+.card h2 { font-size: 21px; }
+.axis { display: grid; gap: 4px; }
+.axis-top { display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; }
+.track { position: relative; height: 22px; }
+.track::before { content: ""; position: absolute; left: 0; right: 0; top: 9px; height: 4px; background: var(--line); }
+.track i { position: absolute; top: 2px; width: 18px; height: 18px; border-radius: 50%; margin-left: -9px; background: var(--accent); }
+.poles2 { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.surprise { border-left: 6px solid var(--lime); background: var(--ice); padding: 14px 16px; font-weight: 500; }
+.toprow { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.toprow b { font-family: var(--font-display); font-weight: 400; font-size: 24px; color: var(--accent); }
+.locked { display: grid; gap: 8px; }
+.lock { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 10px 12px; background: var(--bg); border: 1px dashed var(--line); }
+.lock .v { filter: blur(6px); user-select: none; font-weight: 700; }
+.lock .k { font-size: 14px; }
+.toc { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 6px; counter-reset: toc; }
+.toc li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; font-size: 14.5px; }
+.toc li::before { content: "🔒"; font-size: 13px; }
+.toc li.open::before { content: "✓"; color: var(--green); font-weight: 700; }
+.offer { border: 2px solid var(--accent); background: var(--surface); padding: 18px; display: grid; gap: 12px; }
+.price { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.price s { color: var(--muted); }
+.price b { font-family: var(--font-display); font-weight: 400; font-size: 30px; color: var(--accent); }
+.steps { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; font-size: 14.5px; }
+.share { display: grid; gap: 10px; }
+.share canvas, .share img { width: 100%; max-width: 360px; height: auto; border: 1px solid var(--line); justify-self: center; background: #fff; }
+.status { font-size: 14px; min-height: 1.4em; }
+.status.ok { color: var(--green); }
+.foot { font-size: 12.5px; color: var(--muted); text-align: center; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+@media (prefers-reduced-motion: reduce) { .progress i { transition: none; } }
+</style>
+
+<div class="app">
+  <div class="top"><span class="pill">other than works</span><a id="insta-link" href="https://www.instagram.com/other.than.works/" target="_blank" rel="noopener">@other.than.works</a></div>
+  <p class="notice" id="setup-notice" hidden>운영자 안내: 응답 수집 주소(leadEndpoint)가 비어 있어 연락처가 저장되지 않아요. otw-core.js의 CONFIG를 채운 뒤 공개하세요.</p>
+
+  <!-- 0. 훅 -->
+  <section class="screen" id="s-intro">
+    <div class="hero">
+      <h1>내 그림,<br><em>어디서 돈이 될까?</em></h1>
+      <p>17년 차 디자이너가 수강생 그림을 보며 만든 6축 기준으로, 내 그림체 유형과 가장 잘 맞는 길을 알려 드려요.</p>
+      <div class="facts"><div><b>17문항</b>3분이면 끝</div><div><b>8가지</b>그림체 유형</div><div><b>5갈래</b>그림책·굿즈·이모티콘·인스타툰·외주</div></div>
+    </div>
+    <p class="muted small">정답은 없어요. 최근에 그린 그림 몇 장을 떠올리면서 '대체로 이렇다' 쪽을 고르면 됩니다.</p>
+    <div class="types" id="type-chips" aria-label="그림체 유형 8가지"></div>
+    <button class="btn" id="btn-start">무료로 진단 시작</button>
+  </section>
+
+  <!-- 1. 질문 -->
+  <section class="screen" id="s-quiz" hidden>
+    <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="7" aria-valuenow="0" id="progress"><i></i></div>
+    <span class="step-label" id="step-label"></span>
+    <div id="quiz-body"></div>
+    <p class="err" id="quiz-err" role="alert"></p>
+    <div class="row"><button class="btn ghost" id="btn-prev">이전</button><button class="btn" id="btn-next">다음</button></div>
+  </section>
+
+  <!-- 2. 연락처 게이트 -->
+  <section class="screen" id="s-lead" hidden>
+    <h2>결과가 나왔어요.<br>어디로 보내 드릴까요?</h2>
+    <p class="muted small">결과 화면과 같은 내용을 보내 드리고, 궁금한 점에는 대표가 직접 답장해요.</p>
+    <form class="form" id="lead-form" novalidate>
+      <div class="field"><label for="f-name">닉네임<span class="req">필수</span></label><input id="f-name" maxlength="20" autocomplete="nickname" placeholder="결과에 이렇게 불러 드려요"></div>
+      <div class="field"><label for="f-email">이메일</label><input id="f-email" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com"></div>
+      <div class="field"><label for="f-phone">휴대폰</label><input id="f-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="010-0000-0000"></div>
+      <p class="muted small" style="margin-top:-6px">이메일과 휴대폰 중 하나는 꼭 적어 주세요.</p>
+      <div class="field"><label for="f-insta">인스타 아이디 (선택)</label><input id="f-insta" maxlength="40" placeholder="@my.drawing"></div>
+      <div class="field"><label for="f-goal">해 보고 싶은 길</label>
+        <select id="f-goal"><option value="unknown">아직 모르겠어요</option><option value="picturebook">그림책</option><option value="emoticon">이모티콘</option><option value="goods">캐릭터 굿즈</option><option value="instatoon">인스타툰</option><option value="portfolio">포트폴리오·외주</option></select>
+      </div>
+      <fieldset class="field"><legend>요즘 가장 궁금한 것 (여러 개 골라도 돼요)</legend><div class="chips" id="chips"></div></fieldset>
+      <div class="field"><label for="f-question">대표에게 묻고 싶은 것 (선택)</label><textarea id="f-question" maxlength="500" placeholder="예: 그림책을 하고 싶은데 제 그림이 너무 귀엽기만 한 것 같아요."></textarea></div>
+      <div class="consent">
+        <label><input type="checkbox" id="c-privacy"><span><b>[필수]</b> 개인정보 수집·이용에 동의합니다.</span></label>
+        <details><summary>자세히 보기</summary>수집 항목: 닉네임, 이메일 또는 휴대폰, 인스타 아이디(선택), 진단 응답과 결과, 질문 내용 · 이용 목적: 진단 결과 발송, 질문 답변, 서비스 개선 · 보유 기간: 수집일로부터 1년 또는 동의 철회 시까지. 동의하지 않을 수 있으며, 이 경우 결과를 보내 드릴 수 없어요.</details>
+        <label><input type="checkbox" id="c-marketing"><span><b>[선택]</b> 수업 일정·할인 소식을 이메일·문자로 받을게요.</span></label>
+      </div>
+      <p class="err" id="lead-err" role="alert"></p>
+      <button class="btn lime" type="submit" id="btn-submit">내 결과 보기</button>
+    </form>
+  </section>
+
+  <!-- 3. 결과 -->
+  <section class="screen" id="s-result" hidden>
+    <div class="reveal">
+      <svg viewBox="0 0 120 110" aria-hidden="true">
+        <ellipse cx="60" cy="103" rx="30" ry="5" fill="#0B1230" opacity=".85"/>
+        <rect x="42" y="84" width="9" height="16" rx="4" fill="#9AA1AE"/><rect x="69" y="84" width="9" height="16" rx="4" fill="#9AA1AE"/>
+        <path d="M10 46 q-8 8 -2 20" stroke="#9AA1AE" stroke-width="7" stroke-linecap="round" fill="none"/>
+        <path d="M110 46 q8 -10 4 -22" stroke="#9AA1AE" stroke-width="7" stroke-linecap="round" fill="none"/>
+        <path d="M14 30 q0 -10 10 -10 h44 l7 -9 h21 q10 0 10 10 v58 q0 12 -12 12 h-68 q-12 0 -12 -12 z" fill="#A9B4F2"/>
+        <path d="M68 20 l7 -9 h21 q10 0 10 10 v3 h-38 z" fill="#8F9CEA"/>
+        <ellipse cx="46" cy="54" rx="4" ry="5.5" fill="#16181D"/><ellipse cx="74" cy="54" rx="4" ry="5.5" fill="#16181D"/>
+        <ellipse cx="36" cy="65" rx="6" ry="3.5" fill="#F6B8A8"/><ellipse cx="84" cy="65" rx="6" ry="3.5" fill="#F6B8A8"/>
+        <path d="M53 64 q7 7 14 0" stroke="#16181D" stroke-width="3" stroke-linecap="round" fill="none"/>
+      </svg>
+      <span class="lbl" id="r-who"></span>
+      <h1 id="r-type"></h1>
+      <p id="r-hook"></p>
+      <p id="r-desc"></p>
+    </div>
+
+    <div class="surprise" id="r-surprise"></div>
+
+    <div class="card">
+      <h2>내 그림체 6축</h2>
+      <p class="muted small">축은 우열이 아니라 위치예요. 어느 쪽이든 그 위치가 유리한 시장이 따로 있어요.</p>
+      <div id="r-axes" style="display:grid;gap:12px"></div>
+    </div>
+
+    <div class="card">
+      <h2>지금 그림으로 돈이 되는 길</h2>
+      <div class="toprow"><span>1위</span><b id="r-top"></b></div>
+      <div class="locked" id="r-locked"></div>
+      <p class="muted small">2·3위와 등급, 길마다의 시장·수익 계산·12주 로드맵은 유료 리포트에서 열려요.</p>
+    </div>
+
+    <div class="card">
+      <h2>이번 주에 바로 해 볼 것</h2>
+      <p id="r-rx"></p>
+    </div>
+
+    <div class="offer" id="offer">
+      <h2>대표가 직접 보는 유료 리포트</h2>
+      <p class="small">무료 결과는 답변만으로 만든 '내가 생각하는 내 그림'이에요. 유료 리포트는 실제 그림 3장을 AI로 분석하고 17년 차 디자이너가 감수해서, <b>내 생각과 실제 그림이 어디서 다른지</b>까지 짚어 드려요.</p>
+      <ol class="toc" id="r-toc"></ol>
+      <p class="muted small" id="r-size"></p>
+      <div class="price"><s id="r-price"></s><b id="r-launch"></b><span class="muted small">런칭 기념가</span></div>
+      <ol class="steps"><li>신청 후 최근 그림 3장을 보내 주세요</li><li>AI 분석 + 대표 감수 (영업일 2일 안)</li><li>리포트 파일과 결과 카드 2장 전달</li></ol>
+      <a class="btn" id="cta-report" target="_blank" rel="noopener">유료 리포트 신청</a>
+      <div class="row"><a class="btn ghost" id="cta-classes" target="_blank" rel="noopener">수업 둘러보기</a><a class="btn ghost" id="cta-kakao" target="_blank" rel="noopener">카카오톡 문의</a></div>
+      <p class="muted small" id="cta-note"></p>
+    </div>
+
+    <div class="card share">
+      <h2>결과 카드</h2>
+      <canvas id="share-card" width="1080" height="1350" aria-label="내 그림체 결과 카드"></canvas>
+      <img id="share-img" alt="내 그림체 결과 카드. 길게 눌러 저장하세요." hidden>
+      <div class="row"><button class="btn lime" id="btn-card">카드 저장</button><button class="btn ghost" id="btn-link">친구도 해 보기 링크 복사</button></div>
+      <p class="status" id="share-status" role="status"></p>
+    </div>
+    <p class="status" id="send-status" role="status"></p>
+    <button class="btn ghost" id="btn-restart">처음부터 다시 하기</button>
+  </section>
+
+  <p class="foot">아더댄웍스 · 6축 그림체 진단 · 결과는 답변을 바탕으로 한 참고용이에요.</p>
+</div>
+
+<script src="otw-core.js"></script>
+<script>
+(() => {
+"use strict";
+const O = window.OTW, C = O.CONFIG;
+const $ = (id) => document.getElementById(id);
+const CHIPS = ["제 그림체가 돈이 될까요?", "그림체가 매번 바뀌어요", "어떤 굿즈부터 만들지 모르겠어요", "그림책 투고는 어떻게 하나요?", "이모티콘 제안이 계속 반려돼요", "인스타 계정 키우는 법", "외주 단가를 어떻게 정하나요?", "수업 일정·가격이 궁금해요"];
+
+/* ───── 상태 ───── */
+const ans = {};
+O.AXES.forEach(a => { ans[a.key] = { p: null, c: null }; });
+O.SIGNALS.forEach(x => { ans[x.key] = null; });
+const STEPS = O.AXES.map(a => ({ kind: "axis", a })).concat([{ kind: "signals" }]);
+let step = 0, state = null, lead = null;
+const params = new URLSearchParams(location.search);
+const utm = { source: params.get("utm_source") || "", medium: params.get("utm_medium") || "", campaign: params.get("utm_campaign") || "", ref: params.get("ref") || "" };
+const show = (id) => { ["s-intro", "s-quiz", "s-lead", "s-result"].forEach(s => { $(s).hidden = s !== id; }); window.scrollTo(0, 0); };
+$("setup-notice").hidden = !!C.leadEndpoint;
+
+/* ───── 훅 ───── */
+Object.values(O.TYPES).forEach(t => { const s = document.createElement("span"); s.textContent = t.name; $("type-chips").appendChild(s); });
+$("btn-start").addEventListener("click", () => { step = 0; renderStep(); show("s-quiz"); });
+
+/* ───── 질문 ───── */
+function seg(label, current, onPick) {
+  const wrap = document.createElement("div"); wrap.className = "seg"; wrap.setAttribute("role", "group"); wrap.setAttribute("aria-label", label);
+  for (let n = 1; n <= 5; n++) {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = n; b.setAttribute("aria-pressed", String(current === n));
+    b.addEventListener("click", () => { onPick(n); wrap.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); $("quiz-err").textContent = ""; });
+    wrap.appendChild(b);
+  }
+  return wrap;
+}
+function qcard(title, left, right, current, onPick) {
+  const c = document.createElement("div"); c.className = "qcard";
+  const h = document.createElement("h3"); h.textContent = title;
+  const poles = document.createElement("div"); poles.className = "poles";
+  const l = document.createElement("span"); l.textContent = left; const r = document.createElement("span"); r.textContent = right; poles.append(l, r);
+  c.append(h, poles, seg(title, current, onPick));
+  return c;
+}
+function renderStep() {
+  const body = $("quiz-body"); body.textContent = "";
+  const st = STEPS[step];
+  $("step-label").textContent = `${step + 1} / ${STEPS.length} · ${st.kind === "axis" ? st.a.name : "팔 수 있는 형태인가"}`;
+  $("progress").setAttribute("aria-valuenow", String(step)); $("progress").firstElementChild.style.width = (step / STEPS.length * 100) + "%";
+  if (st.kind === "axis") {
+    const a = st.a;
+    body.append(qcard(a.q, a.lq, a.rq, ans[a.key].p, v => { ans[a.key].p = v; }), document.createElement("div"));
+    body.lastChild.style.height = "4px";
+    body.append(qcard(`이 선택, 그림마다 같은가요?`, "그때그때 달라요", "매번 같아요", ans[a.key].c, v => { ans[a.key].c = v; }));
+  } else {
+    O.SIGNALS.forEach((x, i) => { body.append(qcard(x.sq, "전혀 아니다", "매우 그렇다", ans[x.key], v => { ans[x.key] = v; })); if (i < O.SIGNALS.length - 1) { const sp = document.createElement("div"); sp.style.height = "2px"; body.append(sp); } });
+  }
+  $("btn-prev").textContent = step === 0 ? "처음으로" : "이전";
+  $("btn-next").textContent = step === STEPS.length - 1 ? "결과 만들기" : "다음";
+  $("quiz-err").textContent = "";
+}
+function stepComplete() {
+  const st = STEPS[step];
+  if (st.kind === "axis") return ans[st.a.key].p != null && ans[st.a.key].c != null;
+  return O.SIGNALS.every(x => ans[x.key] != null);
+}
+$("btn-next").addEventListener("click", () => {
+  if (!stepComplete()) { $("quiz-err").textContent = "모든 질문에 하나씩 골라 주세요."; return; }
+  if (step < STEPS.length - 1) { step++; renderStep(); window.scrollTo(0, 0); return; }
+  $("progress").firstElementChild.style.width = "100%";
+  show("s-lead"); $("f-name").focus();
+});
+$("btn-prev").addEventListener("click", () => { if (step === 0) { show("s-intro"); return; } step--; renderStep(); });
+
+/* ───── 연락처 게이트 ───── */
+const picked = new Set();
+CHIPS.forEach(t => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.setAttribute("aria-pressed", "false"); b.addEventListener("click", () => { if (picked.has(t)) picked.delete(t); else picked.add(t); b.setAttribute("aria-pressed", String(picked.has(t))); }); $("chips").appendChild(b); });
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const normPhone = (v) => v.replace(/[^0-9]/g, "");
+function validate() {
+  const name = $("f-name").value.trim(), email = $("f-email").value.trim(), phone = normPhone($("f-phone").value);
+  ["f-name", "f-email", "f-phone"].forEach(id => $(id).removeAttribute("aria-invalid"));
+  if (!name) { $("f-name").setAttribute("aria-invalid", "true"); return ["닉네임을 적어 주세요.", "f-name"]; }
+  if (!email && !phone) { $("f-email").setAttribute("aria-invalid", "true"); $("f-phone").setAttribute("aria-invalid", "true"); return ["결과를 받을 이메일이나 휴대폰 중 하나를 적어 주세요.", "f-email"]; }
+  if (email && !EMAIL_RE.test(email)) { $("f-email").setAttribute("aria-invalid", "true"); return ["이메일 형식이 맞지 않아요. 예: name@example.com", "f-email"]; }
+  if (phone && !/^01[016789]\d{7,8}$/.test(phone)) { $("f-phone").setAttribute("aria-invalid", "true"); return ["휴대폰 번호를 확인해 주세요. 예: 010-1234-5678", "f-phone"]; }
+  if (!$("c-privacy").checked) return ["결과를 보내 드리려면 개인정보 수집·이용 동의가 필요해요.", "c-privacy"];
+  return null;
+}
+function selfSource() {
+  const out = { axes: {}, signals: {}, complete: true };
+  O.AXES.forEach(a => { out.axes[a.key] = { position: (ans[a.key].p - 1) * 25, consistency: ans[a.key].c }; });
+  O.SIGNALS.forEach(x => { out.signals[x.key] = ans[x.key]; });
+  return out;
+}
+$("lead-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const bad = validate();
+  if (bad) { $("lead-err").textContent = bad[0]; $(bad[1]).focus(); return; }
+  $("lead-err").textContent = "";
+  const base = { name: $("f-name").value.trim(), goal: $("f-goal").value };
+  state = O.buildResult(base, null, selfSource());
+  lead = {
+    name: base.name, email: $("f-email").value.trim(), phone: normPhone($("f-phone").value), insta: $("f-insta").value.trim(),
+    goal: base.goal, interests: [...picked], question: $("f-question").value.trim(),
+    consentPrivacy: true, consentMarketing: $("c-marketing").checked,
+  };
+  renderResult();
+  show("s-result");
+  sendLead();
+});
+
+/* ───── 결과 ───── */
+function renderResult() {
+  const ty = O.typeOf(state), tz = O.freeTeaser(state), paths = O.scorePaths(state);
+  $("r-who").textContent = `${state.name}님의 그림체 유형은`;
+  $("r-type").textContent = ty.name;
+  $("r-hook").textContent = `“${ty.hook}”`;
+  $("r-desc").textContent = ty.desc;
+  $("r-surprise").textContent = "의외였던 점 · " + tz.surprise;
+  const ax = $("r-axes"); ax.textContent = "";
+  O.AXES.forEach(a => {
+    const v = state.axes[a.key].position;
+    const d = document.createElement("div"); d.className = "axis";
+    const top = document.createElement("div"); top.className = "axis-top"; const n = document.createElement("span"); n.textContent = a.name; const s2 = document.createElement("span"); s2.textContent = O.sideOf(a, v); top.append(n, s2);
+    const tr = document.createElement("div"); tr.className = "track"; tr.setAttribute("role", "img"); tr.setAttribute("aria-label", `${a.name} ${O.sideOf(a, v)}`); const dot = document.createElement("i"); dot.style.left = Math.min(97, Math.max(3, v)) + "%"; tr.appendChild(dot);
+    const pl = document.createElement("div"); pl.className = "poles2"; const l = document.createElement("span"); l.textContent = a.left; const r = document.createElement("span"); r.textContent = a.right; pl.append(l, r);
+    d.append(top, tr, pl); ax.appendChild(d);
+  });
+  $("r-top").textContent = tz.top.name;
+  const lk = $("r-locked"); lk.textContent = "";
+  tz.locked.forEach(x => { const row = document.createElement("div"); row.className = "lock"; const k = document.createElement("span"); k.className = "k"; k.textContent = "🔒 " + x.label; const v = document.createElement("span"); v.className = "v"; v.setAttribute("aria-hidden", "true"); v.textContent = "●●●●●"; row.append(k, v); lk.appendChild(row); });
+  const rx = state.rx[0]; $("r-rx").textContent = rx ? `${rx.title}: ${rx.how}` : "";
+  const toc = $("r-toc"); toc.textContent = "";
+  tz.toc.forEach((t, i) => { const li = document.createElement("li"); li.textContent = t; if (i === 0) li.className = "open"; toc.appendChild(li); });
+  $("r-size").textContent = `약 ${tz.approxChars.toLocaleString("ko-KR")}자 분량 · 길마다 시장 규모, 수익 계산, 12주 로드맵, 포트폴리오 체크리스트, 흔한 실수, 수업 안내`;
+  $("r-price").textContent = O.won(C.price.report); $("r-launch").textContent = O.won(C.price.launch);
+  wireCTA("cta-report", C.links.report, "결제 페이지 준비 중");
+  wireCTA("cta-classes", C.links.classes, "수업 안내 준비 중");
+  wireCTA("cta-kakao", C.links.kakao, "카카오 채널 준비 중");
+  $("cta-note").textContent = C.links.report ? "" : `지금은 인스타그램 ${C.insta} DM으로 '리포트'라고 보내 주시면 안내해 드려요.`;
+  drawCard(ty);
+}
+function wireCTA(id, url, fallback) {
+  const a = $(id);
+  if (url && /^https:\/\//.test(url)) { a.href = url; a.removeAttribute("aria-disabled"); }
+  else { a.removeAttribute("href"); a.setAttribute("aria-disabled", "true"); a.title = fallback; if (id !== "cta-report") a.textContent = fallback; }
+}
+
+/* ───── 수집 ───── */
+function resultText() {
+  const ty = O.typeOf(state), tz = O.freeTeaser(state);
+  return [`${state.name}님의 그림체 유형은 '${ty.name}'이에요.`, `“${ty.hook}”`, ty.desc, ``, `의외였던 점: ${tz.surprise}`, `지금 그림으로 돈이 되는 길 1위: ${tz.top.name}`,
+    `이번 주에 해 볼 것: ${state.rx[0] ? state.rx[0].title + " — " + state.rx[0].how : ""}`, ``,
+    `2·3위 길과 등급, 길마다 시장·수익 계산·12주 로드맵은 유료 리포트에서 볼 수 있어요.`, `아더댄웍스 ${C.insta}`].join("\n");
+}
+async function sendLead() {
+  const st = $("send-status");
+  const paths = O.scorePaths(state), ty = O.typeOf(state);
+  const payload = {
+    kind: "free-diagnosis", at: new Date().toISOString(), ...lead,
+    type: ty.name, typeKey: ty.key, top1: paths[0].name, top2: paths[1].name, top3: paths[2].name,
+    scores: Object.fromEntries(paths.map(p => [p.key, p.total])),
+    axes: Object.fromEntries(O.AXES.map(a => [a.key, state.axes[a.key].position])),
+    consistency: Object.fromEntries(O.AXES.map(a => [a.key, state.axes[a.key].consistency])),
+    signals: Object.fromEntries(O.SIGNALS.map(x => [x.key, state.signals[x.key].score])),
+    utm, referrer: document.referrer || "", page: location.href.split("#")[0], resultText: resultText(),
+  };
+  window.__lastLead = payload;
+  try { localStorage.setItem("otw-free-last", JSON.stringify({ at: payload.at, type: ty.name })); } catch (e) {}
+  if (!C.leadEndpoint) { st.textContent = ""; return; }
+  try {
+    await fetch(C.leadEndpoint, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+    st.className = "status ok"; st.textContent = lead.email ? `적어 주신 메일(${lead.email})로도 결과를 보내 드렸어요.` : "결과가 저장됐어요. 궁금한 점은 대표가 직접 연락드려요.";
+  } catch (e) { st.className = "status"; st.textContent = "결과 저장이 잠시 지연되고 있어요. 이 화면을 캡처해 두시면 좋아요."; }
+}
+
+/* ───── 결과 카드 ───── */
+function wrapLines(ctx, text, maxW, maxLines) {
+  const out = []; let line = "";
+  for (const ch of String(text)) { const t = line + ch; if (ctx.measureText(t).width > maxW && line) { out.push(line); line = ch; if (out.length === maxLines) break; } else line = t; }
+  if (out.length < maxLines && line) out.push(line);
+  return out;
+}
+async function drawCard(ty) {
+  try { await Promise.all([document.fonts.load('72px "Jua"', "그림"), document.fonts.load('700 28px "Gothic A1"', "그림"), document.fonts.load('700 30px "Gaegu"', "other")]); } catch (e) {}
+  const c = $("share-card"), x = c.getContext("2d"), W = 1080, PX = 78;
+  x.fillStyle = "#1F3D8F"; x.fillRect(0, 0, W, 1350);
+  x.font = '700 30px "Gaegu", sans-serif'; x.letterSpacing = "6px"; const lw = x.measureText("other than works").width;
+  x.fillStyle = "#F1F4FB"; x.beginPath(); x.roundRect ? x.roundRect(PX, 88, lw + 68, 62, 31) : x.rect(PX, 88, lw + 68, 62); x.fill();
+  x.fillStyle = "#16181D"; x.textBaseline = "middle"; x.fillText("other than works", PX + 34, 120); x.letterSpacing = "0px"; x.textBaseline = "alphabetic";
+  x.fillStyle = "#A9B8E4"; x.font = '700 30px "Gothic A1", sans-serif'; x.fillText("내 그림체 유형은", PX, 250);
+  x.fillStyle = "#A8D96A"; x.font = '84px "Jua", sans-serif';
+  let lines = wrapLines(x, ty.name, W - PX * 2, 2); lines.forEach((l, i) => x.fillText(l, PX, 350 + i * 100));
+  let y = 350 + lines.length * 100;
+  x.fillStyle = "#C3D0F0"; x.font = '400 32px "Gothic A1", sans-serif'; wrapLines(x, `“${ty.hook}”`, W - PX * 2, 2).forEach((l, i) => x.fillText(l, PX, y + i * 46)); y += 120;
+  const trackX = PX + 120, trackW = W - PX - trackX;
+  O.AXES.forEach(a => {
+    const v = state.axes[a.key].position;
+    x.fillStyle = "#FFFFFF"; x.font = '700 28px "Gothic A1", sans-serif'; x.fillText(a.name, PX, y + 10);
+    x.fillStyle = "#2B4DA6"; x.fillRect(trackX, y, trackW, 6);
+    x.fillStyle = "#A8D96A"; x.beginPath(); x.arc(Math.min(trackX + trackW - 14, Math.max(trackX + 14, trackX + trackW * v / 100)), y + 3, 14, 0, Math.PI * 2); x.fill();
+    x.fillStyle = "#7B90CD"; x.font = '400 20px "Gothic A1", sans-serif'; x.fillText(a.left, trackX, y + 38); x.fillText(a.right, trackX + trackW - x.measureText(a.right).width, y + 38);
+    y += 74;
+  });
+  x.fillStyle = "#F1F4FB"; x.fillRect(0, 1180, W, 170);
+  x.fillStyle = "#16181D"; x.font = '700 30px "Gothic A1", sans-serif'; x.fillText("나도 해 보기 · 6축 그림체 진단", PX, 1248);
+  x.fillStyle = "#5F6A80"; x.font = '400 26px "Gothic A1", sans-serif'; x.fillText(C.insta + " 프로필 링크", PX, 1294);
+  $("share-img").hidden = true; c.hidden = false;
+}
+let downloadsApi = null;
+$("btn-card").addEventListener("click", async () => {
+  const st = $("share-status");
+  const blob = await new Promise(r => $("share-card").toBlob(r, "image/png"));
+  if (!blob) { st.textContent = "카드를 만들지 못했어요."; return; }
+  const fname = `내그림체-${O.typeOf(state).name.replace(/\s/g, "")}.png`;
+  if (downloadsApi) { try { await downloadsApi.save({ filename: fname, data: blob }); st.className = "status ok"; st.textContent = "저장했어요."; return; } catch (e) { if (e && e.code === "declined") return; } }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = fname; document.body.appendChild(a); a.click(); a.remove();
+  const img = $("share-img"); img.src = url; img.hidden = false; $("share-card").hidden = true;
+  st.className = "status"; st.textContent = "저장이 안 되면 이미지를 길게 눌러 저장하세요.";
+});
+$("btn-link").addEventListener("click", () => {
+  const u = new URL(location.href); u.hash = ""; ["utm_source", "utm_medium", "utm_campaign"].forEach(k => u.searchParams.delete(k));
+  u.searchParams.set("ref", "share"); u.searchParams.set("utm_source", "share"); u.searchParams.set("utm_campaign", O.typeOf(state).key);
+  const text = `나는 '${O.typeOf(state).name}'형이래. 너는? ${u.toString()}`;
+  const st = $("share-status");
+  navigator.clipboard.writeText(text).then(() => { st.className = "status ok"; st.textContent = "링크를 복사했어요. 친구에게 보내 보세요."; })
+    .catch(() => { st.className = "status"; st.textContent = text; });
+});
+$("btn-restart").addEventListener("click", () => {
+  O.AXES.forEach(a => { ans[a.key] = { p: null, c: null }; }); O.SIGNALS.forEach(x => { ans[x.key] = null; });
+  state = null; lead = null; show("s-intro");
+});
+if (window.claude && typeof window.claude.use === "function") window.claude.use("downloads").then(d => { downloadsApi = d; }).catch(() => {});
+window.__free = { get state() { return state; }, get lead() { return lead; }, ans, CHIPS };
+})();
+</script>
+
+</body>
+</html>
