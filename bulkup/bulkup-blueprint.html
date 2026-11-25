@@ -189,7 +189,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
         <div class="stat"><b>30건</b><span>90일 안 유료 진단 목표 <span class="tag est">목표</span></span></div>
         <div class="stat"><b>20명</b><span>온라인 드로잉 클럽 창립 멤버 <span class="tag est">목표</span></span></div>
         <div class="stat"><b>0원</b><span>트랙션 단계 개발비. 오늘 만든 진단 스튜디오로 시작</span></div>
-        <div class="stat"><b>약 750만</b><span>2027 하반기 월 매출 런레이트 시나리오 <span class="tag est">추정</span></span></div>
+        <div class="stat"><b>약 790만</b><span>2027 하반기 월 매출 런레이트 시나리오 <span class="tag est">추정</span></span></div>
       </div>
       <div class="cta">
         <b>바로 써 보세요: 6축 그림체 진단 스튜디오</b>
@@ -263,28 +263,41 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 
       <h3>고객 사다리: 0원에서 300만 원까지 한 줄로 이어지게</h3>
       <div class="ladder" role="list">
-        <div class="step" role="listitem"><i>입구</i><b>6축 자가진단 · 결과 카드</b><strong>0원</strong><span>인스타 공유로 유입</span></div>
-        <div class="step key" role="listitem"><i>첫 결제</i><b>대표 감수 진단 리포트</b><strong>19,000원</strong><span>런칭가 9,900원 · 건당 10분</span></div>
+        <div class="step" role="listitem"><i>입구</i><b>무료 그림체 카드</b><strong>0원</strong><span>자가진단 17문항 또는 AI 카드 1장 · 인스타 공유</span></div>
+        <div class="step key" role="listitem"><i>첫 결제</i><b>유료 리포트: 상업성 + 시장분석</b><strong>29,000원</strong><span>카드 2장 · 2주 처방 · 런칭가 19,000원 · 감수 5–10분</span></div>
         <div class="step" role="listitem"><i>신뢰</i><b>그림책 자습서 · 6축 워크북</b><strong>12,000–24,000원</strong><span>PDF 워크북 → ISBN 종이책</span></div>
         <div class="step key" role="listitem"><i>반복</i><b>온라인 드로잉 클럽</b><strong>월 39,000원</strong><span>월 1회 재진단 포함</span></div>
         <div class="step" role="listitem"><i>객단가</i><b>처방 키트 (개인)</b><strong>39,000–59,000원</strong><span>크리컷 스티커·3D 캐릭터</span></div>
         <div class="step key" role="listitem"><i>큰 단위</i><b>기관 패키지 30인</b><strong>180–300만 원</strong><span>수업 2회 + 키트 + 진단</span></div>
       </div>
       <p class="small muted">가격은 기존 클래스 단가와 시장 관행을 보고 잡은 제안값이에요. 첫 30건을 팔아 보고 조정하는 걸 전제로 합니다.</p>
+      <h3>무료와 유료, 누가 무엇을 하나</h3>
+      <div class="tbl">
+        <table>
+          <thead><tr><th></th><th>무료 그림체 카드</th><th>유료 리포트 (29,000원)</th><th>자동 리포트 (2단계 웹앱 이후)</th></tr></thead>
+          <tbody>
+            <tr><td>담는 것</td><td>6축 위치, 한 줄 정의, 그림체가 가까운 길, 처방 1개</td><td>무료 내용 + 상업 신호 5가지, 길별 상업성 점수·등급, 목표 길(없으면 1위 길) 시장분석, 처방 3개, 카드 2장</td><td>유료와 같음, 감수 없음</td></tr>
+            <tr><td>대표 손</td><td>0분 (자가진단) 또는 1~2분 (AI 카드 발송만)</td><td>5~10분: AI 초안 확인, 점·문장 수정, 발송</td><td>0분</td></tr>
+            <tr><td>Claude 비용</td><td>자가진단은 없음. AI 카드는 대표 Claude 요금제 사용량</td><td>대표 Claude 요금제 사용량</td><td>API 호출비, 건당 수백 원 이하 추정</td></tr>
+            <tr><td>역할</td><td>유입, 인스타 공유</td><td>첫 결제, 대표 보증</td><td>물량, 저가 상품</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small muted">지금 스튜디오는 '이 페이지를 연 사람의 Claude 계정'으로 분석해서 고객이 직접 돌릴 수 없어요. 그래서 0~1단계 유료 리포트는 대표가 버튼을 누르고 감수합니다. 감수 자체가 29,000원의 이유이기도 해요. 손을 완전히 떼려면 2단계 웹앱(자체 API 키)이 필요합니다.</p>
 
       <h3>2027 하반기 월 매출 런레이트 시나리오 <span class="tag est">추정</span></h3>
       <div class="tbl">
         <table>
           <thead><tr><th>라인</th><th>가정</th><th style="text-align:right">월 매출</th><th>대표 시간/월</th></tr></thead>
           <tbody>
-            <tr><td>진단 리포트</td><td>월 40건 × 19,000원</td><td class="num">76만</td><td>약 7시간 (건당 10분)</td></tr>
+            <tr><td>유료 리포트</td><td>월 40건 × 29,000원</td><td class="num">116만</td><td>약 6시간 (건당 감수 5–10분)</td></tr>
             <tr><td>온라인 드로잉 클럽</td><td>평균 40명 × 39,000원</td><td class="num">156만</td><td>약 6시간 (라이브 1회 + 단체 피드백)</td></tr>
             <tr><td>책·워크북</td><td>월 60부 × 평균 순매출 15,000원</td><td class="num">90만</td><td>집필 후 거의 0</td></tr>
             <tr><td>처방 키트 (개인)</td><td>월 30개 × 49,000원</td><td class="num">147만</td><td>배치 생산 월 1회</td></tr>
             <tr><td>기관 패키지</td><td>분기 3건 = 월 평균 1건 × 240만 원</td><td class="num">240만</td><td>출강 2회</td></tr>
             <tr><td>강사 인증</td><td>하반기 월 1명 × 39만 원 (교육비)</td><td class="num">39만</td><td>온라인 녹화 + 평가</td></tr>
           </tbody>
-          <tfoot><tr><td>합계</td><td>출강이 필요한 매출은 기관 패키지(약 32%)뿐</td><td class="num">약 748만</td><td>약 25–30시간</td></tr></tfoot>
+          <tfoot><tr><td>합계</td><td>출강이 필요한 매출은 기관 패키지(약 30%)뿐</td><td class="num">약 788만</td><td>약 25–30시간</td></tr></tfoot>
         </table>
       </div>
       <p class="small muted">제 추정치예요. 키트 원가(재료·필라멘트·포장)와 온라인 서점 공급률은 아직 실측값이 없어서 매출 기준으로만 적었습니다. 핵심은 금액보다 오른쪽 열이에요. 같은 매출을 대표 시간 30시간 안쪽으로 만드는 게 목표입니다.</p>
@@ -354,7 +367,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
       <h3>와이어프레임 (2단계 기준)</h3>
       <div class="phones" role="list" aria-label="화면 흐름 5단계">
         <div class="phone" role="listitem"><span class="no">01 랜딩</span><span class="t">내 그림체,<br>6개 축으로 읽어 드려요</span><div class="wf big">결과 카드 예시 3장 슬라이드</div><div class="wf">17년 차 디자이너가 만든 기준 · 대표 감수</div><div class="wf btn">그림 3장으로 진단받기</div><div class="wf">자가진단 12문항 (무료)</div></div>
-        <div class="phone" role="listitem"><span class="no">02 업로드</span><span class="t">최근 그림 3장</span><div class="wf big">+ 그림 끌어놓기</div><div class="wf">목표하는 길: 그림책 ▾</div><div class="wf">고민 한 줄 (선택)</div><div class="wf btn">결제하고 진단 시작 · 19,000원</div></div>
+        <div class="phone" role="listitem"><span class="no">02 업로드</span><span class="t">최근 그림 3장</span><div class="wf big">+ 그림 끌어놓기</div><div class="wf">목표하는 길: 그림책 ▾</div><div class="wf">고민 한 줄 (선택)</div><div class="wf btn">결제하고 진단 시작 · 29,000원</div></div>
         <div class="phone" role="listitem"><span class="no">03 분석 중</span><span class="t">선부터 보고 있어요</span><div class="wf big">캐릭터가 돋보기 들고 걷는 애니메이션</div><div class="wf">선 → 형태 → 색 → 질감 → 구성 → 정서</div><div class="wf">대표 감수 후 24시간 안에 알림</div></div>
         <div class="phone" role="listitem"><span class="no">04 결과</span><span class="t">단정한 선의<br>담백한 관찰자</span>
           <div class="wf-row"><span>선</span><div class="bar" style="--x:68%"></div></div>
@@ -372,7 +385,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
         <div class="box">
           <h4>돈이 들어오는 곳</h4>
           <ul class="small">
-            <li>건당 리포트 19,000원, 재진단 9,900원</li>
+            <li>무료 카드 0원 → 유료 리포트 29,000원, 재진단 9,900원</li>
             <li>클럽 번들: 월 39,000원에 재진단 1회 포함</li>
             <li>기관 라이선스: 반 단위 진단 + 처방 키트</li>
             <li>강사 인증: 교육비 + 연 라이선스 + 키트 도매</li>
@@ -462,9 +475,9 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
         <div class="wk"><h4>12월 1–2주 · 따뜻한 시장</h4><span class="goal">무료 진단 20건 · 후기 10개</span>
           <ul><li>기존 수강생 20명에게 "그림 3장 보내 주면 6축 진단 해 드려요" DM</li><li>스튜디오로 진단 → 카드 + DM 발송</li><li>인스타 공유 허락 5명 확보</li><li>"어떤 문장이 제일 와닿았나" 물어 결과지 문구 수정</li></ul></div>
         <div class="wk"><h4>12월 3–4주 · 첫 결제</h4><span class="goal">유료 진단 15건</span>
-          <ul><li>네이버 예약에 '6축 진단 리포트' 상품 등록 (런칭가 9,900원, 30명 한정)</li><li>@other.than.works 캐러셀 "그림체가 매번 바뀌는 이유, 6축으로 보면" 발행</li><li>동의받은 결과 카드 5장 릴스로</li><li>당근 비즈프로필·블로그에 같은 글</li></ul></div>
+          <ul><li>네이버 예약에 '상업성·시장분석 리포트' 상품 등록 (런칭가 19,000원, 30명 한정)</li><li>@other.than.works 캐러셀 "그림체가 매번 바뀌는 이유, 6축으로 보면" 발행</li><li>동의받은 결과 카드 5장 릴스로</li><li>당근 비즈프로필·블로그에 같은 글</li></ul></div>
         <div class="wk"><h4>1월 · 처방 챌린지</h4><span class="goal">재제출 40% · 클럽 창립 20명</span>
-          <ul><li>진단받은 사람만 들어오는 '2주 처방 챌린지' 오픈채팅</li><li>2주 뒤 재진단 무료 → 축이 움직인 사례 수집</li><li>1월 말 온라인 드로잉 클럽 1기 모집: 월 39,000원, 창립 멤버 29,000원 유지</li><li>정가 진단 19,000원 전환</li></ul></div>
+          <ul><li>진단받은 사람만 들어오는 '2주 처방 챌린지' 오픈채팅</li><li>2주 뒤 재진단 무료 → 축이 움직인 사례 수집</li><li>1월 말 온라인 드로잉 클럽 1기 모집: 월 39,000원, 창립 멤버 29,000원 유지</li><li>정가 29,000원 전환</li></ul></div>
         <div class="wk"><h4>2월 · 기관과 지원사업 준비</h4><span class="goal">기관 미팅 3곳 · 계약 1건</span>
           <ul><li>1장짜리 기관 제안서: "그림체 찾기 수업 2회 + 처방 키트 30인 + 개인 진단 리포트"</li><li>납품 이력 있는 중학교·청소년센터에 3월 신학기 예산 전 접촉</li><li>@cloudy.piece에서 3D 캐릭터 키트 사전 예약 폼으로 수요 확인</li><li>지원사업 증빙용 지표표 정리 (아래)</li></ul></div>
       </div>
@@ -473,7 +486,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
           <thead><tr><th>지원사업 서류에 그대로 쓸 지표</th><th>90일 목표</th><th>어디서 나오나</th></tr></thead>
           <tbody>
             <tr><td>누적 진단 건수 (무료+유료)</td><td class="num">50건</td><td>스튜디오 진단 기록</td></tr>
-            <tr><td>유료 전환 고객 수 · 매출</td><td class="num">30명 · 약 40만 원</td><td>네이버 예약 정산</td></tr>
+            <tr><td>유료 전환 고객 수 · 매출</td><td class="num">30명 · 약 70만 원</td><td>네이버 예약 정산</td></tr>
             <tr><td>반복 매출 (클럽)</td><td class="num">월 58–78만 원</td><td>클럽 결제 내역</td></tr>
             <tr><td>처방 후 개선 사례</td><td class="num">10건</td><td>재진단 비교 카드</td></tr>
             <tr><td>기관 계약</td><td class="num">1건</td><td>계약서·견적서</td></tr>

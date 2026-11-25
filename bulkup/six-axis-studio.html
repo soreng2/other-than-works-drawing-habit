@@ -4,7 +4,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&family=Gothic+A1:wght@400;500;700&family=Jua&display=swap">
 <style>
-/* Layout: 작업대 — 왼쪽은 입력(그림·질문), 오른쪽은 대표 감수용 결과지. 모바일은 위아래로 쌓는다. */
+/* Layout: 작업대 — 왼쪽은 입력(그림·질문·검증), 오른쪽은 대표 감수용 결과지. 모바일은 위아래로 쌓는다. */
 :root {
   --bg: #F4F6FA;
   --surface: #FFFFFF;
@@ -20,6 +20,8 @@
   --warn: #B4531F;
   --pill-bg: #16181D;
   --pill-fg: #FFFFFF;
+  --gold: #FFE9A8;
+  --gold-ink: #4A3A00;
   --char-body: #A9B4F2;
   --char-tab: #8F9CEA;
   --char-limb: #9AA1AE;
@@ -31,14 +33,14 @@
   :root:not([data-theme="light"]) {
     --bg: #0D1430; --surface: #16204A; --ice: #1E2B5E; --ink: #EEF2FB; --muted: #A9B8E4;
     --line: #2C3B72; --navy: #1F3D8F; --accent: #A8BDF7; --accent-ink: #0D1430; --lime: #B5E27A;
-    --green: #8BCB7E; --warn: #F2A37A; --pill-bg: #F1F4FB; --pill-fg: #16181D;
+    --green: #8BCB7E; --warn: #F2A37A; --pill-bg: #F1F4FB; --pill-fg: #16181D; --gold: #5A4A10; --gold-ink: #FFE9A8;
     --char-body: #A9B4F2; --char-tab: #8F9CEA; --char-limb: #9AA1AE; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0D1430; --surface: #16204A; --ice: #1E2B5E; --ink: #EEF2FB; --muted: #A9B8E4;
   --line: #2C3B72; --navy: #1F3D8F; --accent: #A8BDF7; --accent-ink: #0D1430; --lime: #B5E27A;
-  --green: #8BCB7E; --warn: #F2A37A; --pill-bg: #F1F4FB; --pill-fg: #16181D;
+  --green: #8BCB7E; --warn: #F2A37A; --pill-bg: #F1F4FB; --pill-fg: #16181D; --gold: #5A4A10; --gold-ink: #FFE9A8;
   --char-body: #A9B4F2; --char-tab: #8F9CEA; --char-limb: #9AA1AE; color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -51,15 +53,17 @@ button { cursor: pointer; }
 header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
 .pill { font-family: var(--font-hand); font-size: 17px; letter-spacing: .18em; background: var(--pill-bg); color: var(--pill-fg); border-radius: 60px; padding: 6px 18px 5px; white-space: nowrap; }
 header.top h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(24px, 3.4vw, 32px); margin: 0; line-height: 1.25; text-wrap: balance; }
-header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 68ch; }
+header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 72ch; }
 
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 2px solid var(--line); }
 .tab { border: 0; background: none; padding: 10px 14px; font-weight: 700; color: var(--muted); border-bottom: 4px solid transparent; margin-bottom: -2px; }
 .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
 
 .grid { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.grid.wide { grid-template-columns: minmax(0, 1fr); }
 @media (max-width: 880px) { .grid { grid-template-columns: minmax(0, 1fr); } }
-.panel { background: var(--surface); border: 1px solid var(--line); padding: 20px; display: grid; gap: 16px; min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); padding: 20px; display: grid; gap: 16px; min-width: 0; align-content: start; }
+.panel > * { min-width: 0; }
 .panel h2 { font-family: var(--font-display); font-weight: 400; font-size: 22px; margin: 0; line-height: 1.3; }
 .panel h3 { font-size: 13px; letter-spacing: .08em; color: var(--muted); margin: 0; font-weight: 700; }
 .field { display: grid; gap: 6px; }
@@ -68,7 +72,7 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 68ch
 .field textarea { resize: vertical; min-height: 64px; }
 .hint { font-size: 13px; color: var(--muted); margin: 0; }
 
-.drop { border: 2px dashed var(--line); background: var(--bg); padding: 18px; text-align: center; display: grid; gap: 8px; justify-items: center; }
+.drop { border: 2px dashed var(--line); background: var(--bg); padding: 18px; text-align: center; display: grid; gap: 8px; justify-items: center; cursor: pointer; }
 .drop.over { border-color: var(--accent); background: var(--ice); }
 .drop strong { font-size: 15px; }
 .thumbs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
@@ -85,7 +89,6 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 68ch
 .status.err { color: var(--warn); }
 .status.ok { color: var(--green); }
 
-/* 자가진단 */
 .q { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 8px; }
 .q:first-of-type { border-top: 0; padding-top: 0; }
 .q .poles { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
@@ -93,59 +96,99 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 68ch
 .seg button { border: 1.5px solid var(--line); background: var(--bg); padding: 8px 0; font-weight: 700; font-size: 13px; min-height: 40px; }
 .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .q .sub { font-size: 13px; font-weight: 700; }
+.qgroup { font-family: var(--font-display); font-size: 18px; margin-top: 6px; }
 
-/* 결과지 */
+.tier { display: inline-grid; grid-template-columns: 1fr 1fr; border: 1.5px solid var(--line); }
+.tier button { border: 0; background: transparent; padding: 7px 12px; font-weight: 700; font-size: 13px; }
+.tier button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
 .result-head { display: flex; gap: 16px; align-items: center; }
 .result-head svg { flex: 0 0 auto; width: 84px; height: 78px; }
 .result-head .who { font-size: 14px; color: var(--muted); }
 .summary { font-family: var(--font-display); font-size: clamp(22px, 3vw, 32px); line-height: 1.3; border: 0; background: transparent; width: 100%; padding: 0; color: var(--accent); resize: none; overflow: hidden; field-sizing: content; min-height: 1.3em; }
 @media (max-width: 560px) { .summary { min-height: 2.6em; } }
 .badge { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .06em; padding: 3px 8px; background: var(--ice); color: var(--ink); }
-.badge.sample { background: #FFE9A8; color: #4A3A00; }
+.badge.sample { background: var(--gold); color: var(--gold-ink); }
+.paid-only[hidden] { display: none !important; }
+.paidmark { font-size: 11px; font-weight: 700; color: var(--gold-ink); background: var(--gold); padding: 1px 6px; margin-left: 6px; letter-spacing: 0; }
 
 .axis { display: grid; gap: 6px; padding-block: 12px; border-top: 1px solid var(--line); }
 .axis-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
 .axis-name { font-weight: 700; }
 .axis-name small { font-weight: 500; color: var(--muted); margin-left: 6px; }
-.cons { display: inline-flex; gap: 3px; align-items: center; font-size: 12px; color: var(--muted); }
-.cons button { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--accent); background: transparent; padding: 0; }
-.cons button.on { background: var(--accent); }
-.spectrum { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.dots { display: inline-flex; gap: 3px; align-items: center; font-size: 12px; color: var(--muted); }
+.dots button { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--accent); background: transparent; padding: 0; }
+.dots button.on { background: var(--accent); }
 .spectrum input[type=range] { width: 100%; accent-color: var(--navy); }
 .poles2 { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); gap: 8px; }
 .evidence { width: 100%; border: 0; border-left: 3px solid var(--line); background: transparent; padding: 2px 0 2px 10px; font-size: 14px; color: var(--ink); resize: vertical; min-height: 44px; }
+
+.sig { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding-block: 10px; border-top: 1px solid var(--line); align-items: center; }
+.sig b { font-size: 14px; }
+.sig span.d { font-size: 12px; color: var(--muted); grid-column: 1 / -1; }
+.sig textarea { grid-column: 1 / -1; }
 
 .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 @media (max-width: 560px) { .two { grid-template-columns: minmax(0, 1fr); } }
 .listbox { display: grid; gap: 6px; align-content: start; }
 .listbox textarea { width: 100%; border: 1.5px solid var(--line); background: var(--bg); padding: 8px 10px; min-height: 92px; resize: vertical; font-size: 14px; }
 
-.fit { display: grid; gap: 8px; }
-.fit-row { display: grid; grid-template-columns: 7.5em minmax(0, 1fr) 2.6em; gap: 10px; align-items: center; font-size: 14px; font-variant-numeric: tabular-nums; }
-.fit-bar { height: 10px; background: var(--ice); position: relative; }
-.fit-bar i { position: absolute; inset: 0 auto 0 0; background: var(--accent); }
-.fit-row.top .fit-bar i { background: var(--green); }
-.fit-row.top { font-weight: 700; }
-
-.rx { display: grid; gap: 10px; counter-reset: rx; }
-.rx-item { display: grid; gap: 4px; border: 1.5px solid var(--line); padding: 10px 12px; }
-.rx-item input, .rx-item textarea { border: 0; background: transparent; width: 100%; padding: 0; }
-.rx-item input { font-weight: 700; }
-.rx-item textarea { font-size: 14px; color: var(--muted); resize: vertical; min-height: 40px; }
+.score-tbl { overflow-x: auto; }
+.score-tbl table { border-collapse: collapse; width: 100%; min-width: 460px; font-size: 14px; font-variant-numeric: tabular-nums; }
+.score-tbl th, .score-tbl td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+.score-tbl th:first-child, .score-tbl td:first-child { text-align: left; }
+.score-tbl th { font-size: 12px; color: var(--muted); font-weight: 700; }
+.score-tbl tr.top td { font-weight: 700; background: var(--ice); }
+.grade { display: inline-block; min-width: 26px; text-align: center; font-weight: 700; padding: 1px 6px; border: 1.5px solid currentColor; }
+.grade.A { color: var(--green); } .grade.B { color: var(--accent); } .grade.C { color: var(--muted); } .grade.D { color: var(--warn); }
 
 .reco { background: var(--navy); color: #FFFFFF; padding: 16px 18px; display: grid; gap: 4px; }
 .reco b { color: #A8D96A; font-family: var(--font-display); font-weight: 400; font-size: 22px; }
 .reco span { color: #C3D0F0; font-size: 14px; }
 
-.card-wrap { display: grid; gap: 10px; justify-items: start; }
-.card-wrap canvas, .card-wrap img { width: 100%; max-width: 360px; height: auto; border: 1px solid var(--line); background: #fff; }
-.dm { width: 100%; min-height: 150px; border: 1.5px solid var(--line); background: var(--bg); padding: 10px 12px; font-size: 14px; resize: vertical; }
+.market { border: 1.5px solid var(--line); padding: 16px 18px; display: grid; gap: 12px; }
+.market h4 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 20px; }
+.mk-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 18px; }
+@media (max-width: 640px) { .mk-grid { grid-template-columns: minmax(0, 1fr); } }
+.mk-grid div { display: grid; gap: 2px; }
+.mk-grid dt { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .04em; }
+.mk-grid dd { margin: 0; font-size: 14px; }
+.gaps { background: var(--bg); padding: 10px 12px; font-size: 14px; display: grid; gap: 4px; }
+.src { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.src a { color: var(--muted); }
+
+.rx { display: grid; gap: 10px; }
+.rx-item { display: grid; gap: 4px; border: 1.5px solid var(--line); padding: 10px 12px; }
+.rx-item input, .rx-item textarea { border: 0; background: transparent; width: 100%; padding: 0; }
+.rx-item input { font-weight: 700; }
+.rx-item textarea { font-size: 14px; color: var(--muted); resize: vertical; min-height: 40px; }
+
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 560px) { .cards { grid-template-columns: minmax(0, 1fr); } }
+.card-wrap { display: grid; gap: 8px; justify-items: start; align-content: start; }
+.card-wrap canvas, .card-wrap img { width: 100%; max-width: 340px; height: auto; border: 1px solid var(--line); background: #fff; }
+.dm { width: 100%; min-height: 220px; border: 1.5px solid var(--line); background: var(--bg); padding: 10px 12px; font-size: 14px; resize: vertical; }
 
 .hist { display: grid; gap: 10px; }
 .hist-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; border: 1px solid var(--line); padding: 12px 14px; background: var(--surface); }
 .hist-item .t { font-weight: 700; }
 .hist-item .m { font-size: 13px; color: var(--muted); }
 .empty { color: var(--muted); padding: 22px; border: 2px dashed var(--line); text-align: center; }
+
+.lab-tbl { overflow-x: auto; border: 1px solid var(--line); }
+.lab-tbl table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.lab-tbl th, .lab-tbl td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+.lab-tbl th:nth-child(-n+2), .lab-tbl td:nth-child(-n+2) { text-align: left; }
+.lab-tbl img { width: 40px; height: 40px; object-fit: cover; display: block; }
+.lab-tbl td.sum { white-space: normal; min-width: 140px; text-align: left; }
+.checks { display: grid; gap: 8px; }
+.chk { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 10px; align-items: start; font-size: 14px; }
+.chk .r { font-weight: 700; text-align: center; padding: 2px 0; border: 1.5px solid currentColor; font-size: 12px; }
+.chk .r.pass { color: var(--green); } .chk .r.fail { color: var(--warn); } .chk .r.na { color: var(--muted); }
+.distbar { display: flex; height: 14px; border: 1px solid var(--line); overflow: hidden; }
+.distbar i { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 4px; background: var(--c); vertical-align: -1px; }
+
 .spinner { width: 16px; height: 16px; border: 3px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
@@ -156,17 +199,17 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 68ch
   <header class="top">
     <span class="pill">other than works</span>
     <h1>6축 그림체 진단 스튜디오</h1>
-    <p>그림을 올리면 AI가 6개 축에서 그림체의 위치를 읽고, 대표가 감수해 결과 카드와 2주 처방을 만듭니다. 축은 우열이 아니라 위치예요. 처방과 수업 연결은 아더댄웍스 규칙으로 계산합니다.</p>
+    <p>그림을 올리면 AI가 6축 위치와 상업 신호 5가지를 관찰하고, 대표가 감수합니다. 길별 점수는 그림체 적합 45% + 상품 준비도 35% + 시장 매력 20%로 계산해요. 무료 카드는 그림체까지, 유료 리포트는 상업성 평가와 시장분석까지 담습니다.</p>
   </header>
 
   <nav class="tabs" role="tablist" aria-label="진단 방식">
     <button class="tab" role="tab" id="tab-ai" aria-selected="true" aria-controls="pane-ai">AI 그림 진단</button>
-    <button class="tab" role="tab" id="tab-self" aria-selected="false" aria-controls="pane-self">자가 진단 12문항</button>
+    <button class="tab" role="tab" id="tab-self" aria-selected="false" aria-controls="pane-self">자가 진단</button>
+    <button class="tab" role="tab" id="tab-lab" aria-selected="false" aria-controls="pane-lab">검증 실험실</button>
     <button class="tab" role="tab" id="tab-hist" aria-selected="false" aria-controls="pane-hist">진단 기록</button>
   </nav>
 
   <div class="grid" id="main-grid">
-    <!-- 입력 -->
     <section class="panel" id="pane-ai" role="tabpanel" aria-labelledby="tab-ai">
       <h2>그림 올리기</h2>
       <div class="field">
@@ -174,7 +217,7 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 68ch
         <input id="in-name" type="text" maxlength="20" placeholder="예: 소랭" autocomplete="off">
       </div>
       <div class="field">
-        <label for="in-goal">목표하는 길</label>
+        <label for="in-goal">하고 싶은 길</label>
         <select id="in-goal">
           <option value="unknown">아직 모르겠어요</option>
           <option value="picturebook">그림책</option>
@@ -183,6 +226,7 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 68ch
           <option value="instatoon">인스타툰</option>
           <option value="portfolio">포트폴리오·외주</option>
         </select>
+        <p class="hint">고르면 그 길의 시장분석이, 모르겠다면 점수 1위 길의 시장분석이 붙어요.</p>
       </div>
       <div class="field">
         <label for="in-note">대표 메모 <span class="hint" style="display:inline">(AI에게 함께 전달)</span></label>
@@ -195,23 +239,65 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 68ch
       </label>
       <div class="thumbs" id="thumbs"></div>
       <div class="row">
-        <button class="btn" id="btn-analyze" disabled>AI로 6축 읽기</button>
+        <button class="btn" id="btn-analyze" disabled>AI로 진단하기</button>
         <button class="btn ghost" id="btn-stop" hidden>멈추기</button>
       </div>
       <p class="status" id="ai-status" role="status"></p>
-      <p class="hint" id="ai-note">분석은 지금 이 페이지를 보는 사람의 Claude 계정으로 실행돼요. 첫 실행 때 허용 여부를 한 번 묻습니다.</p>
+      <p class="hint" id="ai-note">분석은 이 페이지를 연 사람의 Claude 계정 사용량으로 실행돼요. 첫 실행 때 허용 여부를 한 번 묻습니다.</p>
     </section>
 
     <section class="panel" id="pane-self" role="tabpanel" aria-labelledby="tab-self" hidden>
-      <h2>자가 진단 12문항</h2>
-      <p class="hint">축마다 두 가지를 골라요. 위는 내 그림이 어느 쪽에 가까운지, 아래는 그 선택이 매번 같은지예요.</p>
+      <h2>자가 진단 17문항</h2>
+      <p class="hint">그림체 6축은 위치와 일관성 두 가지씩, 상업 신호 5개는 하나씩 골라요. Claude 없이도 같은 결과지가 나옵니다.</p>
       <div class="field">
         <label for="self-name">이름 또는 닉네임</label>
         <input id="self-name" type="text" maxlength="20" placeholder="예: 소랭" autocomplete="off">
       </div>
+      <div class="field">
+        <label for="self-goal">하고 싶은 길</label>
+        <select id="self-goal">
+          <option value="unknown">아직 모르겠어요</option>
+          <option value="picturebook">그림책</option>
+          <option value="emoticon">이모티콘</option>
+          <option value="goods">캐릭터 굿즈</option>
+          <option value="instatoon">인스타툰</option>
+          <option value="portfolio">포트폴리오·외주</option>
+        </select>
+      </div>
       <div id="self-qs"></div>
       <button class="btn" id="btn-self">결과 보기</button>
       <p class="status" id="self-status" role="status"></p>
+    </section>
+
+    <section class="panel" id="pane-lab" role="tabpanel" aria-labelledby="tab-lab" hidden>
+      <h2>검증 실험실</h2>
+      <p class="hint">결과가 그림마다 실제로 달라지는지 확인하는 곳이에요. 서로 다른 그림 4~12장을 넣고 돌리면 축별 차이, 1위 길이 얼마나 갈리는지, 같은 그림을 반복했을 때 흔들림을 판정합니다. 사진을 한 장 섞으면 그림이 아닌 이미지를 걸러내는지도 확인해요.</p>
+      <label class="drop" id="lab-drop" for="lab-files">
+        <strong>서로 다른 그림 4~12장 고르기</strong>
+        <span class="hint">추천 구성: 수채 그림책 · 이모티콘 · 사실적 인물 · 웹툰 컷 · 굿즈 캐릭터 · 연필 크로키 · 아이 그림 · 사진 1장</span>
+        <input id="lab-files" class="sr" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+      </label>
+      <div class="field">
+        <label for="lab-repeat">반복 테스트</label>
+        <select id="lab-repeat">
+          <option value="0">반복 없음 (그림당 1회)</option>
+          <option value="2" selected>첫 2장은 3번씩 돌려 흔들림 측정</option>
+        </select>
+        <p class="hint" id="lab-cost">호출 수: 0회. 각 호출은 이 계정의 Claude 사용량을 씁니다.</p>
+      </div>
+      <div class="row">
+        <button class="btn" id="btn-lab" disabled>검증 실행</button>
+        <button class="btn ghost" id="btn-lab-stop" hidden>멈추기</button>
+      </div>
+      <p class="status" id="lab-status" role="status"></p>
+      <div class="lab-tbl" id="lab-tbl" hidden></div>
+      <div class="checks" id="lab-checks" hidden></div>
+      <div style="display:grid;gap:8px">
+        <h3>규칙 쏠림 시뮬레이션 (AI 없이)</h3>
+        <p class="hint">무작위 그림체 5,000개를 점수 규칙에 넣었을 때 1위 길의 비율이에요. 한 길이 50%를 넘으면 규칙이 쏠린 겁니다.</p>
+        <div class="distbar" id="sim-bar" role="img"></div>
+        <div class="legend" id="sim-legend"></div>
+      </div>
     </section>
 
     <section class="panel" id="pane-hist" role="tabpanel" aria-labelledby="tab-hist" hidden>
@@ -224,7 +310,10 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 68ch
     <section class="panel" id="result" aria-live="polite">
       <div class="row" style="justify-content:space-between">
         <span class="badge" id="res-badge">예시 결과</span>
-        <span class="hint" id="res-mode"></span>
+        <div class="tier" role="group" aria-label="결과지 종류">
+          <button type="button" id="tier-free" aria-pressed="false">무료 카드</button>
+          <button type="button" id="tier-paid" aria-pressed="true">유료 리포트</button>
+        </div>
       </div>
       <div class="result-head">
         <svg viewBox="0 0 120 110" aria-hidden="true">
@@ -242,7 +331,7 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 68ch
           <path d="M53 64 q7 7 14 0" stroke="#16181D" stroke-width="3" stroke-linecap="round" fill="none"/>
         </svg>
         <div style="min-width:0;flex:1">
-          <div class="who" id="res-who">지민님의 그림체</div>
+          <div class="who" id="res-who"></div>
           <label class="sr" for="res-summary">그림체 한 줄 정의</label>
           <textarea class="summary" id="res-summary" maxlength="28" rows="1"></textarea>
         </div>
@@ -250,52 +339,60 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 68ch
 
       <div>
         <h3>6축 위치 · 대표 감수</h3>
-        <p class="hint">점은 끌어서, 일관성은 동그라미를 눌러 고칠 수 있어요. 고치면 적합도와 카드가 바로 바뀝니다.</p>
+        <p class="hint">점은 끌어서, 일관성은 동그라미를 눌러 고칠 수 있어요. 고치면 점수와 카드가 바로 바뀝니다.</p>
         <div id="axes"></div>
       </div>
 
-      <div class="two">
-        <div class="listbox">
-          <h3><label for="res-strengths">살릴 것</label></h3>
-          <textarea id="res-strengths"></textarea>
-        </div>
-        <div class="listbox">
-          <h3><label for="res-blockers">막히는 곳</label></h3>
-          <textarea id="res-blockers"></textarea>
-        </div>
+      <div class="paid-only" data-paid>
+        <h3>상업 신호 5가지<span class="paidmark">유료</span></h3>
+        <p class="hint">그림체가 아니라 '팔 수 있는 형태인가'를 봅니다. 굿즈와 이모티콘처럼 그림체가 비슷한 길은 여기서 갈려요.</p>
+        <div id="signals"></div>
       </div>
 
-      <div class="fit">
-        <h3>길별 적합도</h3>
-        <div id="fit"></div>
+      <div class="two">
+        <div class="listbox"><h3><label for="res-strengths">살릴 것</label></h3><textarea id="res-strengths"></textarea></div>
+        <div class="listbox"><h3><label for="res-blockers">막히는 곳</label></h3><textarea id="res-blockers"></textarea></div>
+      </div>
+
+      <div>
+        <h3 id="score-title">길별 점수</h3>
+        <div class="score-tbl" id="scores"></div>
+        <p class="hint" id="score-note"></p>
       </div>
 
       <div class="reco" id="reco"></div>
+
+      <div class="paid-only market" id="market" data-paid></div>
 
       <div>
         <h3>2주 처방</h3>
         <div class="rx" id="rx"></div>
       </div>
 
-      <div class="two">
+      <div class="cards">
         <div class="card-wrap">
-          <h3>결과 카드 1080×1350</h3>
-          <canvas id="card" width="1080" height="1350" aria-label="결과 카드 미리보기"></canvas>
-          <img id="card-img" alt="결과 카드 이미지. 길게 눌러 저장하세요." hidden>
-          <div class="row">
-            <button class="btn lime" id="btn-png">카드 PNG 저장</button>
-          </div>
+          <h3>카드 1 · 그림체 진단</h3>
+          <canvas id="card" width="1080" height="1350" aria-label="그림체 진단 카드 미리보기"></canvas>
+          <img id="card-img" alt="그림체 진단 카드 이미지. 길게 눌러 저장하세요." hidden>
+          <button class="btn lime" id="btn-png">카드 1 저장</button>
           <p class="status" id="png-status" role="status"></p>
         </div>
-        <div class="listbox">
-          <h3><label for="dm">수강생에게 보낼 DM</label></h3>
-          <textarea class="dm" id="dm"></textarea>
-          <div class="row">
-            <button class="btn ghost" id="btn-copy">DM 복사</button>
-            <button class="btn" id="btn-save">기록에 저장</button>
-          </div>
-          <p class="status" id="save-status" role="status"></p>
+        <div class="card-wrap paid-only" data-paid>
+          <h3>카드 2 · 상업성·시장<span class="paidmark">유료</span></h3>
+          <canvas id="card2" width="1080" height="1350" aria-label="상업성 시장 카드 미리보기"></canvas>
+          <img id="card2-img" alt="상업성 시장 카드 이미지. 길게 눌러 저장하세요." hidden>
+          <button class="btn lime" id="btn-png2">카드 2 저장</button>
+          <p class="status" id="png2-status" role="status"></p>
         </div>
+      </div>
+      <div class="listbox">
+        <h3><label for="dm">수강생에게 보낼 DM</label></h3>
+        <textarea class="dm" id="dm"></textarea>
+        <div class="row">
+          <button class="btn ghost" id="btn-copy">DM 복사</button>
+          <button class="btn" id="btn-save">기록에 저장</button>
+        </div>
+        <p class="status" id="save-status" role="status"></p>
       </div>
     </section>
   </div>
@@ -304,52 +401,175 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 68ch
 <script>
 (() => {
 "use strict";
-/* ───────── 6축 정의 (대표의 실제 6축으로 교체하는 곳) ───────── */
+/* ═════════ 1. 아더댄웍스 규칙 (대표의 실제 기준으로 교체하는 곳) ═════════ */
 const AXES = [
-  { key: "line",    name: "선",   en: "LINE",        left: "러프·스케치",   right: "정돈·클린",
-    q: "내 그림의 선은?", lq: "여러 번 겹쳐 긋고 흔적을 남긴다", rq: "한 번에 깔끔하게 정리한다" },
+  { key: "line",    name: "선",   en: "LINE",        left: "러프·스케치",    right: "정돈·클린",
+    q: "내 그림의 선은?", lq: "여러 번 겹쳐 긋고 흔적을 남긴다", rq: "한 번에 깔끔하게 정리한다",
+    anchor: "0~15 = 연필 크로키처럼 여러 번 겹친 선, 85~100 = 이모티콘처럼 굵기가 일정한 단일 윤곽선" },
   { key: "form",    name: "형태", en: "FORM",        left: "데포르메·단순화", right: "사실·구조",
-    q: "사람과 사물의 모양은?", lq: "크게 줄이고 귀엽게 바꾼다", rq: "비율과 구조를 실제에 가깝게 잡는다" },
-  { key: "color",   name: "색",   en: "COLOR",       left: "절제·톤온톤",   right: "대비·고채도",
-    q: "색을 고를 때는?", lq: "비슷한 색 몇 개로 조용하게", rq: "보색과 진한 색으로 또렷하게" },
-  { key: "texture", name: "질감", en: "TEXTURE",     left: "플랫·디지털",   right: "아날로그·재료감",
-    q: "화면의 표면은?", lq: "면을 평평하게 채운다", rq: "종이·붓·연필 결이 보인다" },
-  { key: "comp",    name: "구성", en: "COMPOSITION", left: "정적·중앙",     right: "동적·여백·대각",
-    q: "한 장을 배치할 때는?", lq: "주인공을 가운데 안정적으로", rq: "치우치거나 기울여 움직임을 만든다" },
-  { key: "mood",    name: "정서", en: "MOOD",        left: "담백·관찰",     right: "서사·감정",
-    q: "그림이 전하는 건?", lq: "보이는 장면을 차분히 기록", rq: "이야기와 감정이 먼저 보인다" },
+    q: "사람과 사물의 모양은?", lq: "크게 줄이고 귀엽게 바꾼다", rq: "비율과 구조를 실제에 가깝게 잡는다",
+    anchor: "0~15 = 2~3등신, 손발 생략, 85~100 = 해부학 비율과 원근이 정확한 인물" },
+  { key: "color",   name: "색",   en: "COLOR",       left: "절제·톤온톤",    right: "대비·고채도",
+    q: "색을 고를 때는?", lq: "비슷한 색 몇 개로 조용하게", rq: "보색과 진한 색으로 또렷하게",
+    anchor: "0~15 = 흑백이나 한 계열 3색 이하, 85~100 = 원색·보색이 화면 대부분" },
+  { key: "texture", name: "질감", en: "TEXTURE",     left: "플랫·디지털",    right: "아날로그·재료감",
+    q: "화면의 표면은?", lq: "면을 평평하게 채운다", rq: "종이·붓·연필 결이 보인다",
+    anchor: "0~15 = 벡터처럼 균일한 면, 85~100 = 수채 번짐·종이 결·붓자국이 뚜렷" },
+  { key: "comp",    name: "구성", en: "COMPOSITION", left: "정적·중앙",      right: "동적·여백·대각",
+    q: "한 장을 배치할 때는?", lq: "주인공을 가운데 안정적으로", rq: "치우치거나 기울여 움직임을 만든다",
+    anchor: "0~15 = 흰 배경 중앙 단독 캐릭터, 85~100 = 대각 구도·과감한 여백·잘린 프레임" },
+  { key: "mood",    name: "정서", en: "MOOD",        left: "담백·관찰",      right: "서사·감정",
+    q: "그림이 전하는 건?", lq: "보이는 장면을 차분히 기록", rq: "이야기와 감정이 먼저 보인다",
+    anchor: "0~15 = 사물·풍경 관찰 기록, 85~100 = 한 장만 봐도 앞뒤 사건과 감정이 읽힘" },
 ];
 
-/* 길별 목표 위치와 가중치 (같은 순서: 선, 형태, 색, 질감, 구성, 정서) */
-const GENRES = [
-  { key: "picturebook", name: "그림책",        target: [45, 40, 55, 65, 65, 80], w: [.3, .6, .5, .6, .8, 1],  cw: .3,
-    product: "픽처포지(그림책반)", extra: "그림책 만들기 자습서 2장 '캐릭터와 스타일'부터" },
-  { key: "emoticon",    name: "이모티콘",      target: [75, 15, 70, 25, 30, 85], w: [.8, 1, .6, .7, .6, .9], cw: .3,
-    product: "이모티콘반", extra: "표정 24컷 시트로 선 두께부터 통일" },
-  { key: "goods",       name: "캐릭터 굿즈",   target: [80, 25, 65, 30, 35, 55], w: [1, .9, .7, .6, .5, .3],  cw: .35,
-    product: "굿즈반 + 캐릭터 키트", extra: "크리컷 스티커 키트로 첫 샘플 제작" },
-  { key: "instatoon",   name: "인스타툰",      target: [60, 30, 45, 30, 50, 85], w: [.6, .8, .4, .5, .5, 1],  cw: .3,
-    product: "콘텐츠반(릴스·협찬)", extra: "4컷 3편으로 캐릭터 고정부터" },
-  { key: "portfolio",   name: "포트폴리오·외주", target: [65, 60, 55, 50, 60, 55], w: [.5, .5, .5, .4, .6, .4], cw: .55,
-    product: "포트폴리오반", extra: "같은 그림체로 6장 묶음 만들기" },
+/* 상업 신호: 그림체가 아니라 '팔 수 있는 형태인가' */
+const SIGNALS = [
+  { key: "craft",      name: "완성도",       fix: "선 정리와 채색 경계 마감", desc: "선 정리, 채색 경계, 마감이 상업물 수준인가", sq: "마감(선 정리·채색 경계)이 깔끔한 편이다" },
+  { key: "character",  name: "캐릭터 고정성", fix: "반복 등장시킬 고정 캐릭터 만들기", desc: "반복 등장시킬 수 있는 알아보기 쉬운 캐릭터가 있는가", sq: "같은 캐릭터를 여러 장 그려 봤고 매번 알아볼 수 있다" },
+  { key: "expression", name: "표정·감정 폭", fix: "표정과 몸짓으로 감정 폭 넓히기", desc: "표정과 몸짓으로 감정을 여러 가지로 나눠 보여 주는가", sq: "기쁨·슬픔·화남 같은 표정을 여러 가지로 그릴 수 있다" },
+  { key: "narrative",  name: "장면 서사",     fix: "한 장에 앞뒤 이야기 담기", desc: "한 장이 이야기의 한 순간으로 읽히는가", sq: "내 그림 한 장에는 앞뒤 이야기가 있다" },
+  { key: "production", name: "상품화 적합",   fix: "윤곽 정리와 작은 크기 식별성", desc: "윤곽이 분명하고 작게 줄여도 알아보며 색 면이 분리되는가 (스티커·인쇄·커팅)", sq: "작게 줄여도 알아볼 수 있고 윤곽이 분명하다" },
 ];
+
+/* 길: target = 6축 목표 위치, w = 6축 가중치, ready = 준비도 가중치 (완성도, 캐릭터, 표정, 서사, 상품화, 일관성) */
+const GENRES = [
+  { key: "picturebook", name: "그림책", target: [45, 40, 50, 65, 62, 78], w: [.4, .5, .5, .8, .8, 1],
+    ready: [.25, .15, .1, .3, 0, .2], product: "픽처포지(그림책반)", extra: "그림책 만들기 자습서 2장 '캐릭터와 스타일'부터" },
+  { key: "emoticon", name: "이모티콘", target: [72, 20, 65, 25, 35, 78], w: [.8, 1, .5, .7, .4, .6],
+    ready: [.15, .25, .35, 0, .1, .15], product: "이모티콘반", extra: "표정 24컷 시트로 선 두께부터 통일" },
+  { key: "goods", name: "캐릭터 굿즈", target: [75, 28, 62, 30, 38, 45], w: [1, .8, .6, .7, .4, .5],
+    ready: [.2, .3, .05, 0, .3, .15], product: "굿즈반 + 캐릭터 키트", extra: "크리컷 스티커 키트로 첫 샘플 제작" },
+  { key: "instatoon", name: "인스타툰", target: [58, 32, 45, 35, 48, 80], w: [.4, .7, .5, .6, .4, 1.4],
+    ready: [.1, .25, .2, .3, 0, .15], product: "콘텐츠반(릴스·협찬)", extra: "4컷 3편으로 캐릭터 고정부터" },
+  { key: "portfolio", name: "포트폴리오·외주", target: [62, 62, 52, 50, 58, 52], w: [.5, 1.2, .5, .5, .7, .6],
+    ready: [.35, .05, .05, .1, .1, .35], product: "포트폴리오반", extra: "같은 그림체로 6장 묶음 만들기" },
+];
+const MIX = { style: .45, ready: .35, market: .20 };
 const ROUTINE = { name: "드로잉 루틴반", why: "위치보다 반복이 먼저예요. 같은 선택을 4주 반복하면 그림체가 생깁니다." };
 
-/* 축별 기본 처방 (자가진단 또는 AI 응답이 비었을 때) */
+/* 시장 브리프 (2026.11 조사 기준, 출처 표시. attract = 시장 매력 점수, 대표 판단으로 조정) */
+const MARKET = {
+  picturebook: { attract: 55, asOf: "2026.11",
+    size: "2025년 국내 신간 6만 4,991종. 아동 분야 평균 발행 부수는 전년보다 7.4% 줄었어요. 대신 볼로냐 아동도서전에 국내 39개 출판사가 나가는 등 해외 판권 쪽이 커지고 있어요.",
+    money: "인세 방식. 흔히 정가의 10%를 글·그림 작가가 나눕니다. 정가 15,000원 책이 3,000부 팔리면 작가 몫은 약 450만 원 (글그림을 혼자 하면 전부).",
+    entry: "출판사 투고·공모전. 기획부터 출간까지 1~2년이 흔해서 돈이 늦게 들어와요 (추정).",
+    speed: "느림 · 브랜드와 강의 레버리지는 가장 큼",
+    first: "더미북 1권 (12~16장면) → 출판사 투고 3곳 + 독립출판 소량 인쇄",
+    src: [["출협 2025 출판생산 통계 (뉴시스)", "https://mobile.newsis.com/view/NISX20260529_0003649654"], ["볼로냐아동도서전 K-그림책 (헤럴드경제)", "https://www.heraldk.com/article/2026041217583347719"], ["작가 인세 10% 관행 (경인일보)", "https://www.kyeongin.com/article/1632537"]] },
+  emoticon: { attract: 70, asOf: "2026.11",
+    size: "카카오 이모티콘 누적 거래 7,000억 원 돌파. 누적 매출 1억 원 이상 이모티콘 2,885개, 10억 원 이상 146개로 보도됐어요. 창작자는 약 1만 명.",
+    money: "판매 수익 + 이모티콘 플러스 구독 사용량에 따른 분배. 승인되면 바로 매출이 생겨요.",
+    entry: "제안 경쟁이 셉니다. 매주 약 2,000건이 제안되고 100여 건이 출시돼 약 20:1로 보도됐어요.",
+    speed: "중간 · 승인까지 반복 제안 필요",
+    first: "표정 시안 세트 1종 → 카카오·라인·OGQ 동시 제안",
+    src: [["카카오 이모티콘 시장 (조선비즈/다음)", "https://v.daum.net/v/20250530144051820?f=p"], ["7000억 이모티콘 시장 (디아이투데이)", "https://ditoday.com/?p=91918"], ["카카오 이모티콘 10주년 (카카오)", "https://www.kakaocorp.com/page/detail/9609"]] },
+  goods: { attract: 65, asOf: "2026.11",
+    size: "국내 캐릭터 산업 매출 2024년 7조 958억 원 (2021년 5조 39억 원에서 증가, 문체부 콘텐츠산업조사 인용 보도). 캐릭터 수출도 2025년 12.8% 늘었어요.",
+    money: "개당 마진. 재고 부담이 핵심 리스크인데, 3D프린터·크리컷으로 소량 생산하면 재고 없이 시작할 수 있어요.",
+    entry: "진입은 쉽고 경쟁이 큽니다. POD 플랫폼 마플샵에만 크리에이터 9만 명 이상 (앱스토어 설명).",
+    speed: "빠름 · 첫 판매까지 수주 가능",
+    first: "스티커 시트 1종 + 키링 1종 → 플리마켓·마플샵 테스트 판매",
+    src: [["캐릭터 산업 7조 958억 (뉴시스)", "https://mobile.newsis.com/view/NISX20260716_0003713011"], ["2025 콘텐츠산업 동향 (아시아경제)", "https://view.asiae.co.kr/article/2026043008302523575"], ["마플샵 (앱스토어)", "https://apps.apple.com/us/app/id1571108536"]] },
+  instatoon: { attract: 60, asOf: "2026.11",
+    size: "웹툰을 주로 보는 채널로 인스타그램을 꼽은 비중 23.9% (2025 만화산업백서 인용 보도). 뷰티·식품·라이프스타일 브랜드 협업이 늘고 있어요.",
+    money: "브랜드 협찬·광고툰 제작. 제작 대행 사례로 컷당 3만 5천~5만 5천 원, 월 4편 패키지 200만 원 (크몽).",
+    entry: "팔로워가 쌓여야 협찬이 옵니다. 주 2~3회 연재를 6개월 이상 버티는 게 관건이에요 (추정).",
+    speed: "중간 · 연재 지속력이 곧 매출",
+    first: "4컷 12편 연재 → 협찬 제안서용 미디어킷",
+    src: [["인스타툰 협업 동향 (고구마팜)", "https://gogumafarm.kr/?p=2724"], ["인스타툰 제작 단가 사례 (크몽)", "https://kmong.com/gig/739349"]] },
+  portfolio: { attract: 50, asOf: "2026.11",
+    size: "외주 일러스트 거래 단가 (크몽 5년 거래 데이터): 간단 캐릭터 2만 원, 배경 포함 12만 원, 브랜딩·복잡 33만 원 이상. 숨고 평균 건당 10만 원.",
+    money: "건당·시간 노동형. 단가는 포트폴리오의 일관성과 전문 분야가 정해요.",
+    entry: "플랫폼 진입은 쉽지만 저가 경쟁이 심해요. 같은 그림체 6장 이상 묶음이 있어야 단가를 올릴 수 있어요 (추정).",
+    speed: "빠름 · 대신 시간을 파는 구조",
+    first: "한 분야(출판·브랜드·교육) 포트폴리오 6장 → 크몽 등록 + 출판사 메일 10곳",
+    src: [["일러스트 가격 데이터 (크몽)", "https://kmong.com/prices/%EC%9D%BC%EB%9F%AC%EC%8A%A4%ED%8A%B8"], ["일러스트 디자인 평균 비용 (숨고)", "https://soomgo.com/a.%EB%B6%80%EC%82%B0-%EB%8F%99%EA%B5%AC/%EC%9D%BC%EB%9F%AC%EC%8A%A4%ED%8A%B8-%EB%94%94%EC%9E%90%EC%9D%B8"]] },
+};
+
 const RX_LIB = {
   line:    { title: "선 한 가지로 7일", how: "브러시 1종·두께 1종으로 매일 사물 3개. 지우개 없이 그린다." },
   form:    { title: "도형 3개로 줄이기", how: "주인공을 원·사각·삼각 3개 도형으로만 다시 그려 비율을 고정한다." },
   color:   { title: "팔레트 4색 고정", how: "주색 1, 보조 2, 포인트 1. 2주 동안 이 4색 밖으로 나가지 않는다." },
   texture: { title: "표면 하나 정하기", how: "플랫이든 연필 결이든 하나만 골라 7장 연속 같은 브러시 세팅으로." },
   comp:    { title: "썸네일 9칸", how: "같은 장면을 3×3 작은 칸에 배치만 바꿔 9번. 가장 마음에 드는 것만 완성." },
-  mood:    { title: "한 줄 문장 먼저", how: "그리기 전에 이 장면의 감정을 한 문장으로 적고, 그 문장에 맞는 표정만 남긴다." },
+  mood:    { title: "한 줄 문장 먼저", how: "그리기 전에 장면의 감정을 한 문장으로 적고, 그 문장에 맞는 표정만 남긴다." },
+  craft:      { title: "마감 체크 5분", how: "완성 전 윤곽 끊김·삐져나온 채색·지저분한 경계 3곳을 찾아 고치고 끝낸다." },
+  character:  { title: "턴어라운드 1장", how: "주인공을 앞·옆·뒤·3/4 네 방향으로 그려 특징 3가지를 고정한다." },
+  expression: { title: "표정 12칸", how: "같은 캐릭터로 기쁨·슬픔·화남·놀람 등 12표정을 한 장에. 눈썹과 입만 바꾼다." },
+  narrative:  { title: "앞뒤 한 컷씩", how: "완성한 그림의 바로 앞 장면과 뒷장면을 러프로 한 컷씩 그려 세 컷으로 만든다." },
+  production: { title: "2cm 테스트", how: "그림을 2cm로 줄여 출력해 알아보는지 확인하고, 안 보이는 디테일은 지운다." },
 };
 
+/* ═════════ 2. 계산 ═════════ */
 const $ = (id) => document.getElementById(id);
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 const avg = (arr) => arr.reduce((s, x) => s + x, 0) / (arr.length || 1);
+function hasBatchim(word) {
+  const m = String(word).match(/[가-힣](?=[^가-힣]*$)/);
+  if (!m) return false;
+  return (m[0].charCodeAt(0) - 0xAC00) % 28 !== 0;
+}
+const josa = (w, withB, noB) => w + (hasBatchim(w) ? withB : noB);
 
-/* ───────── 상태 ───────── */
+/* 스타일 적합도 보정: 그림체 분포(평균 50, 표준편차 22)에서 각 길의 거리 평균·편차를 구해 표준점수로 바꾼다.
+   이렇게 해야 목표 위치가 가운데인 길이 무조건 유리해지는 쏠림이 사라진다. */
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function gauss(r) { let u = 0, v = 0; while (!u) u = r(); while (!v) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+const styleDist = (g, pos) => { let n = 0, d = 0; pos.forEach((p, i) => { n += g.w[i] * Math.abs(p - g.target[i]); d += g.w[i]; }); return n / d; };
+const CAL = (() => { const r = rng(7); return GENRES.map(g => { let s = 0, s2 = 0; const N = 4000;
+  for (let i = 0; i < N; i++) { const p = AXES.map(() => clamp(50 + 22 * gauss(r), 0, 100)); const d = styleDist(g, p); s += d; s2 += d * d; }
+  const m = s / N; return { m, sd: Math.sqrt(s2 / N - m * m) }; }); })();
+
+function scorePaths(s) {
+  const pos = AXES.map(a => s.axes[a.key].position);
+  const consAvg = avg(AXES.map(a => s.axes[a.key].consistency));
+  const sig = SIGNALS.map(x => (s.signals && s.signals[x.key] ? s.signals[x.key].score : 3));
+  const readyVals = [...sig, consAvg].map(v => (v - 1) / 4 * 100);
+  return GENRES.map((g, i) => {
+    const style = Math.round(clamp(50 + 18 * (CAL[i].m - styleDist(g, pos)) / CAL[i].sd, 0, 100));
+    const ready = Math.round(readyVals.reduce((t, v, j) => t + v * g.ready[j], 0));
+    const market = MARKET[g.key].attract;
+    const total = Math.round(MIX.style * style + MIX.ready * ready + MIX.market * market);
+    const grade = total >= 75 ? "A" : total >= 62 ? "B" : total >= 50 ? "C" : "D";
+    return { ...g, style, ready, market, total, grade };
+  }).sort((a, b) => b.total - a.total || b.style - a.style);
+}
+const GRADE_TXT = { A: "바로 상품화 가능", B: "3개월 준비하면 상품화", C: "기초를 다진 뒤 도전", D: "지금은 다른 길이 유리" };
+
+function recommendation(s, paths) {
+  const cons = avg(AXES.map(a => s.axes[a.key].consistency));
+  const top = paths[0];
+  const goal = paths.find(p => p.key === s.goal);
+  if (cons < 2.6) return { title: ROUTINE.name, line: ROUTINE.why, then: `루틴 4주 뒤 ${top.name} 쪽으로 다시 진단`, target: goal || top };
+  if (goal && goal.key !== top.key) {
+    if (goal.total >= top.total - 8) return { title: goal.product, line: `하고 싶은 ${josa(goal.name, "과", "와")} 지금 그림이 충분히 가까워요 (${goal.total}점, ${goal.grade}등급).`, then: goal.extra, target: goal };
+    return { title: goal.product, line: `${josa(goal.name, "은", "는")} ${goal.total}점, 지금 그림으로 가장 빨리 돈이 되는 길은 ${top.name}(${top.total}점)이에요. ${josa(goal.name, "을", "를")} 목표로 두고 ${josa(top.name, "으로", "로")} 먼저 매출을 만드는 순서도 가능해요.`, then: `아래 시장분석의 '이 길로 가려면 바꿀 것'부터`, target: goal };
+  }
+  return { title: top.product, line: `지금 그림에 가장 맞는 길은 ${top.name}이에요 (${top.total}점, ${top.grade}등급 · ${GRADE_TXT[top.grade]}).`, then: top.extra, target: top };
+}
+function gapsFor(s, g) {
+  const out = [];
+  AXES.forEach((a, i) => {
+    const d = g.target[i] - s.axes[a.key].position;
+    if (Math.abs(d) >= 22 && g.w[i] >= .5) out.push(`${a.name}: 지금 ${s.axes[a.key].position} → ${g.name}에 맞는 위치 ${g.target[i]} 근처 (${d > 0 ? a.right : a.left} 쪽으로)`);
+  });
+  SIGNALS.forEach((x, j) => {
+    const v = s.signals && s.signals[x.key] ? s.signals[x.key].score : 3;
+    if (v <= 2 && g.ready[j] >= .2) out.push(`${x.name} ${v}/5 → ${x.fix}`);
+  });
+  return out.slice(0, 4);
+}
+function weakest(s, n) {
+  const items = AXES.map(a => ({ key: a.key, name: a.name, v: s.axes[a.key].consistency }))
+    .concat(SIGNALS.map(x => ({ key: x.key, name: x.name, v: s.signals && s.signals[x.key] ? s.signals[x.key].score : 3 })));
+  return items.sort((a, b) => a.v - b.v).slice(0, n);
+}
+
+/* ═════════ 3. 상태 ═════════ */
+const sig = (craft, character, expression, narrative, production) => ({
+  craft: { score: craft, note: "" }, character: { score: character, note: "" }, expression: { score: expression, note: "" },
+  narrative: { score: narrative, note: "" }, production: { score: production, note: "" } });
 const SAMPLE_STATE = {
   name: "지민", goal: "picturebook", mode: "sample", isSample: true,
   summary: "단정한 선의 담백한 관찰자",
@@ -361,82 +581,47 @@ const SAMPLE_STATE = {
     comp:    { position: 34, consistency: 3, evidence: "세 장 모두 주인공이 화면 중앙, 눈높이 시점이에요." },
     mood:    { position: 46, consistency: 3, evidence: "장면은 조용한데 인물 표정이 비슷해 이야기가 약하게 읽혀요." },
   },
+  signals: sig(4, 3, 2, 3, 3),
   strengths: "• 선 정리가 이미 안정적이라 캐릭터 반복에 유리해요\n• 절제된 팔레트가 그림책 톤과 잘 맞아요",
   blockers: "• 배경과 인물의 질감이 달라 한 화면이 두 사람 그림처럼 보여요\n• 구도가 늘 중앙이라 장면이 넘어가는 힘이 약해요",
   rx: [
     { title: "표면 하나 정하기", how: "인물에도 배경과 같은 연필 브러시를 써서 7장 연속 그리기." },
     { title: "썸네일 9칸", how: "같은 장면을 3×3 칸에 배치만 바꿔 9번. 대각 구도를 최소 3개 넣기." },
-    { title: "한 줄 문장 먼저", how: "그리기 전에 장면의 감정을 한 문장으로 적고 표정을 그 문장에 맞추기." },
+    { title: "표정 12칸", how: "같은 캐릭터로 12표정을 한 장에. 눈썹과 입만 바꾼다." },
   ],
 };
+SAMPLE_STATE.signals.craft.note = "윤곽과 채색 경계가 깔끔해요.";
+SAMPLE_STATE.signals.expression.note = "세 장 모두 비슷한 미소라 감정 폭이 좁아요.";
 let state = structuredClone(SAMPLE_STATE);
+let tier = "paid";
 
-/* ───────── 계산 (사업 규칙) ───────── */
-function genreFits(s) {
-  const pos = AXES.map(a => s.axes[a.key].position);
-  const cons = avg(AXES.map(a => s.axes[a.key].consistency));
-  const consNorm = (cons - 1) / 4; // 0~1
-  return GENRES.map(g => {
-    let num = 0, den = 0;
-    pos.forEach((p, i) => { num += g.w[i] * Math.abs(p - g.target[i]); den += g.w[i]; });
-    const shape = clamp(100 - (num / den) * 2, 0, 100);
-    const score = Math.round(shape * ((1 - g.cw) + g.cw * consNorm));
-    return { ...g, score };
-  }).sort((a, b) => b.score - a.score);
-}
-function recommendation(s, fits) {
-  const cons = avg(AXES.map(a => s.axes[a.key].consistency));
-  const goal = GENRES.find(g => g.key === s.goal);
-  const top = fits[0];
-  if (cons < 2.6) {
-    return { title: ROUTINE.name, line: ROUTINE.why, then: `루틴 4주 뒤 ${top.name} 쪽으로 다시 진단` };
-  }
-  if (goal && goal.key !== top.key) {
-    const gf = fits.find(f => f.key === goal.key);
-    if (gf && gf.score >= top.score - 8) {
-      return { title: gf.product, line: `목표한 ${gf.name}과 지금 그림체가 가까워요 (${gf.score}점).`, then: gf.extra };
-    }
-    return { title: top.product, line: `목표는 ${goal.name}이지만 지금 그림체는 ${top.name} 쪽이 더 가까워요 (${top.score}점 vs ${gf ? gf.score : "-"}점).`, then: `${goal.name}으로 가려면 '막히는 곳'의 첫 줄부터 처방대로` };
-  }
-  return { title: top.product, line: `지금 그림체는 ${top.name}에 가장 가까워요 (${top.score}점).`, then: top.extra };
-}
-function weakestAxes(s, n) {
-  return [...AXES].sort((a, b) => s.axes[a.key].consistency - s.axes[b.key].consistency).slice(0, n);
-}
-
-/* ───────── 결과지 렌더 ───────── */
-const axesBox = $("axes");
+/* ═════════ 4. 결과지 렌더 ═════════ */
+function dotsHTML(label) { return `<span class="dots" role="group" aria-label="${label} 1에서 5">${[1,2,3,4,5].map(n => `<button type="button" data-n="${n}" aria-label="${label} ${n}"></button>`).join("")}</span>`; }
+function paintDots(root, v) { root.querySelectorAll(".dots button").forEach(b => { b.classList.toggle("on", +b.dataset.n <= v); b.setAttribute("aria-pressed", String(+b.dataset.n === v)); }); }
 function buildAxes() {
-  axesBox.textContent = "";
+  const box = $("axes"); box.textContent = "";
   AXES.forEach(a => {
-    const row = document.createElement("div");
-    row.className = "axis";
-    row.innerHTML = `
-      <div class="axis-top">
-        <span class="axis-name">${a.name}<small>${a.en}</small></span>
-        <span class="cons" role="group" aria-label="${a.name} 일관성 1에서 5">일관성 ${[1,2,3,4,5].map(n => `<button type="button" data-n="${n}" aria-label="일관성 ${n}"></button>`).join("")}</span>
-      </div>
-      <div class="spectrum">
-        <label class="sr" for="rng-${a.key}">${a.name} 위치</label>
-        <input type="range" id="rng-${a.key}" min="0" max="100" step="1">
-        <div class="poles2"><span>${a.left}</span><span>${a.right}</span></div>
-      </div>
+    const row = document.createElement("div"); row.className = "axis"; row.id = "ax-" + a.key;
+    row.innerHTML = `<div class="axis-top"><span class="axis-name">${a.name}<small>${a.en}</small></span><span class="dots">일관성&nbsp;${dotsHTML(a.name + " 일관성")}</span></div>
+      <div class="spectrum"><label class="sr" for="rng-${a.key}">${a.name} 위치</label><input type="range" id="rng-${a.key}" min="0" max="100" step="1">
+      <div class="poles2"><span>${a.left}</span><span>${a.right}</span></div></div>
       <label class="sr" for="ev-${a.key}">${a.name} 근거</label>
       <textarea class="evidence" id="ev-${a.key}" rows="2" maxlength="160" placeholder="근거가 비어 있어요. 감수하면서 직접 적어 주세요."></textarea>`;
-    axesBox.appendChild(row);
-    row.querySelector("input").addEventListener("input", e => { state.axes[a.key].position = +e.target.value; refreshDerived(); });
+    box.appendChild(row);
+    row.querySelector("input").addEventListener("input", e => { state.axes[a.key].position = +e.target.value; refresh(); });
     row.querySelector("textarea").addEventListener("input", e => { state.axes[a.key].evidence = e.target.value; });
-    row.querySelectorAll(".cons button").forEach(b => b.addEventListener("click", () => {
-      state.axes[a.key].consistency = +b.dataset.n; paintCons(a.key); refreshDerived();
-    }));
+    row.querySelectorAll(".dots button").forEach(b => b.addEventListener("click", () => { state.axes[a.key].consistency = +b.dataset.n; paintDots(row, +b.dataset.n); refresh(); }));
   });
 }
-function paintCons(key) {
-  const c = state.axes[key].consistency;
-  document.querySelectorAll(`#rng-${key}`).forEach(r => {
-    r.closest(".axis").querySelectorAll(".cons button").forEach(b => {
-      const on = +b.dataset.n <= c; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(+b.dataset.n === c));
-    });
+function buildSignals() {
+  const box = $("signals"); box.textContent = "";
+  SIGNALS.forEach(x => {
+    const row = document.createElement("div"); row.className = "sig"; row.id = "sg-" + x.key;
+    row.innerHTML = `<b>${x.name}</b>${dotsHTML(x.name)}<span class="d">${x.desc}</span>
+      <label class="sr" for="sgn-${x.key}">${x.name} 근거</label><textarea class="evidence" id="sgn-${x.key}" rows="1" maxlength="120" placeholder="근거 (선택)"></textarea>`;
+    box.appendChild(row);
+    row.querySelectorAll(".dots button").forEach(b => b.addEventListener("click", () => { state.signals[x.key].score = +b.dataset.n; paintDots(row, +b.dataset.n); refresh(); }));
+    row.querySelector("textarea").addEventListener("input", e => { state.signals[x.key].note = e.target.value; });
   });
 }
 function renderRx() {
@@ -444,11 +629,11 @@ function renderRx() {
   state.rx.forEach((r, i) => {
     const el = document.createElement("div"); el.className = "rx-item";
     el.innerHTML = `<label class="sr" for="rx-t-${i}">처방 ${i + 1} 제목</label><input id="rx-t-${i}" maxlength="30">
-      <label class="sr" for="rx-h-${i}">처방 ${i + 1} 방법</label><textarea id="rx-h-${i}" rows="2" maxlength="140"></textarea>`;
+      <label class="sr" for="rx-h-${i}">처방 ${i + 1} 방법</label><textarea id="rx-h-${i}" rows="2" maxlength="160"></textarea>`;
     const t = el.querySelector("input"), h = el.querySelector("textarea");
     t.value = r.title; h.value = r.how;
-    t.addEventListener("input", () => { state.rx[i].title = t.value; refreshDerived(); });
-    h.addEventListener("input", () => { state.rx[i].how = h.value; refreshDerived(); });
+    t.addEventListener("input", () => { state.rx[i].title = t.value; refresh(); });
+    h.addEventListener("input", () => { state.rx[i].how = h.value; refresh(); });
     box.appendChild(el);
   });
 }
@@ -456,202 +641,245 @@ function renderAll() {
   const badge = $("res-badge");
   badge.textContent = state.isSample ? "예시 결과 · 실제 수강생 아님" : (state.mode === "ai" ? "AI 진단 · 감수 중" : "자가 진단");
   badge.classList.toggle("sample", !!state.isSample);
-  $("res-mode").textContent = state.mode === "ai" ? "AI 관찰 + 대표 감수" : state.mode === "self" ? "본인 응답 기반" : "";
   $("res-summary").value = state.summary;
-  AXES.forEach(a => {
-    $("rng-" + a.key).value = state.axes[a.key].position;
-    $("ev-" + a.key).value = state.axes[a.key].evidence || "";
-    paintCons(a.key);
-  });
+  AXES.forEach(a => { $("rng-" + a.key).value = state.axes[a.key].position; $("ev-" + a.key).value = state.axes[a.key].evidence || ""; paintDots($("ax-" + a.key), state.axes[a.key].consistency); });
+  SIGNALS.forEach(x => { paintDots($("sg-" + x.key), state.signals[x.key].score); $("sgn-" + x.key).value = state.signals[x.key].note || ""; });
   $("res-strengths").value = state.strengths;
   $("res-blockers").value = state.blockers;
-  renderRx();
-  refreshDerived();
+  renderRx(); refresh();
 }
+function setTier(t) {
+  tier = t;
+  $("tier-free").setAttribute("aria-pressed", String(t === "free"));
+  $("tier-paid").setAttribute("aria-pressed", String(t === "paid"));
+  document.querySelectorAll("[data-paid]").forEach(el => { el.hidden = t !== "paid"; });
+  refresh();
+}
+$("tier-free").addEventListener("click", () => setTier("free"));
+$("tier-paid").addEventListener("click", () => setTier("paid"));
+
 let cardTimer = 0;
-function refreshDerived() {
+function refresh() {
   $("res-who").textContent = `${state.name || "이름 없음"}님의 그림체`;
-  const fits = genreFits(state);
-  const fitBox = $("fit"); fitBox.textContent = "";
-  fits.forEach((f, i) => {
-    const r = document.createElement("div"); r.className = "fit-row" + (i === 0 ? " top" : "");
-    const isGoal = f.key === state.goal;
-    r.innerHTML = `<span></span><div class="fit-bar" role="img"><i></i></div><span></span>`;
-    r.children[0].textContent = f.name + (isGoal ? " ★" : "");
-    r.children[1].setAttribute("aria-label", `${f.name} ${f.score}점`);
-    r.children[1].firstChild.style.width = f.score + "%";
-    r.children[2].textContent = f.score;
-    fitBox.appendChild(r);
+  const paths = scorePaths(state);
+  const rec = recommendation(state, paths);
+  // 점수표
+  const paid = tier === "paid";
+  $("score-title").textContent = paid ? "길별 상업성 점수" : "길별 그림체 적합도";
+  const rows = paid ? paths : [...paths].sort((a, b) => b.style - a.style);
+  const head = paid ? "<tr><th>길</th><th>그림체 적합</th><th>상품 준비도</th><th>시장 매력</th><th>종합</th><th>등급</th></tr>" : "<tr><th>길</th><th>그림체 적합도</th></tr>";
+  const tbl = document.createElement("table");
+  tbl.innerHTML = `<thead>${head}</thead><tbody></tbody>`;
+  rows.forEach((p, i) => {
+    const tr = document.createElement("tr"); if (i === 0) tr.className = "top";
+    const cells = paid ? [p.name + (p.key === state.goal ? " ★" : ""), p.style, p.ready, p.market, p.total] : [p.name + (p.key === state.goal ? " ★" : ""), p.style];
+    cells.forEach(c => { const td = document.createElement("td"); td.textContent = c; tr.appendChild(td); });
+    if (paid) { const td = document.createElement("td"); const g = document.createElement("span"); g.className = "grade " + p.grade; g.textContent = p.grade; g.title = GRADE_TXT[p.grade]; td.appendChild(g); tr.appendChild(td); }
+    tbl.tBodies[0].appendChild(tr);
   });
-  const rec = recommendation(state, fits);
+  $("scores").textContent = ""; $("scores").appendChild(tbl);
+  $("score-note").textContent = paid ? "종합 = 그림체 적합 45% + 상품 준비도 35% + 시장 매력 20%. 등급 A 75+ · B 62+ · C 50+ · D 그 아래. ★ = 하고 싶은 길" : "그림체만 본 점수예요. 상업성과 시장분석은 유료 리포트에 들어갑니다.";
+  // 추천
   const reco = $("reco"); reco.textContent = "";
-  const s1 = document.createElement("span"); s1.textContent = "추천 다음 단계";
-  const b = document.createElement("b"); b.textContent = rec.title;
-  const s2 = document.createElement("span"); s2.textContent = rec.line;
-  const s3 = document.createElement("span"); s3.textContent = "→ " + rec.then;
-  reco.append(s1, b, s2, s3);
-  $("dm").value = dmText(fits, rec);
-  clearTimeout(cardTimer); cardTimer = setTimeout(() => drawCard(fits, rec), 120);
+  [["span", "추천 다음 단계"], ["b", rec.title], ["span", rec.line], ["span", "→ " + rec.then]].forEach(([tag, txt]) => { const el = document.createElement(tag); el.textContent = txt; reco.appendChild(el); });
+  // 시장분석
+  renderMarket(rec.target, paths);
+  $("dm").value = dmText(paths, rec);
+  clearTimeout(cardTimer); cardTimer = setTimeout(() => { drawCard(paths, rec); if (paid) drawCard2(paths, rec); }, 120);
 }
-function dmText(fits, rec) {
+function renderMarket(g, paths) {
+  const box = $("market"); box.textContent = "";
+  const m = MARKET[g.key];
+  const why = state.goal === g.key ? "하고 싶다고 고른 길" : "점수 1위 길";
+  const h = document.createElement("h4"); h.textContent = `${g.name} 시장분석`;
+  const sub = document.createElement("p"); sub.className = "hint"; sub.textContent = `${why} · ${m.asOf} 조사 기준 · 이 길 종합 ${g.total}점 ${g.grade}등급 (${GRADE_TXT[g.grade]})`;
+  const dl = document.createElement("dl"); dl.className = "mk-grid";
+  [["시장 규모", m.size], ["돈이 들어오는 방식", m.money], ["진입 장벽", m.entry], ["매출 속도", m.speed]].forEach(([k, v]) => {
+    const d = document.createElement("div"); const dt = document.createElement("dt"); dt.textContent = k; const dd = document.createElement("dd"); dd.textContent = v; d.append(dt, dd); dl.appendChild(d);
+  });
+  const gp = document.createElement("div"); gp.className = "gaps";
+  const gl = gapsFor(state, g);
+  const t1 = document.createElement("b"); t1.textContent = "이 길로 가려면 바꿀 것"; gp.appendChild(t1);
+  (gl.length ? gl : ["지금 그림체와 상업 신호 모두 이 길과 크게 어긋나는 곳이 없어요."]).forEach(x => { const s = document.createElement("span"); s.textContent = "• " + x; gp.appendChild(s); });
+  const first = document.createElement("div"); first.className = "gaps";
+  const t2 = document.createElement("b"); t2.textContent = "가장 먼저 만들 상품"; const s2 = document.createElement("span"); s2.textContent = m.first;
+  const s3 = document.createElement("span"); s3.textContent = `아더댄웍스 연결: ${g.product}`;
+  first.append(t2, s2, s3);
+  const src = document.createElement("div"); src.className = "src";
+  const sl = document.createElement("span"); sl.textContent = "출처"; src.appendChild(sl);
+  m.src.forEach(([label, url]) => { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.textContent = label; src.appendChild(a); });
+  box.append(h, sub, dl, gp, first, src);
+  if (state.goal !== "unknown" && paths[0].key !== g.key) {
+    const alt = document.createElement("p"); alt.className = "hint";
+    alt.textContent = `참고로 지금 점수 1위는 ${paths[0].name}(${paths[0].total}점)이에요. ${MARKET[paths[0].key].speed}.`;
+    box.appendChild(alt);
+  }
+}
+function dmText(paths, rec) {
   const name = state.name || "작가";
-  const axisLines = weakestAxes(state, 1).map(a => `${a.name}(${a.left} ↔ ${a.right})`);
-  return [
-    `${name}님, 6축 그림체 진단 결과 보내드려요.`,
-    ``,
-    `한 줄로 정리하면 "${state.summary}"예요.`,
-    `지금 그림체에 가장 가까운 길은 ${fits[0].name}(${fits[0].score}점)이고, 가장 흔들리는 축은 ${axisLines[0]}이에요.`,
-    ``,
-    `2주 처방`,
-    ...state.rx.map((r, i) => `${i + 1}. ${r.title} — ${r.how}`),
-    ``,
-    `다음 단계로는 ${rec.title}을(를) 추천드려요. 2주 뒤 같은 그림 3장 다시 보내주시면 축이 얼마나 움직였는지 비교해 드릴게요.`,
-    `— 아더댄웍스 소랭`,
-  ].join("\n");
+  const w = weakest(state, 1)[0];
+  const sumLine = `한 줄로 정리하면 "${state.summary}"${hasBatchim(state.summary) ? "이에요" : "예요"}.`;
+  const lines = [`${name}님, 6축 그림체 진단 결과 보내드려요.`, ``, sumLine];
+  if (tier === "free") {
+    const st = [...paths].sort((a, b) => b.style - a.style)[0];
+    lines.push(`그림체만 보면 ${st.name} 쪽에 가장 가깝고(${st.style}점), 가장 흔들리는 곳은 ${josa(w.name, "이에요", "예요")}.`, ``, `이번 주 처방`, `1. ${state.rx[0]?.title || ""} — ${state.rx[0]?.how || ""}`, ``,
+      `상업성 평가(어느 길이 돈이 되는지)와 해당 시장분석, 2주 처방 전체는 유료 리포트에서 받아 보실 수 있어요.`);
+  } else {
+    const g = rec.target, m = MARKET[g.key];
+    lines.push(`길별 상업성은 ${paths.slice(0, 3).map(p => `${p.name} ${p.total}점(${p.grade})`).join(", ")} 순이에요.`,
+      `가장 흔들리는 곳은 ${josa(w.name, "이에요", "예요")}.`, ``,
+      `[${g.name} 시장 한눈에]`, `• 규모: ${m.size}`, `• 돈 버는 방식: ${m.money}`, `• 진입: ${m.entry}`, `• 먼저 만들 것: ${m.first}`, ``,
+      `2주 처방`, ...state.rx.map((r, i) => `${i + 1}. ${r.title} — ${r.how}`));
+  }
+  lines.push(``, `다음 단계로는 ${josa(rec.title, "을", "를")} 추천드려요. 2주 뒤 같은 그림 3장 다시 보내주시면 축이 얼마나 움직였는지 비교해 드릴게요.`, `— 아더댄웍스 소랭`);
+  return lines.join("\n");
 }
 
-/* ───────── 결과 카드 (캔버스) ───────── */
+/* ═════════ 5. 카드 ═════════ */
 let fontsReady = null;
 function loadFonts() {
-  if (!fontsReady) {
-    fontsReady = Promise.all([
-      document.fonts.load('72px "Jua"', "그림체"),
-      document.fonts.load('700 28px "Gothic A1"', "그림체"),
-      document.fonts.load('400 28px "Gothic A1"', "그림체"),
-      document.fonts.load('700 30px "Gaegu"', "other than works"),
-    ]).catch(() => null);
-  }
+  if (!fontsReady) fontsReady = Promise.all([document.fonts.load('72px "Jua"', "그림체"), document.fonts.load('700 28px "Gothic A1"', "그림체"), document.fonts.load('400 28px "Gothic A1"', "그림체"), document.fonts.load('700 30px "Gaegu"', "other than works")]).catch(() => null);
   return fontsReady;
 }
 function wrapLines(ctx, text, maxW, maxLines) {
   const out = []; let line = "";
-  for (const ch of String(text)) {
-    const test = line + ch;
-    if (ctx.measureText(test).width > maxW && line) {
-      out.push(line); line = ch;
-      if (out.length === maxLines) break;
-    } else line = test;
-  }
+  for (const ch of String(text)) { const t = line + ch; if (ctx.measureText(t).width > maxW && line) { out.push(line); line = ch; if (out.length === maxLines) break; } else line = t; }
   if (out.length < maxLines && line) out.push(line);
-  if (out.length === maxLines && (out.join("").length < String(text).length)) {
-    let last = out[maxLines - 1];
-    while (ctx.measureText(last + "…").width > maxW && last.length) last = last.slice(0, -1);
-    out[maxLines - 1] = last + "…";
-  }
+  if (out.length === maxLines && out.join("").length < String(text).length) { let last = out[maxLines - 1]; while (ctx.measureText(last + "…").width > maxW && last.length) last = last.slice(0, -1); out[maxLines - 1] = last + "…"; }
   return out;
 }
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
-}
-async function drawCard(fits, rec) {
-  await loadFonts();
-  const c = $("card"), ctx = c.getContext("2d");
+function roundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function cardBase(ctx, eyebrow) {
   const W = 1080, H = 1350, PX = 78;
-  ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, W, H);
-  // 로고 필
-  ctx.font = '700 30px "Gaegu", sans-serif';
-  ctx.letterSpacing = "6px";
+  ctx.clearRect(0, 0, W, H); ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, W, H);
+  ctx.font = '700 30px "Gaegu", sans-serif'; ctx.letterSpacing = "6px";
   const logo = "other than works", lw = ctx.measureText(logo).width;
   ctx.fillStyle = "#16181D"; roundRect(ctx, PX, 88, lw + 68, 62, 31); ctx.fill();
-  ctx.fillStyle = "#FFFFFF"; ctx.textBaseline = "middle"; ctx.fillText(logo, PX + 34, 120);
-  ctx.letterSpacing = "0px";
-  // 눈썹 + 이름
-  ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = "#7D879A"; ctx.font = '700 28px "Gothic A1", sans-serif';
-  ctx.letterSpacing = "3px"; ctx.fillText("6축 그림체 진단", PX, 222); ctx.letterSpacing = "0px";
-  ctx.fillStyle = "#16181D"; ctx.font = '44px "Jua", sans-serif';
-  ctx.fillText(`${state.name || "작가"}님의 그림체는`, PX, 290);
-  // 한 줄 정의
+  ctx.fillStyle = "#FFFFFF"; ctx.textBaseline = "middle"; ctx.fillText(logo, PX + 34, 120); ctx.letterSpacing = "0px";
+  ctx.textBaseline = "alphabetic"; ctx.fillStyle = "#7D879A"; ctx.font = '700 28px "Gothic A1", sans-serif';
+  ctx.letterSpacing = "3px"; ctx.fillText(eyebrow, PX, 222); ctx.letterSpacing = "0px";
+}
+function cardFooter(ctx, by) {
+  const W = 1080, PX = 78;
+  ctx.fillStyle = "#7B90CD"; ctx.font = '400 26px "Gothic A1", sans-serif';
+  const acct = "@other.than.works"; ctx.fillText(acct, W - PX - ctx.measureText(acct).width, by);
+  ctx.fillText(new Date().toISOString().slice(0, 10).replaceAll("-", "."), PX, by);
+}
+async function drawCard(paths, rec) {
+  await loadFonts();
+  const c = $("card"), ctx = c.getContext("2d"); const W = 1080, PX = 78;
+  cardBase(ctx, "6축 그림체 진단");
+  ctx.fillStyle = "#16181D"; ctx.font = '44px "Jua", sans-serif'; ctx.fillText(`${state.name || "작가"}님의 그림체는`, PX, 290);
   ctx.fillStyle = "#1F3D8F"; ctx.font = '74px "Jua", sans-serif';
   let sl = wrapLines(ctx, state.summary || "", W - PX * 2, 2);
   if (sl.length > 1) { ctx.font = '62px "Jua", sans-serif'; sl = wrapLines(ctx, state.summary || "", W - PX * 2, 2); }
   sl.forEach((l, i) => ctx.fillText(l, PX, 386 + i * 82));
-  // 6축 스펙트럼
-  let y = sl.length > 1 ? 536 : 480;
-  const rowH = sl.length > 1 ? 72 : 78;
+  let y = sl.length > 1 ? 536 : 480; const rowH = sl.length > 1 ? 72 : 78;
   const trackX = PX + 150, trackW = W - PX - trackX - 10;
   AXES.forEach(a => {
     const ax = state.axes[a.key];
-    ctx.fillStyle = "#16181D"; ctx.font = '700 30px "Gothic A1", sans-serif';
-    ctx.fillText(a.name, PX, y + 10);
-    ctx.fillStyle = "#8A94A6"; ctx.font = '400 22px "Gothic A1", sans-serif';
-    ctx.fillText(a.left, trackX, y + 44);
-    const rw = ctx.measureText(a.right).width; ctx.fillText(a.right, trackX + trackW - rw, y + 44);
+    ctx.fillStyle = "#16181D"; ctx.font = '700 30px "Gothic A1", sans-serif'; ctx.fillText(a.name, PX, y + 10);
+    ctx.fillStyle = "#8A94A6"; ctx.font = '400 22px "Gothic A1", sans-serif'; ctx.fillText(a.left, trackX, y + 44);
+    ctx.fillText(a.right, trackX + trackW - ctx.measureText(a.right).width, y + 44);
     ctx.fillStyle = "#E2E7F0"; ctx.fillRect(trackX, y, trackW, 4);
-    const r = 10 + ax.consistency * 2.4;
-    const cx = clamp(trackX + trackW * (ax.position / 100), trackX + r, trackX + trackW - r);
-    ctx.beginPath(); ctx.arc(cx, y + 2, r, 0, Math.PI * 2);
-    ctx.fillStyle = "#1F3D8F"; ctx.globalAlpha = .35 + ax.consistency * .13; ctx.fill(); ctx.globalAlpha = 1;
+    const r = 10 + ax.consistency * 2.4; const cx = clamp(trackX + trackW * (ax.position / 100), trackX + r, trackX + trackW - r);
+    ctx.beginPath(); ctx.arc(cx, y + 2, r, 0, Math.PI * 2); ctx.fillStyle = "#1F3D8F"; ctx.globalAlpha = .35 + ax.consistency * .13; ctx.fill(); ctx.globalAlpha = 1;
     y += rowH;
   });
-  ctx.fillStyle = "#8A94A6"; ctx.font = '400 22px "Gothic A1", sans-serif';
-  ctx.fillText("점이 클수록 그 선택을 매번 일관되게 한다는 뜻이에요", PX, y + 8);
-  // 하단 네이비 블록
-  const by = 1012, bh = 250;
-  ctx.fillStyle = "#1F3D8F"; ctx.fillRect(0, by, W, bh + 88);
-  ctx.fillStyle = "#A9B8E4"; ctx.font = '700 26px "Gothic A1", sans-serif';
-  ctx.fillText("가장 가까운 길", PX, by + 62);
-  ctx.fillStyle = "#A8D96A"; ctx.font = '60px "Jua", sans-serif';
-  ctx.fillText(`${fits[0].name}  ${fits[0].score}`, PX, by + 134);
+  ctx.fillStyle = "#8A94A6"; ctx.font = '400 22px "Gothic A1", sans-serif'; ctx.fillText("점이 클수록 그 선택을 매번 일관되게 한다는 뜻이에요", PX, y + 8);
+  const by = 1012; ctx.fillStyle = "#1F3D8F"; ctx.fillRect(0, by, W, 338);
+  const paid = tier === "paid";
+  const best = paid ? paths[0] : [...paths].sort((a, b) => b.style - a.style)[0];
+  ctx.fillStyle = "#A9B8E4"; ctx.font = '700 26px "Gothic A1", sans-serif'; ctx.fillText(paid ? "가장 상업성이 높은 길" : "그림체가 가장 가까운 길", PX, by + 62);
+  ctx.fillStyle = "#A8D96A"; ctx.font = '60px "Jua", sans-serif'; ctx.fillText(`${best.name}  ${paid ? best.total : best.style}`, PX, by + 134);
   ctx.fillStyle = "#C3D0F0"; ctx.font = '400 28px "Gothic A1", sans-serif';
-  const rx0 = state.rx[0] ? `처방 1 · ${state.rx[0].title}` : "";
-  wrapLines(ctx, rx0, W - PX * 2, 1).forEach(l => ctx.fillText(l, PX, by + 190));
-  ctx.fillStyle = "#7B90CD"; ctx.font = '400 26px "Gothic A1", sans-serif';
-  const acct = "@other.than.works"; const aw = ctx.measureText(acct).width;
-  ctx.fillText(acct, W - PX - aw, by + 262);
-  ctx.fillText(new Date().toISOString().slice(0, 10).replaceAll("-", "."), PX, by + 262);
+  wrapLines(ctx, state.rx[0] ? `처방 1 · ${state.rx[0].title}` : "", W - PX * 2, 1).forEach(l => ctx.fillText(l, PX, by + 190));
+  cardFooter(ctx, by + 262);
   $("card-img").hidden = true; c.hidden = false;
 }
+async function drawCard2(paths, rec) {
+  await loadFonts();
+  const c = $("card2"), ctx = c.getContext("2d"); const W = 1080, PX = 78; const g = rec.target, m = MARKET[g.key];
+  cardBase(ctx, "상업성 · 시장 리포트");
+  ctx.fillStyle = "#16181D"; ctx.font = '44px "Jua", sans-serif'; ctx.fillText(`${state.name || "작가"}님의 그림이 돈이 되는 길`, PX, 290);
+  let y = 360;
+  paths.slice(0, 3).forEach((p, i) => {
+    const top = p.key === g.key;
+    ctx.fillStyle = top ? "#1F3D8F" : "#16181D"; ctx.font = (top ? '56px' : '44px') + ' "Jua", sans-serif';
+    ctx.fillText(`${i + 1}  ${p.name}`, PX, y + (top ? 10 : 0));
+    const sc = `${p.total}  ${p.grade}`; ctx.fillText(sc, W - PX - ctx.measureText(sc).width, y + (top ? 10 : 0));
+    ctx.fillStyle = "#8A94A6"; ctx.font = '400 22px "Gothic A1", sans-serif';
+    ctx.fillText(`그림체 ${p.style} · 준비도 ${p.ready} · 시장 ${p.market}`, PX + 50, y + (top ? 50 : 38));
+    y += top ? 104 : 88;
+  });
+  if (!paths.slice(0, 3).some(p => p.key === g.key)) {
+    ctx.fillStyle = "#1F3D8F"; ctx.font = '40px "Jua", sans-serif'; ctx.fillText(`★ ${g.name}  ${g.total}  ${g.grade}`, PX, y); y += 70;
+  }
+  ctx.fillStyle = "#E2E7F0"; ctx.fillRect(PX, y, W - PX * 2, 4); y += 60;
+  ctx.fillStyle = "#16181D"; ctx.font = '700 30px "Gothic A1", sans-serif'; ctx.fillText(`${g.name} 시장`, PX, y); y += 50;
+  ctx.fillStyle = "#4C5568"; ctx.font = '400 26px "Gothic A1", sans-serif';
+  const room = Math.max(2, Math.floor((990 - y) / 40));
+  const lines = wrapLines(ctx, m.size, W - PX * 2, 3).concat(wrapLines(ctx, "수익: " + m.money, W - PX * 2, 2), wrapLines(ctx, "진입: " + m.entry, W - PX * 2, 2));
+  lines.slice(0, room).forEach(l => { ctx.fillText(l, PX, y); y += 40; });
+  const by = 1012; ctx.fillStyle = "#1F3D8F"; ctx.fillRect(0, by, W, 338);
+  ctx.fillStyle = "#A9B8E4"; ctx.font = '700 26px "Gothic A1", sans-serif'; ctx.fillText("가장 먼저 만들 상품", PX, by + 62);
+  ctx.fillStyle = "#A8D96A"; ctx.font = '40px "Jua", sans-serif';
+  wrapLines(ctx, m.first, W - PX * 2, 2).forEach((l, i) => ctx.fillText(l, PX, by + 120 + i * 52));
+  ctx.fillStyle = "#7B90CD"; ctx.font = '400 20px "Gothic A1", sans-serif'; ctx.fillText(`시장 자료 ${m.asOf} 기준 · 출처는 리포트 본문`, PX, by + 230);
+  cardFooter(ctx, by + 278);
+  $("card2-img").hidden = true; c.hidden = false;
+}
 
-/* ───────── 탭 ───────── */
-const tabs = [["tab-ai", "pane-ai"], ["tab-self", "pane-self"], ["tab-hist", "pane-hist"]];
+/* ═════════ 6. 탭 ═════════ */
+const tabs = [["tab-ai", "pane-ai"], ["tab-self", "pane-self"], ["tab-lab", "pane-lab"], ["tab-hist", "pane-hist"]];
 function selectTab(id) {
   tabs.forEach(([t, p]) => { const on = t === id; $(t).setAttribute("aria-selected", String(on)); $(p).hidden = !on; });
-  $("result").hidden = id === "tab-hist";
-  $("main-grid").style.gridTemplateColumns = id === "tab-hist" ? "minmax(0, 1fr)" : "";
+  const wide = id === "tab-hist" || id === "tab-lab";
+  $("result").hidden = wide; $("main-grid").classList.toggle("wide", wide);
   try { localStorage.setItem("otw6-tab", id); } catch (e) {}
 }
 tabs.forEach(([t]) => $(t).addEventListener("click", () => selectTab(t)));
 
-/* ───────── 자가진단 ───────── */
+/* ═════════ 7. 자가진단 ═════════ */
 const selfAns = {};
+function segHTML(label) { return `<div class="seg" role="group" aria-label="${label}">${[1,2,3,4,5].map(n => `<button type="button" data-v="${n}" aria-pressed="false">${n}</button>`).join("")}</div>`; }
+function bindSeg(seg, onPick) { seg.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; onPick(+b.dataset.v); seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); }); }
 function buildSelf() {
   const box = $("self-qs");
+  const h1 = document.createElement("div"); h1.className = "qgroup"; h1.textContent = "그림체 6축"; box.appendChild(h1);
   AXES.forEach(a => {
     selfAns[a.key] = { p: null, c: null };
     const q = document.createElement("div"); q.className = "q";
-    q.innerHTML = `<div class="sub">${a.name} · ${a.q}</div>
-      <div class="poles"><span>${a.lq}</span><span style="text-align:right">${a.rq}</span></div>
-      <div class="seg" data-k="p" role="group" aria-label="${a.name} 위치">${[1,2,3,4,5].map(n => `<button type="button" data-v="${n}" aria-pressed="false">${n}</button>`).join("")}</div>
-      <div class="poles"><span>그때그때 달라요</span><span>매번 같아요</span></div>
-      <div class="seg" data-k="c" role="group" aria-label="${a.name} 일관성">${[1,2,3,4,5].map(n => `<button type="button" data-v="${n}" aria-pressed="false">${n}</button>`).join("")}</div>`;
-    q.querySelectorAll(".seg").forEach(seg => seg.addEventListener("click", e => {
-      const btn = e.target.closest("button"); if (!btn) return;
-      selfAns[a.key][seg.dataset.k] = +btn.dataset.v;
-      seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === btn)));
-    }));
+    q.innerHTML = `<div class="sub">${a.name} · ${a.q}</div><div class="poles"><span>${a.lq}</span><span style="text-align:right">${a.rq}</span></div>${segHTML(a.name + " 위치")}
+      <div class="poles"><span>그때그때 달라요</span><span>매번 같아요</span></div>${segHTML(a.name + " 일관성")}`;
+    const segs = q.querySelectorAll(".seg");
+    bindSeg(segs[0], v => { selfAns[a.key].p = v; }); bindSeg(segs[1], v => { selfAns[a.key].c = v; });
+    box.appendChild(q);
+  });
+  const h2 = document.createElement("div"); h2.className = "qgroup"; h2.textContent = "상업 신호 5개"; box.appendChild(h2);
+  SIGNALS.forEach(x => {
+    selfAns[x.key] = null;
+    const q = document.createElement("div"); q.className = "q";
+    q.innerHTML = `<div class="sub">${x.sq}</div><div class="poles"><span>전혀 아니다</span><span>매우 그렇다</span></div>${segHTML(x.name)}`;
+    bindSeg(q.querySelector(".seg"), v => { selfAns[x.key] = v; });
     box.appendChild(q);
   });
 }
 $("btn-self").addEventListener("click", () => {
-  const missing = AXES.filter(a => selfAns[a.key].p == null || selfAns[a.key].c == null).map(a => a.name);
   const st = $("self-status");
-  if (missing.length) { st.className = "status err"; st.textContent = `아직 안 고른 축이 있어요: ${missing.join(", ")}`; return; }
-  const next = { name: $("self-name").value.trim(), goal: "unknown", mode: "self", isSample: false, axes: {}, rx: [] };
-  AXES.forEach(a => {
-    const { p, c } = selfAns[a.key];
-    next.axes[a.key] = { position: (p - 1) * 25, consistency: c, evidence: `본인 응답: ${p <= 2 ? a.left : p >= 4 ? a.right : "중간"} 쪽, 일관성 ${c}/5` };
-  });
-  const fits = genreFits(next);
-  const weak = weakestAxes(next, 3);
+  const missing = AXES.filter(a => selfAns[a.key].p == null || selfAns[a.key].c == null).map(a => a.name).concat(SIGNALS.filter(x => selfAns[x.key] == null).map(x => x.name));
+  if (missing.length) { st.className = "status err"; st.textContent = `아직 안 고른 문항이 있어요: ${missing.join(", ")}`; return; }
+  const next = { name: $("self-name").value.trim(), goal: $("self-goal").value, mode: "self", isSample: false, axes: {}, signals: {}, rx: [] };
+  AXES.forEach(a => { const { p, c } = selfAns[a.key]; next.axes[a.key] = { position: (p - 1) * 25, consistency: c, evidence: `본인 응답: ${p <= 2 ? a.left : p >= 4 ? a.right : "중간"} 쪽, 일관성 ${c}/5` }; });
+  SIGNALS.forEach(x => { next.signals[x.key] = { score: selfAns[x.key], note: "본인 응답" }; });
   next.summary = summarize(next);
-  next.strengths = AXES.filter(a => next.axes[a.key].consistency >= 4).map(a => `• ${a.name}: ${next.axes[a.key].position >= 50 ? a.right : a.left} 쪽 선택이 안정적이에요`).join("\n") || "• 아직 확실히 굳은 축은 없어요. 고를 수 있는 폭이 넓다는 뜻이기도 해요";
-  next.blockers = weak.slice(0, 2).map(a => `• ${a.name} 축이 그림마다 흔들려요 (일관성 ${next.axes[a.key].consistency}/5)`).join("\n");
-  next.rx = weak.map(a => ({ ...RX_LIB[a.key] }));
+  next.strengths = AXES.filter(a => next.axes[a.key].consistency >= 4).map(a => `• ${a.name}: ${next.axes[a.key].position >= 50 ? a.right : a.left} 쪽 선택이 안정적이에요`).concat(SIGNALS.filter(x => next.signals[x.key].score >= 4).map(x => `• ${josa(x.name, "이", "가")} 강점이에요`)).slice(0, 3).join("\n") || "• 아직 확실히 굳은 축은 없어요. 고를 수 있는 폭이 넓다는 뜻이기도 해요";
+  const weak = weakest(next, 3);
+  next.blockers = weak.slice(0, 2).map(w => `• ${josa(w.name, "이", "가")} 약해요 (${w.v}/5)`).join("\n");
+  next.rx = weak.map(w => ({ ...RX_LIB[w.key] }));
   state = next; renderAll();
-  st.className = "status ok"; st.textContent = `결과가 나왔어요. 가장 가까운 길은 ${fits[0].name}이에요.`;
+  const paths = scorePaths(state);
+  st.className = "status ok"; st.textContent = `결과가 나왔어요. 상업성 1위는 ${josa(paths[0].name, "이에요", "예요")}.`;
   if (matchMedia("(max-width: 880px)").matches) $("result").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 function summarize(s) {
@@ -662,53 +890,55 @@ function summarize(s) {
   return [adj, mid, noun].filter(Boolean).join(" ");
 }
 
-/* ───────── 이미지 입력 ───────── */
+/* ═════════ 8. 이미지 입력 ═════════ */
 let files = [];
-const MAX_FILES = 3;
 function renderThumbs() {
   const box = $("thumbs"); box.textContent = "";
   files.forEach((f, i) => {
     const d = document.createElement("div"); d.className = "thumb";
-    const img = document.createElement("img"); img.alt = `올린 그림 ${i + 1}`; img.src = URL.createObjectURL(f);
-    img.onload = () => URL.revokeObjectURL(img.src);
-    const x = document.createElement("button"); x.type = "button"; x.textContent = "×"; x.setAttribute("aria-label", `그림 ${i + 1} 빼기`);
-    x.onclick = () => { files.splice(i, 1); renderThumbs(); };
+    const img = document.createElement("img"); img.alt = `올린 그림 ${i + 1}`; img.src = URL.createObjectURL(f); img.onload = () => URL.revokeObjectURL(img.src);
+    const x = document.createElement("button"); x.type = "button"; x.textContent = "×"; x.setAttribute("aria-label", `그림 ${i + 1} 빼기`); x.onclick = () => { files.splice(i, 1); renderThumbs(); };
     d.append(img, x); box.appendChild(d);
   });
-  $("btn-analyze").disabled = !files.length || !sampleFn;
+  $("btn-analyze").disabled = !files.length || !sampleFn || busy;
 }
+const isImg = f => /^image\/(jpeg|png|webp|gif)$/.test(f.type);
 function addFiles(list) {
-  const imgs = [...list].filter(f => /^image\/(jpeg|png|webp|gif)$/.test(f.type));
-  const st = $("ai-status");
-  if (imgs.length < list.length) { st.className = "status err"; st.textContent = "JPG·PNG·WebP·GIF 그림만 올릴 수 있어요."; }
-  else st.textContent = "";
-  files = files.concat(imgs).slice(0, MAX_FILES);
-  renderThumbs();
+  const imgs = [...list].filter(isImg); const st = $("ai-status");
+  if (imgs.length < list.length) { st.className = "status err"; st.textContent = "JPG·PNG·WebP·GIF 그림만 올릴 수 있어요."; } else st.textContent = "";
+  files = files.concat(imgs).slice(0, 3); renderThumbs();
 }
-$("in-files").addEventListener("change", e => { addFiles(e.target.files); e.target.value = ""; });
-const drop = $("drop");
-["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
-["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
-drop.addEventListener("drop", e => addFiles(e.dataTransfer.files));
-document.addEventListener("paste", e => { if (e.clipboardData?.files?.length) addFiles(e.clipboardData.files); });
+function wireDrop(dropEl, inputEl, onFiles) {
+  inputEl.addEventListener("change", e => { onFiles(e.target.files); e.target.value = ""; });
+  ["dragenter", "dragover"].forEach(ev => dropEl.addEventListener(ev, e => { e.preventDefault(); dropEl.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev => dropEl.addEventListener(ev, e => { e.preventDefault(); dropEl.classList.remove("over"); }));
+  dropEl.addEventListener("drop", e => onFiles(e.dataTransfer.files));
+}
+wireDrop($("drop"), $("in-files"), addFiles);
+document.addEventListener("paste", e => { if (!$("pane-ai").hidden && e.clipboardData?.files?.length) addFiles(e.clipboardData.files); });
 
-/* ───────── AI 진단 ───────── */
-let sampleFn = null, ctl = null;
+/* ═════════ 9. AI 호출 ═════════ */
+let sampleFn = null, ctl = null, busy = false;
 const GOAL_NAME = { unknown: "아직 모름", picturebook: "그림책", emoticon: "이모티콘", goods: "캐릭터 굿즈", instatoon: "인스타툰", portfolio: "포트폴리오·외주" };
 function buildPrompt(n, goal, note) {
-  const axisSpec = AXES.map(a => `- ${a.key} (${a.name}): 0 = ${a.left}, 100 = ${a.right}`).join("\n");
+  const axisSpec = AXES.map(a => `- ${a.key} (${a.name}): 0 = ${a.left}, 100 = ${a.right}. 기준점: ${a.anchor}`).join("\n");
+  const sigSpec = SIGNALS.map(x => `- ${x.key} (${x.name}): ${x.desc}`).join("\n");
   return `당신은 17년 차 시각디자이너가 만든 '6축 그림체 진단' 루브릭을 따르는 아트 디렉터 보조입니다.
-첨부한 그림 ${n}장은 모두 한 사람이 그린 것입니다. 당신은 관찰만 합니다. 점수 해석, 수업 추천, 가격 안내는 하지 않습니다.
+첨부한 그림 ${n}장은 모두 한 사람이 그린 것입니다. 당신은 관찰만 합니다. 장르 추천, 시장 판단, 가격 안내는 하지 않습니다.
 
 [6축 — 우열이 아니라 위치]
 ${axisSpec}
 
+[상업 신호 5가지 — 1~5점, 팔 수 있는 형태인지]
+${sigSpec}
+
 [채점 규칙]
-1. position(0~100): 그림에서 실제로 보이는 것만으로 정합니다. 애매하면 40~60 사이에 두고 근거에 애매한 이유를 씁니다.
-2. consistency(1~5): 그 축의 선택이 의도적으로, 여러 장(한 장이면 화면 안 여러 요소)에 걸쳐 같게 유지되는 정도. 1 = 장마다/요소마다 다름, 5 = 완전히 일관됨. 그림이 1장이면 4 이상은 매우 확실할 때만 줍니다.
-3. evidence: 그 점수를 준 근거를 그림 속 구체적 요소로 한 문장(60자 안팎). "전반적으로" 같은 말 대신 위치·대상·도구를 짚습니다.
-4. 말투: ~요/~습니다를 섞은 담백한 대화체. 칭찬 인사, 위로 문구, "충분히 잘하고 있어요" 같은 감성 문구, "~해야 합니다"의 연속은 쓰지 않습니다.
-5. 그림이 아니거나(사진, 문서, 스크린샷) 판단할 수 없으면 {"error":"not_artwork","reason":"..."} 만 답합니다.
+1. position(0~100): 보이는 것만으로 정합니다. 기준점과 비교해 0~20, 80~100 구간도 그림이 그렇다면 과감하게 씁니다. 모든 축을 40~60에 몰아 두지 않습니다. 정말 중간일 때만 45~55를 쓰고 근거에 이유를 씁니다.
+2. consistency(1~5): 그 축의 선택이 여러 장(한 장이면 화면 안 여러 요소)에 걸쳐 의도적으로 같게 유지되는 정도. 그림이 1장이면 4 이상은 매우 확실할 때만.
+3. signals score(1~5): 3 = 취미 그림으로는 충분하지만 상품으로는 손볼 곳이 있음. 5 = 그대로 출판·판매해도 될 수준. 캐릭터가 등장하지 않으면 character와 expression은 1~2.
+4. evidence·note: 그림 속 구체적 요소(위치·대상·도구)로 한 문장(60자 안팎).
+5. 말투: ~요/~습니다를 섞은 담백한 대화체. 칭찬 인사, 위로·감성 문구, "~해야 합니다"의 연속은 쓰지 않습니다.
+6. 그림이 아니거나(사진, 문서, 스크린샷) 판단할 수 없으면 {"error":"not_artwork","reason":"..."} 만 답합니다.
 
 [참고 정보]
 - 본인이 말한 목표: ${GOAL_NAME[goal] || "아직 모름"}
@@ -716,17 +946,11 @@ ${axisSpec}
 
 [출력 — 아래 JSON 하나만]
 {
-  "summary": "그림체 한 줄 정의, 16자 안팎의 명사구 (예: 단정한 선의 담백한 관찰자)",
-  "axes": {
-    "line":    {"position": 0, "consistency": 1, "evidence": "..."},
-    "form":    {"position": 0, "consistency": 1, "evidence": "..."},
-    "color":   {"position": 0, "consistency": 1, "evidence": "..."},
-    "texture": {"position": 0, "consistency": 1, "evidence": "..."},
-    "comp":    {"position": 0, "consistency": 1, "evidence": "..."},
-    "mood":    {"position": 0, "consistency": 1, "evidence": "..."}
-  },
+  "summary": "그림체 한 줄 정의, 16자 안팎의 명사구",
+  "axes": {"line": {"position": 0, "consistency": 1, "evidence": "..."}, "form": {...}, "color": {...}, "texture": {...}, "comp": {...}, "mood": {...}},
+  "signals": {"craft": {"score": 1, "note": "..."}, "character": {...}, "expression": {...}, "narrative": {...}, "production": {...}},
   "strengths": ["살릴 것 2개, 각 40자 안팎"],
-  "blockers": ["막히는 곳 2개, 각 40자 안팎. 일관성이 가장 낮은 축부터"],
+  "blockers": ["막히는 곳 2개, 각 40자 안팎. 가장 약한 축이나 신호부터"],
   "prescriptions": [{"title": "12자 안팎 과제명", "how": "2주 동안 할 구체적 방법 한 문장, 도구·횟수 포함"}]
 }
 prescriptions는 정확히 3개, blockers의 순서를 따릅니다.`;
@@ -734,23 +958,20 @@ prescriptions는 정확히 3개, blockers의 순서를 따릅니다.`;
 function coerceAI(raw, base) {
   if (!raw || typeof raw !== "object") throw { code: "invalid_json" };
   if (raw.error) throw { code: "not_artwork", message: String(raw.reason || "") };
-  const out = { ...base, mode: "ai", isSample: false, axes: {} };
+  const out = { ...base, mode: "ai", isSample: false, axes: {}, signals: {} };
   out.summary = String(raw.summary || "").slice(0, 28) || "이름 붙이기 전의 그림체";
   AXES.forEach(a => {
-    const v = (raw.axes && raw.axes[a.key]) || {};
-    const p = Number(v.position), c = Number(v.consistency);
-    out.axes[a.key] = {
-      position: Number.isFinite(p) ? Math.round(clamp(p, 0, 100)) : 50,
-      consistency: Number.isFinite(c) ? Math.round(clamp(c, 1, 5)) : 3,
-      evidence: String(v.evidence || "").slice(0, 160),
-    };
+    const v = (raw.axes && raw.axes[a.key]) || {}; const p = Number(v.position), c = Number(v.consistency);
+    out.axes[a.key] = { position: Number.isFinite(p) ? Math.round(clamp(p, 0, 100)) : 50, consistency: Number.isFinite(c) ? Math.round(clamp(c, 1, 5)) : 3, evidence: String(v.evidence || "").slice(0, 160) };
+  });
+  SIGNALS.forEach(x => {
+    const v = (raw.signals && raw.signals[x.key]) || {}; const sc = Number(v.score);
+    out.signals[x.key] = { score: Number.isFinite(sc) ? Math.round(clamp(sc, 1, 5)) : 3, note: String(v.note || "").slice(0, 120) };
   });
   const list = (x) => Array.isArray(x) ? x.map(s => "• " + String(s).slice(0, 80)).join("\n") : "";
-  out.strengths = list(raw.strengths);
-  out.blockers = list(raw.blockers);
-  const rx = Array.isArray(raw.prescriptions) ? raw.prescriptions.slice(0, 3).map(r => ({
-    title: String(r?.title || "").slice(0, 30), how: String(r?.how || "").slice(0, 140) })).filter(r => r.title) : [];
-  weakestAxes(out, 6).forEach(a => { if (rx.length < 3 && !rx.some(r => r.title === RX_LIB[a.key].title)) rx.push({ ...RX_LIB[a.key] }); });
+  out.strengths = list(raw.strengths); out.blockers = list(raw.blockers);
+  const rx = Array.isArray(raw.prescriptions) ? raw.prescriptions.slice(0, 3).map(r => ({ title: String(r?.title || "").slice(0, 30), how: String(r?.how || "").slice(0, 160) })).filter(r => r.title) : [];
+  weakest(out, 11).forEach(w => { if (rx.length < 3 && !rx.some(r => r.title === RX_LIB[w.key].title)) rx.push({ ...RX_LIB[w.key] }); });
   out.rx = rx;
   return out;
 }
@@ -766,69 +987,175 @@ const ERR_COPY = {
   not_artwork: "그림이 아닌 이미지로 보여요. 직접 그린 그림을 올려 주세요.",
   empty_completion: "빈 답이 왔어요. 그림 수를 줄여 다시 시도해 주세요.",
 };
+const FATAL = ["not_granted", "sampling_disabled", "images_unavailable", "not_declared", "capability_disabled", "capability_removed"];
+function runAI(imgs, goal, note, signal) {
+  return sampleFn.json(buildPrompt(imgs.length, goal, note), { images: imgs, modelTier: "default", signal, cache: false });
+}
 $("btn-analyze").addEventListener("click", async () => {
-  if (!sampleFn || !files.length) return;
-  const st = $("ai-status"), btn = $("btn-analyze"), stop = $("btn-stop");
-  ctl = new AbortController();
-  btn.disabled = true; stop.hidden = false;
+  if (!sampleFn || !files.length || busy) return;
+  const st = $("ai-status"), stop = $("btn-stop");
+  ctl = new AbortController(); busy = true; renderThumbs(); stop.hidden = false;
   st.className = "status"; st.innerHTML = '<span class="row"><span class="spinner"></span><span id="tick">그림을 보고 있어요</span></span>';
   const t0 = Date.now();
   const tick = setInterval(() => { const el = $("tick"); if (el) el.textContent = `그림을 보고 있어요 · ${Math.round((Date.now() - t0) / 1000)}초 (보통 20~60초)`; }, 1000);
   const base = { name: $("in-name").value.trim(), goal: $("in-goal").value };
   try {
-    const raw = await sampleFn.json(buildPrompt(files.length, base.goal, $("in-note").value), {
-      images: files, modelTier: "default", signal: ctl.signal, cache: false,
-    });
+    const raw = await runAI(files, base.goal, $("in-note").value, ctl.signal);
     state = coerceAI(raw, base); renderAll();
     st.className = "status ok"; st.textContent = "AI 관찰이 끝났어요. 오른쪽 결과지를 감수해 주세요.";
     if (matchMedia("(max-width: 880px)").matches) $("result").scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (e) {
     const code = e && e.code;
     if (code === "cancelled") { st.className = "status"; st.textContent = "멈췄어요."; }
-    else {
-      st.className = "status err";
-      st.textContent = ERR_COPY[code] || "연결이 끊겼어요. 잠시 뒤 다시 눌러 주세요.";
-      if (["not_granted", "sampling_disabled", "images_unavailable"].includes(code)) { sampleFn = null; $("ai-note").textContent = "이 화면에서는 AI 진단을 쓸 수 없어요."; }
-    }
-  } finally {
-    clearInterval(tick); stop.hidden = true; ctl = null; renderThumbs();
-  }
+    else { st.className = "status err"; st.textContent = ERR_COPY[code] || "연결이 끊겼어요. 잠시 뒤 다시 눌러 주세요."; if (FATAL.includes(code)) disableAI(); }
+  } finally { clearInterval(tick); stop.hidden = true; ctl = null; busy = false; renderThumbs(); updateLab(); }
 });
 $("btn-stop").addEventListener("click", () => ctl?.abort());
+function disableAI(msg) { sampleFn = null; $("ai-note").textContent = msg || "이 화면에서는 AI 진단을 쓸 수 없어요. 자가 진단 탭으로 같은 결과지를 만들 수 있어요."; renderThumbs(); updateLab(); }
 
-/* ───────── 결과지 직접 수정 ───────── */
-$("res-summary").addEventListener("input", e => { state.summary = e.target.value; refreshDerived(); });
+/* ═════════ 10. 검증 실험실 ═════════ */
+let labFiles = [], labCtl = null;
+const COLORS = { picturebook: "#4EA24E", emoticon: "#F2A13B", goods: "#2F6BF3", instatoon: "#B565D9", portfolio: "#7D879A" };
+function updateLab() {
+  const rep = +$("lab-repeat").value;
+  const calls = labFiles.length + Math.min(rep, labFiles.length) * 2;
+  $("lab-cost").textContent = `그림 ${labFiles.length}장 · 호출 ${calls}회. 각 호출은 이 계정의 Claude 사용량을 씁니다. 한 번에 1~2분 걸릴 수 있어요.`;
+  $("btn-lab").disabled = labFiles.length < 2 || !sampleFn || busy;
+}
+wireDrop($("lab-drop"), $("lab-files"), list => { labFiles = labFiles.concat([...list].filter(isImg)).slice(0, 12); $("lab-status").textContent = `${labFiles.length}장 준비됐어요.`; $("lab-status").className = "status"; updateLab(); });
+$("lab-repeat").addEventListener("change", updateLab);
+const sd = arr => { const m = avg(arr); return Math.sqrt(avg(arr.map(x => (x - m) ** 2))); };
+$("btn-lab").addEventListener("click", async () => {
+  if (!sampleFn || busy || labFiles.length < 2) return;
+  busy = true; renderThumbs(); updateLab();
+  labCtl = new AbortController(); $("btn-lab-stop").hidden = false;
+  const rep = +$("lab-repeat").value;
+  const jobs = []; labFiles.forEach((f, i) => { jobs.push({ i, run: 0 }); if (i < rep) { jobs.push({ i, run: 1 }); jobs.push({ i, run: 2 }); } });
+  const results = labFiles.map(() => ({ runs: [], error: null }));
+  const tblBox = $("lab-tbl"); tblBox.hidden = false; $("lab-checks").hidden = true;
+  const st = $("lab-status");
+  for (let k = 0; k < jobs.length; k++) {
+    if (labCtl.signal.aborted) break;
+    const j = jobs[k];
+    st.className = "status"; st.textContent = `${k + 1}/${jobs.length} 분석 중 · 그림 ${j.i + 1}${j.run ? ` (반복 ${j.run + 1}회째)` : ""}`;
+    try {
+      const raw = await runAI([labFiles[j.i]], "unknown", "", labCtl.signal);
+      const s = coerceAI(raw, { name: "", goal: "unknown" });
+      results[j.i].runs.push(s);
+    } catch (e) {
+      if (e && e.code === "cancelled") break;
+      results[j.i].error = e && e.code || "upstream_error";
+      if (FATAL.includes(e && e.code)) { disableAI(); break; }
+      if (e && e.code === "rate_limited") { st.className = "status err"; st.textContent = ERR_COPY.rate_limited; break; }
+    }
+    renderLabTable(results);
+  }
+  $("btn-lab-stop").hidden = true; busy = false; labCtl = null; renderThumbs(); updateLab();
+  renderLabChecks(results, rep);
+  st.className = "status ok"; st.textContent = "검증이 끝났어요. 아래 판정을 확인하세요.";
+});
+$("btn-lab-stop").addEventListener("click", () => labCtl?.abort());
+function renderLabTable(results) {
+  const t = document.createElement("table");
+  t.innerHTML = `<thead><tr><th>그림</th><th>한 줄 정의</th>${AXES.map(a => `<th>${a.name}</th>`).join("")}<th>그림체 1위</th><th>상업성 1위</th><th>반복 흔들림</th></tr></thead><tbody></tbody>`;
+  results.forEach((r, i) => {
+    const tr = document.createElement("tr");
+    const td0 = document.createElement("td"); const img = document.createElement("img"); img.alt = `그림 ${i + 1}`; img.src = URL.createObjectURL(labFiles[i]); img.onload = () => URL.revokeObjectURL(img.src); td0.appendChild(img); tr.appendChild(td0);
+    const s = r.runs[0];
+    const td1 = document.createElement("td"); td1.className = "sum"; td1.textContent = s ? s.summary : (r.error ? (r.error === "not_artwork" ? "그림 아님으로 거름" : "오류: " + r.error) : "대기"); tr.appendChild(td1);
+    AXES.forEach(a => { const td = document.createElement("td"); td.textContent = s ? s.axes[a.key].position : "–"; tr.appendChild(td); });
+    const p = s ? scorePaths(s) : null;
+    const tdS = document.createElement("td"); tdS.textContent = p ? [...p].sort((x, y) => y.style - x.style)[0].name : "–"; tr.appendChild(tdS);
+    const tdT = document.createElement("td"); tdT.textContent = p ? `${p[0].name} ${p[0].total}` : "–"; tr.appendChild(tdT);
+    const tdR = document.createElement("td");
+    if (r.runs.length > 1) { const diffs = []; for (let k = 1; k < r.runs.length; k++) AXES.forEach(a => diffs.push(Math.abs(r.runs[k].axes[a.key].position - r.runs[0].axes[a.key].position))); tdR.textContent = `평균 ±${avg(diffs).toFixed(1)}`; } else tdR.textContent = "–";
+    tr.appendChild(tdR);
+    t.tBodies[0].appendChild(tr);
+  });
+  $("lab-tbl").textContent = ""; $("lab-tbl").appendChild(t);
+}
+function renderLabChecks(results, rep) {
+  const ok = results.filter(r => r.runs.length);
+  const box = $("lab-checks"); box.textContent = ""; box.hidden = false;
+  const add = (res, title, detail) => {
+    const d = document.createElement("div"); d.className = "chk";
+    const r = document.createElement("span"); r.className = "r " + res; r.textContent = res === "pass" ? "통과" : res === "fail" ? "주의" : "판정 불가";
+    const t = document.createElement("div"); const b = document.createElement("b"); b.textContent = title; const s = document.createElement("div"); s.className = "hint"; s.textContent = detail;
+    t.append(b, s); d.append(r, t); box.appendChild(d);
+  };
+  const h = document.createElement("h3"); h.textContent = "판정"; box.appendChild(h);
+  if (ok.length < 3) { add("na", "그림이 3장 이상 분석돼야 판정할 수 있어요", `분석 성공 ${ok.length}장`); return; }
+  const sds = AXES.map(a => sd(ok.map(r => r.runs[0].axes[a.key].position)));
+  const meanSd = avg(sds);
+  add(meanSd >= 15 ? "pass" : "fail", `그림마다 축 위치가 달라지는가 · 평균 표준편차 ${meanSd.toFixed(1)}점`,
+    `축별: ${AXES.map((a, i) => `${a.name} ${sds[i].toFixed(0)}`).join(" · ")}. 15점 이상이면 그림을 구분하고 있어요. 낮으면 AI가 가운데로 몰아 주는 중이니 프롬프트 기준점을 손봐야 해요.`);
+  const tops = ok.map(r => scorePaths(r.runs[0])[0].key);
+  const uniq = new Set(tops).size; const maxShare = Math.max(...[...new Set(tops)].map(k => tops.filter(t => t === k).length)) / tops.length;
+  add(uniq >= Math.min(3, ok.length) && maxShare <= .6 ? "pass" : "fail", `상업성 1위 길이 그림마다 갈리는가 · ${uniq}가지, 최다 비율 ${(maxShare * 100).toFixed(0)}%`,
+    `한 길이 60%를 넘으면 쏠림이에요. 넣은 그림이 서로 충분히 다른지도 함께 보세요.`);
+  const reps = results.filter(r => r.runs.length > 1);
+  if (reps.length) {
+    const diffs = []; reps.forEach(r => { for (let k = 1; k < r.runs.length; k++) AXES.forEach(a => diffs.push(Math.abs(r.runs[k].axes[a.key].position - r.runs[0].axes[a.key].position))); });
+    const md = avg(diffs);
+    add(md <= 10 ? "pass" : "fail", `같은 그림을 다시 돌려도 비슷한가 · 평균 흔들림 ±${md.toFixed(1)}점`, `10점 이하면 안정적이에요. 넘으면 대표 감수가 꼭 필요하다는 뜻이고, 앵커 예시 그림을 프롬프트에 붙이면 줄어요.`);
+  } else add("na", "반복 테스트를 하지 않았어요", "반복 테스트를 켜고 다시 돌리면 흔들림을 잴 수 있어요.");
+  const rejected = results.filter(r => r.error === "not_artwork").length;
+  add(rejected ? "pass" : "na", rejected ? `그림이 아닌 이미지 ${rejected}장을 걸러냈어요` : "사진을 섞지 않았거나 걸러내지 못했어요", "사진을 한 장 섞어 넣고 '그림 아님으로 거름'이 뜨는지 확인하세요.");
+}
+function renderSim() {
+  const r = rng(2026); const cnt = {}; const N = 5000;
+  for (let i = 0; i < N; i++) {
+    const s = { axes: {}, signals: {} };
+    AXES.forEach(a => { s.axes[a.key] = { position: clamp(50 + 22 * gauss(r), 0, 100), consistency: 1 + Math.floor(r() * 5) }; });
+    SIGNALS.forEach(x => { s.signals[x.key] = { score: 1 + Math.floor(r() * 5) }; });
+    const k = scorePaths(s)[0].key; cnt[k] = (cnt[k] || 0) + 1;
+  }
+  const bar = $("sim-bar"), leg = $("sim-legend"); bar.textContent = ""; leg.textContent = "";
+  const label = [];
+  GENRES.forEach(g => {
+    const pct = (cnt[g.key] || 0) / N * 100;
+    const i = document.createElement("i"); i.style.width = pct + "%"; i.style.background = COLORS[g.key]; bar.appendChild(i);
+    const s = document.createElement("span"); s.style.setProperty("--c", COLORS[g.key]); s.textContent = `${g.name} ${pct.toFixed(0)}%`; leg.appendChild(s);
+    label.push(`${g.name} ${pct.toFixed(0)}%`);
+  });
+  bar.setAttribute("aria-label", "무작위 입력 1위 비율: " + label.join(", "));
+  return cnt;
+}
+
+/* ═════════ 11. 결과지 수정 · 복사 · 저장 ═════════ */
+$("res-summary").addEventListener("input", e => { state.summary = e.target.value; refresh(); });
 $("res-strengths").addEventListener("input", e => { state.strengths = e.target.value; });
 $("res-blockers").addEventListener("input", e => { state.blockers = e.target.value; });
-
-/* ───────── 복사 / PNG / 저장 ───────── */
 $("btn-copy").addEventListener("click", () => {
   const ta = $("dm"), st = $("save-status");
   navigator.clipboard.writeText(ta.value).then(() => { st.className = "status ok"; st.textContent = "DM 문구를 복사했어요."; })
     .catch(() => { ta.focus(); ta.select(); st.className = "status"; st.textContent = "문구를 선택해 뒀어요. 복사해서 붙여 넣으세요."; });
 });
 let downloadsApi = null;
-$("btn-png").addEventListener("click", async () => {
-  const st = $("png-status");
-  const blob = await new Promise(r => $("card").toBlob(r, "image/png"));
+async function savePng(canvasId, imgId, statusId, suffix) {
+  const st = $(statusId);
+  const blob = await new Promise(r => $(canvasId).toBlob(r, "image/png"));
   if (!blob) { st.className = "status err"; st.textContent = "카드를 이미지로 만들지 못했어요."; return; }
-  const fname = `otw-6axis-${(state.name || "result").replace(/[^\w가-힣-]/g, "")}-${new Date().toISOString().slice(0, 10)}.png`;
+  const fname = `otw-6axis-${(state.name || "result").replace(/[^\w가-힣-]/g, "")}-${suffix}-${new Date().toISOString().slice(0, 10)}.png`;
   if (downloadsApi) {
-    try { await downloadsApi.save({ filename: fname, data: blob }); st.className = "status ok"; st.textContent = "카드를 저장했어요."; return; }
+    try { await downloadsApi.save({ filename: fname, data: blob }); st.className = "status ok"; st.textContent = "저장했어요."; return; }
     catch (e) { if (e?.code === "declined") { st.className = "status"; st.textContent = "저장을 취소했어요."; return; } }
   }
-  const img = $("card-img"); img.src = URL.createObjectURL(blob); img.hidden = false; $("card").hidden = true;
+  const img = $(imgId); img.src = URL.createObjectURL(blob); img.hidden = false; $(canvasId).hidden = true;
   st.className = "status"; st.textContent = "이미지를 길게 누르거나 오른쪽 클릭해서 저장하세요.";
-});
+}
+$("btn-png").addEventListener("click", () => savePng("card", "card-img", "png-status", "style"));
+$("btn-png2").addEventListener("click", () => savePng("card2", "card2-img", "png2-status", "market"));
 
-let db = null, unsub = null;
+let db = null;
 function snapshotForSave() {
-  const fits = genreFits(state);
+  const paths = scorePaths(state);
   return {
-    name: state.name || "", goal: state.goal || "unknown", mode: state.mode, summary: state.summary,
+    name: state.name || "", goal: state.goal || "unknown", mode: state.mode, tier, summary: state.summary,
     axes: AXES.map(a => ({ key: a.key, position: state.axes[a.key].position, consistency: state.axes[a.key].consistency, evidence: state.axes[a.key].evidence || "" })),
+    signals: SIGNALS.map(x => ({ key: x.key, score: state.signals[x.key].score, note: state.signals[x.key].note || "" })),
     strengths: state.strengths, blockers: state.blockers, rx: state.rx,
-    topGenre: fits[0].key, topScore: fits[0].score, createdAt: Date.now(),
+    topGenre: paths[0].key, topScore: paths[0].total, topGrade: paths[0].grade, createdAt: Date.now(),
   };
 }
 $("btn-save").addEventListener("click", async () => {
@@ -850,11 +1177,11 @@ function renderHist(docs) {
     const t = document.createElement("div"); t.className = "t"; t.textContent = `${v.name || "이름 없음"} · ${v.summary || ""}`;
     const g = GENRES.find(x => x.key === v.topGenre);
     const m = document.createElement("div"); m.className = "m";
-    m.textContent = `${new Date(Number(v.createdAt) || 0).toLocaleDateString("ko-KR")} · ${v.mode === "ai" ? "AI" : "자가"} · ${g ? g.name : "-"} ${Number(v.topScore) || ""}`;
+    m.textContent = `${new Date(Number(v.createdAt) || 0).toLocaleDateString("ko-KR")} · ${v.mode === "ai" ? "AI" : "자가"} · ${v.tier === "free" ? "무료" : "유료"} · ${g ? g.name : "-"} ${Number(v.topScore) || ""}${v.topGrade ? " " + String(v.topGrade).slice(0, 1) : ""}`;
     left.append(t, m);
     const acts = document.createElement("div"); acts.className = "row";
     const open = document.createElement("button"); open.className = "btn ghost"; open.textContent = "열기";
-    open.onclick = () => { state = fromSaved(v); renderAll(); selectTab("tab-ai"); };
+    open.onclick = () => { state = fromSaved(v); renderAll(); setTier(v.tier === "free" ? "free" : "paid"); selectTab("tab-ai"); };
     const del = document.createElement("button"); del.className = "btn ghost"; del.textContent = "삭제";
     let armed = false;
     del.onclick = async () => {
@@ -866,27 +1193,28 @@ function renderHist(docs) {
 }
 function fromSaved(v) {
   const s = { name: String(v.name || ""), goal: String(v.goal || "unknown"), mode: v.mode === "ai" ? "ai" : "self", isSample: false,
-    summary: String(v.summary || ""), strengths: String(v.strengths || ""), blockers: String(v.blockers || ""), axes: {}, rx: [] };
-  AXES.forEach(a => {
-    const x = (Array.isArray(v.axes) ? v.axes : []).find(y => y && y.key === a.key) || {};
-    s.axes[a.key] = { position: clamp(Number(x.position) || 50, 0, 100), consistency: clamp(Number(x.consistency) || 3, 1, 5), evidence: String(x.evidence || "") };
-  });
+    summary: String(v.summary || ""), strengths: String(v.strengths || ""), blockers: String(v.blockers || ""), axes: {}, signals: {}, rx: [] };
+  if (!GENRES.some(g => g.key === s.goal)) s.goal = "unknown";
+  AXES.forEach(a => { const x = (Array.isArray(v.axes) ? v.axes : []).find(y => y && y.key === a.key) || {};
+    s.axes[a.key] = { position: clamp(Number(x.position ?? 50), 0, 100), consistency: clamp(Number(x.consistency) || 3, 1, 5), evidence: String(x.evidence || "") }; });
+  SIGNALS.forEach(k => { const x = (Array.isArray(v.signals) ? v.signals : []).find(y => y && y.key === k.key) || {};
+    s.signals[k.key] = { score: clamp(Number(x.score) || 3, 1, 5), note: String(x.note || "") }; });
   s.rx = (Array.isArray(v.rx) ? v.rx : []).slice(0, 3).map(r => ({ title: String(r?.title || ""), how: String(r?.how || "") }));
-  while (s.rx.length < 3) s.rx.push({ ...RX_LIB[weakestAxes(s, 3)[s.rx.length].key] });
+  weakest(s, 11).forEach(w => { if (s.rx.length < 3 && !s.rx.some(r => r.title === RX_LIB[w.key].title)) s.rx.push({ ...RX_LIB[w.key] }); });
   return s;
 }
 
-/* ───────── 시작 ───────── */
-buildAxes(); buildSelf(); renderAll();
+/* ═════════ 12. 시작 ═════════ */
+buildAxes(); buildSignals(); buildSelf(); renderAll(); setTier("paid"); renderSim(); updateLab();
 try { const t = localStorage.getItem("otw6-tab"); if (t && $(t)) selectTab(t); } catch (e) {}
 
 const C = window.claude;
 const use = (name) => (C && typeof C.use === "function") ? C.use(name).catch(() => null) : Promise.resolve(null);
 use("sample").then(async s => {
-  if (!s) { $("ai-note").textContent = "이 화면에서는 AI 진단을 쓸 수 없어요. 자가 진단 탭으로 같은 결과지를 만들 수 있어요."; return; }
+  if (!s) { disableAI(); return; }
   const lim = await s.limits().catch(() => null);
-  if (!lim || !lim.images) { $("ai-note").textContent = "이 화면에서는 그림을 Claude에게 보낼 수 없어요. 자가 진단 탭을 써 주세요."; return; }
-  sampleFn = s; renderThumbs();
+  if (!lim || !lim.images) { disableAI("이 화면에서는 그림을 Claude에게 보낼 수 없어요. 자가 진단 탭을 써 주세요."); return; }
+  sampleFn = s; renderThumbs(); updateLab();
 });
 use("downloads").then(d => { downloadsApi = d; });
 use("db").then(d => {
@@ -894,17 +1222,16 @@ use("db").then(d => {
   db = d;
   const timer = setTimeout(() => renderHistUnavailable("기록을 불러오는 데 오래 걸려요. 잠시 뒤 다시 열어 주세요."), 10000);
   try {
-    unsub = db.collection("diagnoses").orderBy("createdAt", "desc").limit(50).onSnapshot(
+    db.collection("diagnoses").orderBy("createdAt", "desc").limit(50).onSnapshot(
       snap => { clearTimeout(timer); renderHist(snap.docs); },
       () => { clearTimeout(timer); renderHistUnavailable("기록은 이 페이지 소유자와 편집자만 볼 수 있어요."); });
   } catch (e) { clearTimeout(timer); renderHistUnavailable(); }
 });
 function renderHistUnavailable(msg) {
   const box = $("hist"); box.textContent = "";
-  const e = document.createElement("div"); e.className = "empty";
-  e.textContent = msg || "이 화면에서는 진단 기록을 쓸 수 없어요. 소유자 계정으로 claude.ai에서 열면 보여요.";
+  const e = document.createElement("div"); e.className = "empty"; e.textContent = msg || "이 화면에서는 진단 기록을 쓸 수 없어요. 소유자 계정으로 claude.ai에서 열면 보여요.";
   box.appendChild(e);
 }
-window.__otw = { genreFits, recommendation, summarize, coerceAI, get state() { return state; } };
+window.__otw = { scorePaths, recommendation, summarize, coerceAI, renderSim, gapsFor, hasBatchim, dmText: () => $("dm").value, setTier, get state() { return state; }, set state(v) { state = v; renderAll(); } };
 })();
 </script>
