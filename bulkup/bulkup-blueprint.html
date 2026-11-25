@@ -1,0 +1,589 @@
+<title>아더댄웍스 벌크업 설계도</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&family=Gothic+A1:wght@400;500;700&family=Jua&display=swap">
+<style>
+/* Layout: 넓은 화면은 왼쪽 목차 + 본문 한 단, 좁은 화면은 본문만. 브랜드 네이비·라임을 강조에만 쓴다. */
+:root {
+  --bg: #FFFFFF;
+  --soft: #F4F6FA;
+  --ice: #E6EDFA;
+  --ink: #16181D;
+  --muted: #5F6A80;
+  --line: #E2E7F0;
+  --accent: #1F3D8F;
+  --blue: #2F6BF3;
+  --lime: #A8D96A;
+  --green: #3F8A3F;
+  --warn: #A4471B;
+  --navy-bg: #1F3D8F;
+  --on-navy: #FFFFFF;
+  --on-navy-2: #C3D0F0;
+  --code-bg: #F4F6FA;
+  --font-display: "Jua", "Gothic A1", system-ui, sans-serif;
+  --font-body: "Gothic A1", system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-hand: "Gaegu", "Gothic A1", cursive;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D1430; --soft: #141D42; --ice: #1C2858; --ink: #EEF2FB; --muted: #A9B8E4; --line: #2A386B;
+    --accent: #A8BDF7; --blue: #8FB0FF; --lime: #B5E27A; --green: #8BCB7E; --warn: #F2A37A;
+    --navy-bg: #1F3D8F; --on-navy: #FFFFFF; --on-navy-2: #C3D0F0; --code-bg: #141D42; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D1430; --soft: #141D42; --ice: #1C2858; --ink: #EEF2FB; --muted: #A9B8E4; --line: #2A386B;
+  --accent: #A8BDF7; --blue: #8FB0FF; --lime: #B5E27A; --green: #8BCB7E; --warn: #F2A37A;
+  --navy-bg: #1F3D8F; --on-navy: #FFFFFF; --on-navy-2: #C3D0F0; --code-bg: #141D42; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.75; }
+a { color: var(--blue); }
+:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+
+.hero { background: var(--navy-bg); color: var(--on-navy); margin-top: calc(-1 * env(safe-area-inset-top, 0px)); padding-top: calc(env(safe-area-inset-top, 0px) + 40px); padding-bottom: 44px; }
+.hero-in { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; }
+.pill { justify-self: start; font-family: var(--font-hand); font-size: 17px; letter-spacing: .18em; background: #F1F4FB; color: #16181D; border-radius: 60px; padding: 6px 18px 5px; }
+.hero h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(32px, 5.4vw, 56px); line-height: 1.22; margin: 0; text-wrap: balance; }
+.hero h1 em { font-style: normal; color: #A8D96A; }
+.hero p { margin: 0; color: var(--on-navy-2); max-width: 62ch; font-size: 17px; }
+.meta { font-size: 13px; color: #A9B8E4; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+
+.layout { max-width: 1120px; margin: 0 auto; padding-block: 36px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 48px; }
+.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 20px); align-self: start; font-size: 14px; display: grid; gap: 2px; }
+.toc b { font-size: 12px; letter-spacing: .1em; color: var(--muted); margin-bottom: 6px; }
+.toc a { color: var(--muted); text-decoration: none; padding: 5px 0 5px 12px; border-left: 2px solid var(--line); }
+.toc a:hover { color: var(--ink); border-left-color: var(--accent); }
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } .toc { display: none; } }
+
+main { min-width: 0; display: grid; gap: 64px; }
+section { display: grid; gap: 18px; min-width: 0; scroll-margin-top: 16px; }
+.eyebrow { font-size: 13px; font-weight: 700; letter-spacing: .1em; color: var(--accent); }
+h2 { font-family: var(--font-display); font-weight: 400; font-size: clamp(26px, 3.4vw, 36px); line-height: 1.3; margin: 0; text-wrap: balance; }
+h3 { font-size: 19px; margin: 8px 0 0; line-height: 1.45; }
+p { margin: 0; max-width: 68ch; }
+.lead { font-size: 18px; }
+ul, ol { margin: 0; padding-left: 1.3em; max-width: 68ch; display: grid; gap: 6px; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+.tag { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 8px; border: 1.5px solid currentColor; color: var(--muted); white-space: nowrap; line-height: 1.6; }
+.tag.est { color: var(--warn); }
+.tag.ok { color: var(--green); }
+
+.thesis { background: var(--soft); border-left: 6px solid var(--accent); padding: 22px 24px; display: grid; gap: 10px; }
+.thesis p { font-size: 19px; font-weight: 500; line-height: 1.65; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 760px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stat { border-top: 4px solid var(--ink); padding-top: 10px; display: grid; gap: 2px; }
+.stat b { font-family: var(--font-display); font-weight: 400; font-size: 34px; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 14px; color: var(--muted); line-height: 1.5; }
+
+.tbl { overflow-x: auto; border: 1px solid var(--line); }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14.5px; line-height: 1.6; }
+th, td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+th { background: var(--soft); font-size: 13px; letter-spacing: .02em; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+tfoot td { font-weight: 700; background: var(--ice); }
+
+.fig { border: 1px solid var(--line); background: var(--soft); padding: 18px; display: grid; gap: 10px; min-width: 0; }
+.fig svg { width: 100%; height: auto; display: block; }
+.svg-scroll { overflow-x: auto; }
+.svg-scroll svg { min-width: 620px; }
+.fig figcaption { font-size: 14px; color: var(--muted); }
+figure { margin: 0; }
+
+.ladder { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 520px) { .ladder { grid-template-columns: minmax(0, 1fr); } }
+.step { background: var(--bg); border: 1.5px solid var(--line); padding: 12px; display: grid; gap: 4px; align-content: start; }
+.step i { font-style: normal; font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .06em; }
+.step b { font-size: 15px; line-height: 1.4; }
+.step span { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.step strong { font-family: var(--font-display); font-weight: 400; font-size: 20px; color: var(--accent); }
+.step.key { border-color: var(--accent); background: var(--ice); }
+
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 700px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+.box { border: 1.5px solid var(--line); padding: 16px 18px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.box h4 { margin: 0; font-size: 16px; }
+.box.stop { border-color: var(--warn); }
+.box.stop h4 { color: var(--warn); }
+
+.phones { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 8px; }
+.phone { flex: 0 0 188px; border: 2px solid var(--ink); border-radius: 22px; padding: 14px 12px 16px; background: var(--bg); display: grid; gap: 8px; align-content: start; min-height: 360px; }
+.phone .no { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .08em; }
+.phone .t { font-family: var(--font-display); font-size: 17px; line-height: 1.3; }
+.wf { background: var(--ice); color: var(--muted); font-size: 11px; padding: 8px; text-align: center; line-height: 1.4; }
+.wf.big { height: 84px; display: grid; place-items: center; }
+.wf.btn { background: var(--accent); color: var(--bg); font-weight: 700; }
+.wf.lime { background: var(--lime); color: #16181D; font-weight: 700; }
+.bar { height: 6px; background: var(--line); position: relative; }
+.bar::after { content: ""; position: absolute; top: -3px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); left: var(--x, 50%); }
+.wf-row { display: grid; gap: 3px; font-size: 10px; color: var(--muted); }
+
+pre { margin: 0; background: var(--code-bg); border: 1px solid var(--line); padding: 16px; overflow-x: auto; font-family: var(--font-mono); font-size: 13px; line-height: 1.65; white-space: pre; }
+.cta { background: var(--navy-bg); color: var(--on-navy); padding: 20px 22px; display: grid; gap: 8px; }
+.cta p { color: var(--on-navy-2); }
+.cta a { color: #A8D96A; font-weight: 700; }
+
+.timeline { display: grid; gap: 0; border-left: 3px solid var(--line); margin-left: 6px; }
+.tl { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 14px; padding: 10px 0 14px 18px; position: relative; }
+.tl::before { content: ""; position: absolute; left: -8px; top: 17px; width: 13px; height: 13px; border-radius: 50%; background: var(--bg); border: 3px solid var(--accent); }
+.tl.hot::before { background: var(--lime); border-color: var(--green); }
+.tl .m { font-weight: 700; font-variant-numeric: tabular-nums; }
+.tl ul { padding-left: 1.1em; }
+@media (max-width: 520px) { .tl { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
+
+.weeks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 860px) { .weeks { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .weeks { grid-template-columns: minmax(0, 1fr); } }
+.wk { border-top: 4px solid var(--accent); background: var(--soft); padding: 14px; display: grid; gap: 8px; align-content: start; }
+.wk h4 { margin: 0; font-size: 15px; }
+.wk .goal { font-size: 13px; font-weight: 700; color: var(--green); }
+.wk ul { font-size: 14px; padding-left: 1.1em; }
+
+.check { list-style: none; padding: 0; display: grid; gap: 10px; }
+.check li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 8px; align-items: start; }
+.check input { width: 20px; height: 20px; margin-top: 4px; accent-color: var(--accent); }
+.src { font-size: 13px; color: var(--muted); display: grid; gap: 4px; }
+.src ol { font-size: 13px; }
+footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 18px; }
+</style>
+
+<header class="hero">
+  <div class="hero-in">
+    <span class="pill">other than works</span>
+    <h1>그리는 시간을 파는 공방에서<br><em>안목을 파는 회사</em>로</h1>
+    <p>아더댄웍스 벌크업 설계도. 17년 차 디자이너의 눈을 '6축 그림체 진단'이라는 원본 하나로 굳히고, 거기서 책·구독·키트·기관 패키지·자격이 갈라져 나오게 만드는 계획입니다.</p>
+    <div class="meta"><span>기준일 2026.11.25</span><span>대상 기간 2026.12 – 2027.12</span><span>함께 만든 것: 6축 진단 스튜디오 (작동하는 MVP)</span></div>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="toc" aria-label="목차">
+    <b>목차</b>
+    <a href="#summary">결론 먼저</a>
+    <a href="#bottleneck">지금의 병목</a>
+    <a href="#model">비즈니스 모델</a>
+    <a href="#ai">AI 서비스 기획안</a>
+    <a href="#prompt">프롬프트 설계</a>
+    <a href="#traction">0원 트랙션 90일</a>
+    <a href="#grants">2027 지원사업 연결</a>
+    <a href="#setup">이번 달 정비 목록</a>
+    <a href="#risk">리스크</a>
+    <a href="#sources">출처</a>
+  </nav>
+
+  <main>
+    <!-- 0 -->
+    <section id="summary">
+      <span class="eyebrow">결론 먼저</span>
+      <h2>첫 돈은 AI가 아니라 'AI로 10배 빨라진 대표의 진단'에서 나옵니다</h2>
+      <div class="thesis">
+        <p>아더댄웍스가 가진 것 중 복제가 안 되는 건 대표의 안목 하나예요. 그런데 지금은 그 안목이 수업 시간 안에서만 팔립니다. 안목을 <strong>6축 진단 루브릭</strong>이라는 원본으로 고정하면, 같은 원본이 무료 진단(유입) → 유료 리포트 → 책 → 구독 → 키트 → 기관 패키지 → 강사 자격까지 반복해서 팔립니다.</p>
+        <p class="small muted">AI는 관찰만 맡고, 처방과 상품 연결은 대표의 규칙으로 계산합니다. 그래야 모델을 바꿔도 사업의 핵심이 남고, 지원사업에서 'AI 활용 + 자체 IP 보유 기업'으로 설명됩니다.</p>
+      </div>
+      <div class="stats">
+        <div class="stat"><b>30건</b><span>90일 안 유료 진단 목표 <span class="tag est">목표</span></span></div>
+        <div class="stat"><b>20명</b><span>온라인 드로잉 클럽 창립 멤버 <span class="tag est">목표</span></span></div>
+        <div class="stat"><b>0원</b><span>트랙션 단계 개발비. 오늘 만든 진단 스튜디오로 시작</span></div>
+        <div class="stat"><b>약 750만</b><span>2027 하반기 월 매출 런레이트 시나리오 <span class="tag est">추정</span></span></div>
+      </div>
+      <div class="cta">
+        <b>바로 써 보세요: 6축 그림체 진단 스튜디오</b>
+        <p>그림 1~3장을 올리면 AI가 6축 위치와 근거를 읽고, 대표가 감수한 뒤 인스타용 결과 카드(1080×1350), 2주 처방, 수강생 DM 문구까지 만들어 줍니다. 진단 기록은 소유자만 봅니다.</p>
+        <a href="https://claude.ai/artifact/EkFy31tQyaVgejNoEWCfy1" target="_blank" rel="noopener">진단 스튜디오 열기 →</a>
+      </div>
+    </section>
+
+    <!-- 1 -->
+    <section id="bottleneck">
+      <span class="eyebrow">01 · 진단</span>
+      <h2>지금 매출 공식은 '대표 시간 × 단가'라서 천장이 낮아요</h2>
+      <p>현재 매출원 대부분이 대표가 그 자리에 있어야 생깁니다. 월 110만 원 임대료는 고정인데, 매출은 대표가 아프거나 집필하는 달에 바로 줄어드는 구조예요.</p>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>지금 매출원</th><th>대표 시간 의존</th><th>복제·확장</th><th>판단</th></tr></thead>
+          <tbody>
+            <tr><td>오프라인 클래스 6종 (루틴·포트폴리오·픽처포지·콘텐츠·이모티콘·굿즈)</td><td>매우 높음</td><td>정원 = 천장</td><td>유지하되 커리큘럼을 '진단 → 처방' 구조로 통일</td></tr>
+            <tr><td>외주 디자인·일러스트</td><td>매우 높음</td><td>없음</td><td>단가 인상 또는 축소</td></tr>
+            <tr><td>낱개 굿즈 소매</td><td>중간 (재고·CS)</td><td>낮음, 마진 얇음</td><td>키트·기관 패키지로 흡수</td></tr>
+            <tr><td>온라인 클럽 (빈티지 드로잉 등)</td><td>중간</td><td>높음</td><td>구독형 상설 클럽으로 전환</td></tr>
+            <tr><td>기관 출강·교구 납품</td><td>높음 (출강)</td><td>키트는 높음</td><td>키트+진단 리포트 패키지로 단가 상승</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>바꾸고 싶은 공식은 이거예요. <strong>매출 = 원본 1회 제작 × 판매 채널 수 × 반복 구매.</strong> 원본은 6축 루브릭, 캐릭터 IP, 그림책 커리큘럼 세 가지면 충분합니다.</p>
+    </section>
+
+    <!-- 2 -->
+    <section id="model">
+      <span class="eyebrow">02 · 비즈니스 모델</span>
+      <h2>원본 하나, 출구 다섯 개: OTW 스타일 OS</h2>
+      <figure class="fig">
+        <div class="svg-scroll"><svg viewBox="0 0 760 430" role="img" aria-labelledby="fly-t">
+          <title id="fly-t">6축 진단을 중심으로 진단, 출판, 구독, 제작, 자격 다섯 출구가 둘러싼 구조. 진단 데이터가 다시 책과 커리큘럼을 고친다.</title>
+          <defs>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker>
+          </defs>
+          <g stroke="var(--muted)" stroke-width="2" fill="none" marker-end="url(#ar)">
+            <path d="M380 165 L380 92"/>
+            <path d="M440 196 L560 150"/>
+            <path d="M440 250 L556 300"/>
+            <path d="M320 250 L204 300"/>
+            <path d="M320 196 L200 150"/>
+          </g>
+          <path d="M250 382 Q380 432 510 382" stroke="var(--green)" stroke-width="2.5" fill="none" stroke-dasharray="6 6" marker-end="url(#ar)"/>
+          <text x="380" y="420" text-anchor="middle" font-size="13" fill="var(--green)" font-weight="700">진단 데이터가 책 개정·커리큘럼·자격 기준을 고친다</text>
+          <rect x="300" y="165" width="160" height="96" fill="var(--navy-bg)"/>
+          <text x="380" y="205" text-anchor="middle" font-size="22" fill="#A8D96A" style="font-family:var(--font-display)">6축 진단</text>
+          <text x="380" y="232" text-anchor="middle" font-size="13" fill="#C3D0F0">원본 IP · 대표의 안목</text>
+          <g font-size="14">
+            <rect x="300" y="22" width="160" height="70" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/>
+            <text x="380" y="50" text-anchor="middle" font-weight="700" fill="var(--ink)">① 진단</text>
+            <text x="380" y="72" text-anchor="middle" fill="var(--muted)" font-size="12">무료 카드 · 유료 리포트</text>
+            <rect x="560" y="110" width="176" height="70" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/>
+            <text x="648" y="138" text-anchor="middle" font-weight="700" fill="var(--ink)">② 출판</text>
+            <text x="648" y="160" text-anchor="middle" fill="var(--muted)" font-size="12">자습서 · 6축 워크북 · ISBN</text>
+            <rect x="556" y="280" width="180" height="70" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/>
+            <text x="646" y="308" text-anchor="middle" font-weight="700" fill="var(--ink)">③ 구독</text>
+            <text x="646" y="330" text-anchor="middle" fill="var(--muted)" font-size="12">온라인 드로잉 클럽 · 월 재진단</text>
+            <rect x="24" y="280" width="180" height="70" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/>
+            <text x="114" y="308" text-anchor="middle" font-weight="700" fill="var(--ink)">④ 제작</text>
+            <text x="114" y="330" text-anchor="middle" fill="var(--muted)" font-size="12">처방 키트 · 기관 교구 (준공장)</text>
+            <rect x="24" y="110" width="176" height="70" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/>
+            <text x="112" y="138" text-anchor="middle" font-weight="700" fill="var(--ink)">⑤ 자격·라이선스</text>
+            <text x="112" y="160" text-anchor="middle" fill="var(--muted)" font-size="12">그림체 진단 코치 인증</text>
+          </g>
+        </svg></div>
+        <figcaption>다섯 출구 모두 같은 루브릭을 씁니다. 진단 결과가 '어떤 키트, 어떤 책 챕터, 어떤 클럽 과제'로 이어질지 규칙으로 정해져 있어서 대표가 매번 새로 설명할 필요가 없어요.</figcaption>
+      </figure>
+
+      <h3>고객 사다리: 0원에서 300만 원까지 한 줄로 이어지게</h3>
+      <div class="ladder" role="list">
+        <div class="step" role="listitem"><i>입구</i><b>6축 자가진단 · 결과 카드</b><strong>0원</strong><span>인스타 공유로 유입</span></div>
+        <div class="step key" role="listitem"><i>첫 결제</i><b>대표 감수 진단 리포트</b><strong>19,000원</strong><span>런칭가 9,900원 · 건당 10분</span></div>
+        <div class="step" role="listitem"><i>신뢰</i><b>그림책 자습서 · 6축 워크북</b><strong>12,000–24,000원</strong><span>PDF 워크북 → ISBN 종이책</span></div>
+        <div class="step key" role="listitem"><i>반복</i><b>온라인 드로잉 클럽</b><strong>월 39,000원</strong><span>월 1회 재진단 포함</span></div>
+        <div class="step" role="listitem"><i>객단가</i><b>처방 키트 (개인)</b><strong>39,000–59,000원</strong><span>크리컷 스티커·3D 캐릭터</span></div>
+        <div class="step key" role="listitem"><i>큰 단위</i><b>기관 패키지 30인</b><strong>180–300만 원</strong><span>수업 2회 + 키트 + 진단</span></div>
+      </div>
+      <p class="small muted">가격은 기존 클래스 단가와 시장 관행을 보고 잡은 제안값이에요. 첫 30건을 팔아 보고 조정하는 걸 전제로 합니다.</p>
+
+      <h3>2027 하반기 월 매출 런레이트 시나리오 <span class="tag est">추정</span></h3>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>라인</th><th>가정</th><th style="text-align:right">월 매출</th><th>대표 시간/월</th></tr></thead>
+          <tbody>
+            <tr><td>진단 리포트</td><td>월 40건 × 19,000원</td><td class="num">76만</td><td>약 7시간 (건당 10분)</td></tr>
+            <tr><td>온라인 드로잉 클럽</td><td>평균 40명 × 39,000원</td><td class="num">156만</td><td>약 6시간 (라이브 1회 + 단체 피드백)</td></tr>
+            <tr><td>책·워크북</td><td>월 60부 × 평균 순매출 15,000원</td><td class="num">90만</td><td>집필 후 거의 0</td></tr>
+            <tr><td>처방 키트 (개인)</td><td>월 30개 × 49,000원</td><td class="num">147만</td><td>배치 생산 월 1회</td></tr>
+            <tr><td>기관 패키지</td><td>분기 3건 = 월 평균 1건 × 240만 원</td><td class="num">240만</td><td>출강 2회</td></tr>
+            <tr><td>강사 인증</td><td>하반기 월 1명 × 39만 원 (교육비)</td><td class="num">39만</td><td>온라인 녹화 + 평가</td></tr>
+          </tbody>
+          <tfoot><tr><td>합계</td><td>출강이 필요한 매출은 기관 패키지(약 32%)뿐</td><td class="num">약 748만</td><td>약 25–30시간</td></tr></tfoot>
+        </table>
+      </div>
+      <p class="small muted">제 추정치예요. 키트 원가(재료·필라멘트·포장)와 온라인 서점 공급률은 아직 실측값이 없어서 매출 기준으로만 적었습니다. 핵심은 금액보다 오른쪽 열이에요. 같은 매출을 대표 시간 30시간 안쪽으로 만드는 게 목표입니다.</p>
+
+      <div class="cols">
+        <div class="box stop">
+          <h4>그만둘 것</h4>
+          <ul class="small">
+            <li>1:1 맞춤 외주. 남기려면 단가를 지금의 2배로</li>
+            <li>낱개 굿즈 소매. 재고는 키트 구성품으로 소진</li>
+            <li>수업마다 새 자료 만들기. 워크시트를 6축 기준 원본 12종으로 고정</li>
+            <li>개별 DM 상담. 진단 결과지와 처방이 대신 답하게</li>
+          </ul>
+        </div>
+        <div class="box">
+          <h4>준공장을 쓰는 방식</h4>
+          <ul class="small">
+            <li>크리컷: 처방별 스티커·스텐실 시트 (예: '팔레트 4색 고정' 키트)</li>
+            <li>3D 프린터: 캐릭터 피규어·도장 손잡이·교구 틀. 한 번 모델링하고 배치로 출력</li>
+            <li>@cloudy.piece 계정은 키트 사전 수요 테스트 창구로</li>
+            <li>낱개 판매가 아니라 '수업 30인 세트' 단위로만 생산</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section id="ai">
+      <span class="eyebrow">03 · AI 서비스 기획안</span>
+      <h2>OTW 아트 디렉터: 6축 그림체 진단 코치</h2>
+      <p class="lead">"내 그림체가 뭔지, 그래서 뭘 연습해야 하는지 말로 듣고 싶다." 그림 올리는 사람 대부분이 가진 이 질문에 17년 차 디자이너의 기준으로 답하는 서비스예요.</p>
+
+      <h3>왜 이것부터 하나</h3>
+      <ol>
+        <li><strong>재료가 이미 있어요.</strong> 6축 방법론과 수강생 사례가 있어서 프롬프트에 넣을 기준이 바로 나옵니다.</li>
+        <li><strong>결과물이 곧 광고예요.</strong> 결과 카드는 인스타에 공유되는 포맷이라 진단 한 건이 유입 한 건을 만듭니다.</li>
+        <li><strong>모든 상품의 입구예요.</strong> 진단 결과가 클래스·책·키트 중 무엇을 살지 정해 줍니다.</li>
+        <li><strong>데이터가 쌓여요.</strong> 진단 100건이면 책 개정, 민간자격 평가 기준, 지원사업 실적 증빙이 됩니다.</li>
+      </ol>
+
+      <h3>타깃</h3>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>고객</th><th>상황</th><th>지불 이유</th><th>첫 상품</th></tr></thead>
+          <tbody>
+            <tr><td><b>A. 기존 수강생·문의자</b></td><td>이미 대표를 신뢰. "제 그림체 어때요?"를 DM으로 묻는 사람</td><td>대표 감수라는 보증</td><td>진단 리포트 → 클럽</td></tr>
+            <tr><td><b>B. 인스타 그림 계정 운영 성인</b></td><td>20–40대 취미 작가. 그림체가 매번 바뀌어 고민</td><td>막연한 고민을 숫자와 과제로</td><td>무료 카드 → 리포트</td></tr>
+            <tr><td><b>C. 데뷔 준비자</b></td><td>그림책 공모전, 이모티콘 제안, 굿즈 런칭 준비</td><td>목표 장르와의 거리 확인</td><td>리포트 → 픽처포지·이모티콘반</td></tr>
+            <tr><td><b>D. 미술학원·공방 강사</b></td><td>수강생 피드백 언어가 부족</td><td>수업에 바로 쓰는 진단 도구</td><td>강사 인증 + 라이선스</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>단계별 스펙</h3>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>단계</th><th>사용자 경험</th><th>만드는 방법</th><th>비용</th></tr></thead>
+          <tbody>
+            <tr><td><b>0. 컨시어지</b><br><span class="tag ok">완성</span></td><td>수강생이 DM으로 그림을 보내면 대표가 스튜디오에서 진단 → 감수 → 카드·DM 발송</td><td>오늘 만든 <a href="https://claude.ai/artifact/EkFy31tQyaVgejNoEWCfy1" target="_blank" rel="noopener">6축 진단 스튜디오</a></td><td>0원 (대표 Claude 계정)</td></tr>
+            <tr><td><b>1. 셀프 접수</b><br>2027 1분기</td><td>네이버 예약에서 결제 → 구글폼으로 그림 업로드 → 24시간 안에 결과 카드와 리포트 수령</td><td>네이버 예약 + 구글폼 + 스튜디오. 코드 없음</td><td>월 수만 원 이하 <span class="tag est">추정</span></td></tr>
+            <tr><td><b>2. 자체 웹앱</b><br>2027 하반기</td><td>업로드 즉시 AI 초안, 대표 감수 큐, 2주 뒤 재진단 비교, 클럽 회원 월 1회 포함</td><td>웹앱 + Claude API + 결제. 지원사업 자금으로 외주 또는 노코드</td><td>지원금 범위 안</td></tr>
+            <tr><td><b>3. B2B</b><br>2028</td><td>강사용 대시보드: 반 전체 6축 분포, 학생별 처방 자동 배정</td><td>2단계 앱에 계정·반 기능 추가</td><td>라이선스 수익으로 충당</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>와이어프레임 (2단계 기준)</h3>
+      <div class="phones" role="list" aria-label="화면 흐름 5단계">
+        <div class="phone" role="listitem"><span class="no">01 랜딩</span><span class="t">내 그림체,<br>6개 축으로 읽어 드려요</span><div class="wf big">결과 카드 예시 3장 슬라이드</div><div class="wf">17년 차 디자이너가 만든 기준 · 대표 감수</div><div class="wf btn">그림 3장으로 진단받기</div><div class="wf">자가진단 12문항 (무료)</div></div>
+        <div class="phone" role="listitem"><span class="no">02 업로드</span><span class="t">최근 그림 3장</span><div class="wf big">+ 그림 끌어놓기</div><div class="wf">목표하는 길: 그림책 ▾</div><div class="wf">고민 한 줄 (선택)</div><div class="wf btn">결제하고 진단 시작 · 19,000원</div></div>
+        <div class="phone" role="listitem"><span class="no">03 분석 중</span><span class="t">선부터 보고 있어요</span><div class="wf big">캐릭터가 돋보기 들고 걷는 애니메이션</div><div class="wf">선 → 형태 → 색 → 질감 → 구성 → 정서</div><div class="wf">대표 감수 후 24시간 안에 알림</div></div>
+        <div class="phone" role="listitem"><span class="no">04 결과</span><span class="t">단정한 선의<br>담백한 관찰자</span>
+          <div class="wf-row"><span>선</span><div class="bar" style="--x:68%"></div></div>
+          <div class="wf-row"><span>형태</span><div class="bar" style="--x:38%"></div></div>
+          <div class="wf-row"><span>색</span><div class="bar" style="--x:30%"></div></div>
+          <div class="wf-row"><span>질감</span><div class="bar" style="--x:58%"></div></div>
+          <div class="wf-row"><span>구성</span><div class="bar" style="--x:34%"></div></div>
+          <div class="wf-row"><span>정서</span><div class="bar" style="--x:46%"></div></div>
+          <div class="wf lime">카드 저장 · 인스타 공유</div></div>
+        <div class="phone" role="listitem"><span class="no">05 처방·다음 단계</span><span class="t">2주 처방 3개</span><div class="wf">① 표면 하나 정하기</div><div class="wf">② 썸네일 9칸</div><div class="wf">③ 한 줄 문장 먼저</div><div class="wf">가장 가까운 길: 그림책 82</div><div class="wf btn">2주 뒤 재진단 예약</div><div class="wf">픽처포지 1기 보기</div></div>
+      </div>
+
+      <h3>수익 모델과 지표</h3>
+      <div class="cols">
+        <div class="box">
+          <h4>돈이 들어오는 곳</h4>
+          <ul class="small">
+            <li>건당 리포트 19,000원, 재진단 9,900원</li>
+            <li>클럽 번들: 월 39,000원에 재진단 1회 포함</li>
+            <li>기관 라이선스: 반 단위 진단 + 처방 키트</li>
+            <li>강사 인증: 교육비 + 연 라이선스 + 키트 도매</li>
+          </ul>
+        </div>
+        <div class="box">
+          <h4>매주 볼 숫자 4개</h4>
+          <ul class="small">
+            <li>무료 카드 → 유료 리포트 전환율 (목표 10%)</li>
+            <li>2주 처방 후 재제출률 (목표 40%)</li>
+            <li>리포트 → 클럽 전환율 (목표 25%)</li>
+            <li>건당 감수 시간 (목표 10분 이하)</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3b -->
+    <section id="prompt">
+      <span class="eyebrow">03-1 · 프롬프트 설계</span>
+      <h2>AI는 보고, 규칙은 판단하고, 대표는 서명합니다</h2>
+      <figure class="fig">
+        <div class="svg-scroll"><svg viewBox="0 0 760 150" role="img" aria-labelledby="pipe-t">
+          <title id="pipe-t">그림 입력, AI 관찰, 규칙 계산, 대표 감수, 결과 전달의 다섯 단계</title>
+          <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker></defs>
+          <g stroke="var(--muted)" stroke-width="2" marker-end="url(#ar2)"><path d="M132 60H160"/><path d="M290 60H318"/><path d="M448 60H476"/><path d="M606 60H634"/></g>
+          <g font-size="14" text-anchor="middle">
+            <rect x="10" y="30" width="122" height="60" fill="var(--bg)" stroke="var(--line)" stroke-width="2"/><text x="71" y="58" font-weight="700" fill="var(--ink)">그림 1–3장</text><text x="71" y="78" font-size="12" fill="var(--muted)">+ 목표·메모</text>
+            <rect x="160" y="30" width="130" height="60" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/><text x="225" y="58" font-weight="700" fill="var(--ink)">AI 관찰</text><text x="225" y="78" font-size="12" fill="var(--muted)">위치·일관성·근거</text>
+            <rect x="318" y="30" width="130" height="60" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/><text x="383" y="58" font-weight="700" fill="var(--ink)">규칙 계산</text><text x="383" y="78" font-size="12" fill="var(--muted)">적합도·상품 연결</text>
+            <rect x="476" y="30" width="130" height="60" fill="var(--navy-bg)"/><text x="541" y="58" font-weight="700" fill="#A8D96A">대표 감수</text><text x="541" y="78" font-size="12" fill="#C3D0F0">점·문장 수정</text>
+            <rect x="634" y="30" width="116" height="60" fill="var(--bg)" stroke="var(--line)" stroke-width="2"/><text x="692" y="58" font-weight="700" fill="var(--ink)">카드·DM</text><text x="692" y="78" font-size="12" fill="var(--muted)">기록 저장</text>
+          </g>
+          <text x="380" y="128" text-anchor="middle" font-size="13" fill="var(--muted)">AI에게는 점수 해석·수업 추천·가격을 맡기지 않는다. 그 부분이 아더댄웍스의 영업 비밀이다.</text>
+        </svg></div>
+      </figure>
+      <h3>시스템 프롬프트 핵심 (스튜디오에 실제로 들어간 것)</h3>
+<pre>당신은 17년 차 시각디자이너가 만든 '6축 그림체 진단' 루브릭을 따르는
+아트 디렉터 보조입니다. 첨부한 그림 N장은 모두 한 사람이 그린 것입니다.
+당신은 관찰만 합니다. 점수 해석, 수업 추천, 가격 안내는 하지 않습니다.
+
+[6축 — 우열이 아니라 위치]
+- line (선): 0 = 러프·스케치, 100 = 정돈·클린
+- form (형태): 0 = 데포르메·단순화, 100 = 사실·구조
+- color (색): 0 = 절제·톤온톤, 100 = 대비·고채도
+- texture (질감): 0 = 플랫·디지털, 100 = 아날로그·재료감
+- comp (구성): 0 = 정적·중앙, 100 = 동적·여백·대각
+- mood (정서): 0 = 담백·관찰, 100 = 서사·감정
+
+[채점 규칙]
+1. position: 보이는 것만으로. 애매하면 40~60, 근거에 애매한 이유를 쓴다.
+2. consistency(1~5): 그 선택이 여러 장에 걸쳐 의도적으로 유지되는 정도.
+   그림이 1장이면 4 이상은 매우 확실할 때만.
+3. evidence: 그림 속 구체적 요소(위치·대상·도구)로 한 문장.
+4. 말투: ~요/~습니다 섞은 담백한 대화체. 위로 문구·감성 문구 금지.
+5. 그림이 아니면 {"error":"not_artwork"}만 답한다.
+
+[출력] summary, axes{6개}, strengths[2], blockers[2], prescriptions[3] JSON 하나</pre>
+      <div class="cols">
+        <div class="box">
+          <h4>정확도를 올리는 순서</h4>
+          <ol class="small">
+            <li><b>앵커 세트 18장:</b> 축마다 0·50·100 예시 그림을 대표가 고르고, 각 그림을 한 줄로 설명해 프롬프트에 붙입니다.</li>
+            <li><b>감수 로그:</b> 스튜디오에 저장되는 'AI 점수 vs 대표 수정 점수'를 50건 모읍니다.</li>
+            <li><b>축별 오차 측정:</b> 평균 오차가 15점 넘는 축만 설명을 고칩니다. 목표는 전 축 10점 이하.</li>
+            <li><b>감수 시간 단축:</b> 오차가 줄면 건당 10분 → 3분. 그때 가격을 낮추거나 물량을 늘립니다.</li>
+          </ol>
+        </div>
+        <div class="box">
+          <h4>지켜야 할 선</h4>
+          <ul class="small">
+            <li>그림 원본은 저장하지 않고 결과만 남깁니다 (스튜디오 기본 동작).</li>
+            <li>'진단'은 평가가 아니라 위치라는 말을 결과지마다 붙입니다.</li>
+            <li>미성년 기관 수업은 보호자 동의서에 AI 분석 고지를 넣습니다.</li>
+            <li>6축 축 이름은 지금 가정값이에요. <b>대표의 실제 6축으로 바꾸는 곳은 스튜디오 코드 맨 위 AXES 한 군데</b>입니다.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section id="traction">
+      <span class="eyebrow">04 · 실행 플랜</span>
+      <h2>개발비 0원으로 첫 유료 고객 30명 만드는 90일</h2>
+      <p>새로 만들 건 없어요. 진단 스튜디오, 네이버 예약 결제, 인스타 3계정, 블로그, 당근, 오픈채팅을 순서대로 연결만 합니다.</p>
+      <div class="weeks">
+        <div class="wk"><h4>12월 1–2주 · 따뜻한 시장</h4><span class="goal">무료 진단 20건 · 후기 10개</span>
+          <ul><li>기존 수강생 20명에게 "그림 3장 보내 주면 6축 진단 해 드려요" DM</li><li>스튜디오로 진단 → 카드 + DM 발송</li><li>인스타 공유 허락 5명 확보</li><li>"어떤 문장이 제일 와닿았나" 물어 결과지 문구 수정</li></ul></div>
+        <div class="wk"><h4>12월 3–4주 · 첫 결제</h4><span class="goal">유료 진단 15건</span>
+          <ul><li>네이버 예약에 '6축 진단 리포트' 상품 등록 (런칭가 9,900원, 30명 한정)</li><li>@other.than.works 캐러셀 "그림체가 매번 바뀌는 이유, 6축으로 보면" 발행</li><li>동의받은 결과 카드 5장 릴스로</li><li>당근 비즈프로필·블로그에 같은 글</li></ul></div>
+        <div class="wk"><h4>1월 · 처방 챌린지</h4><span class="goal">재제출 40% · 클럽 창립 20명</span>
+          <ul><li>진단받은 사람만 들어오는 '2주 처방 챌린지' 오픈채팅</li><li>2주 뒤 재진단 무료 → 축이 움직인 사례 수집</li><li>1월 말 온라인 드로잉 클럽 1기 모집: 월 39,000원, 창립 멤버 29,000원 유지</li><li>정가 진단 19,000원 전환</li></ul></div>
+        <div class="wk"><h4>2월 · 기관과 지원사업 준비</h4><span class="goal">기관 미팅 3곳 · 계약 1건</span>
+          <ul><li>1장짜리 기관 제안서: "그림체 찾기 수업 2회 + 처방 키트 30인 + 개인 진단 리포트"</li><li>납품 이력 있는 중학교·청소년센터에 3월 신학기 예산 전 접촉</li><li>@cloudy.piece에서 3D 캐릭터 키트 사전 예약 폼으로 수요 확인</li><li>지원사업 증빙용 지표표 정리 (아래)</li></ul></div>
+      </div>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>지원사업 서류에 그대로 쓸 지표</th><th>90일 목표</th><th>어디서 나오나</th></tr></thead>
+          <tbody>
+            <tr><td>누적 진단 건수 (무료+유료)</td><td class="num">50건</td><td>스튜디오 진단 기록</td></tr>
+            <tr><td>유료 전환 고객 수 · 매출</td><td class="num">30명 · 약 40만 원</td><td>네이버 예약 정산</td></tr>
+            <tr><td>반복 매출 (클럽)</td><td class="num">월 58–78만 원</td><td>클럽 결제 내역</td></tr>
+            <tr><td>처방 후 개선 사례</td><td class="num">10건</td><td>재진단 비교 카드</td></tr>
+            <tr><td>기관 계약</td><td class="num">1건</td><td>계약서·견적서</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section id="grants">
+      <span class="eyebrow">05 · 2027 지원사업 연결</span>
+      <h2>트랙션 → 증빙 → 지원금 → 자동화 순서로 쌓기</h2>
+      <p>창업기업 확인서 트랙(초기창업패키지 등)은 구 사업자와 업종이 겹쳐 어렵다고 보고, 업력 제한이 없거나 넓은 트랙에 집중합니다. 아래 일정은 <b>2026년 실제 공고 시기</b>를 확인해 2027년을 추정한 거예요. 공고가 나오면 자격 조건을 원문으로 다시 확인해야 합니다.</p>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>트랙</th><th>쓸 자격</th><th>사업 (2026 확인)</th><th>2026 시기</th><th>2027 쓸 곳</th></tr></thead>
+          <tbody>
+            <tr><td><b>공간</b></td><td>창업 7년 이내 콘텐츠·디자인 기업</td><td>북부 경기문화창조허브 스타트업 입주 (경기콘텐츠진흥원)</td><td>2월·8월 연 2회 모집 <span class="tag ok">확인</span></td><td>8월 모집 지원 → 9–10월 입주 → 12월 원흥 정리와 맞물림</td></tr>
+            <tr><td><b>공간 대안</b></td><td>창업기업</td><td>동국대 BMC창업보육센터(고양)</td><td>연 6차례 수시 모집 <span class="tag ok">확인</span></td><td>창조허브 탈락 시 대안</td></tr>
+            <tr><td><b>AI</b></td><td>소상공인 확인서</td><td>혁신 소상공인 AI 활용 지원사업 (중기부, 2026 신규, 예산 144억 원 보도)</td><td>2026 통합공고 후 모집 <span class="tag ok">확인</span></td><td>진단 웹앱 2단계 개발비</td></tr>
+            <tr><td><b>출판</b></td><td>출판사 신고 + 발행 실적</td><td>출판진흥원 전자책 제작 지원 (출판사당 최대 10종)</td><td>2026년 3차까지, 3차는 10월 접수 <span class="tag ok">확인</span></td><td>자습서·워크북 전자책 먼저 → 종이책</td></tr>
+            <tr><td><b>제조</b></td><td>소공인 (제조업 업종 필요)</td><td>소공인 스마트제조지원(스마트공방)</td><td>추가 모집 6월 15일–7월 3일 <span class="tag ok">확인</span></td><td>키트 생산 장비·공정. 업종 추가가 먼저</td></tr>
+            <tr><td><b>예술인</b></td><td>예술활동증명, 중위소득 120% 이하</td><td>예술활동준비금 300만 원 (한국예술인복지재단)</td><td>3월 23일–4월 17일 <span class="tag ok">확인</span></td><td>그림책 집필 기간 생활비 방어</td></tr>
+            <tr><td><b>여성기업</b></td><td>여성기업 확인서</td><td>공공기관 여성기업제품 우선구매, 여성기업종합지원센터 보육</td><td>상시</td><td>기관 패키지 영업 때 구매 실적 명분으로</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>2027 월별 로드맵 <span class="tag est">2026 공고 패턴 기준 추정</span></h3>
+      <div class="timeline">
+        <div class="tl hot"><span class="m">2026.12</span><ul><li>사업자 정비 (아래 목록), 무료·유료 진단 시작</li><li>상표 출원: '6축 그림체 진단', 캐릭터</li></ul></div>
+        <div class="tl"><span class="m">2027.01</span><ul><li>온라인 드로잉 클럽 1기, 중기부 소상공인 통합공고 확인 (2026은 전년 12월 29일 발표)</li></ul></div>
+        <div class="tl"><span class="m">02</span><ul><li>북부 창조허브 상반기 모집 (선택: 원흥 계약 조건을 보고 판단)</li><li>기관 영업, 신학기 예산 전</li></ul></div>
+        <div class="tl hot"><span class="m">03–04</span><ul><li>예술활동준비금 신청</li><li>AI 활용 지원사업 공고 대응. 90일 지표표가 여기서 쓰입니다</li></ul></div>
+        <div class="tl"><span class="m">05–07</span><ul><li>스마트공방 계열 공고 대응 (제조 업종 추가 완료 전제)</li><li>자습서 전자책 출간, 진단 웹앱 2단계 착수</li></ul></div>
+        <div class="tl hot"><span class="m">08–09</span><ul><li>북부 경기문화창조허브 하반기 모집 지원 (2026은 8월 11일–9월 11일)</li><li>출판진흥원 제작 지원 하반기 차수</li></ul></div>
+        <div class="tl"><span class="m">10–11</span><ul><li>입주 협약·이전 준비, 강사 인증 1기</li></ul></div>
+        <div class="tl hot"><span class="m">12</span><ul><li>원흥 작업실 정리, 월 고정비 110만 원 → 입주 공간 관리비 수준으로</li></ul></div>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section id="setup">
+      <span class="eyebrow">06 · 이번 달</span>
+      <h2>지원사업 문을 열어 두는 정비 목록</h2>
+      <p class="small muted">체크 표시는 이 브라우저에만 저장돼요.</p>
+      <ul class="check" id="checklist">
+        <li><input type="checkbox" id="c1"><label for="c1"><b>사업자등록에 제조업 종목 추가.</b> 소공인 트랙은 제조업이어야 열립니다. 어떤 세부 업종(교구·플라스틱 제품 등)으로 넣을지는 세무사와 확인하세요.</label></li>
+        <li><input type="checkbox" id="c2"><label for="c2"><b>출판사 신고를 2027 초로 앞당기기.</b> 출판 지원사업은 신고 후 경과 기간이나 발행 실적을 보는 경우가 많아서, 일찍 신고할수록 자격이 빨리 열립니다 (제 추정, 공고별 확인 필요).</label></li>
+        <li><input type="checkbox" id="c3"><label for="c3"><b>상표 출원:</b> '6축 그림체 진단' 문자상표, 아더댄웍스 캐릭터. 교육·디자인 서비스, 서적, 앱 쪽 상품류를 변리사와 정하세요.</label></li>
+        <li><input type="checkbox" id="c4"><label for="c4"><b>여성기업·소상공인 확인서 유효기간 확인.</b> 공고 직전에 만료되면 신청을 놓칩니다.</label></li>
+        <li><input type="checkbox" id="c5"><label for="c5"><b>통신판매업 신고 상태 확인.</b> 리포트·워크북·키트 온라인 판매에 필요합니다.</label></li>
+        <li><input type="checkbox" id="c6"><label for="c6"><b>학교장터(S2B) 공급자 등록 검토.</b> 학교가 키트·수업을 사는 통로라 기관 패키지 매출과 바로 연결됩니다.</label></li>
+        <li><input type="checkbox" id="c7"><label for="c7"><b>스튜디오의 6축 이름을 실제 6축으로 교체.</b> 코드 맨 위 AXES 목록만 바꾸면 결과지·카드·자가진단이 같이 바뀝니다.</label></li>
+      </ul>
+    </section>
+
+    <!-- 7 -->
+    <section id="risk">
+      <span class="eyebrow">07 · 리스크</span>
+      <h2>미리 막아 둘 네 가지</h2>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>리스크</th><th>어떻게 보이나</th><th>대응</th></tr></thead>
+          <tbody>
+            <tr><td>AI가 그림을 잘못 읽음</td><td>"제 그림 그런 거 아닌데요"</td><td>0–1단계는 대표 감수 필수. 감수 로그로 프롬프트 개선</td></tr>
+            <tr><td>진단이 평가처럼 느껴짐</td><td>점수에 상처받는 수강생</td><td>우열 없는 '위치' 언어, 처방 중심 결과지, 위로 대신 구체적 과제</td></tr>
+            <tr><td>대표 시간이 다시 감수에 묶임</td><td>건수가 늘수록 피곤</td><td>건당 감수 10분 상한. 넘으면 가격 인상 또는 클럽으로 유도</td></tr>
+            <tr><td>지원사업 일정이 예상과 다름</td><td>공고 시기·자격 변경</td><td>트랙을 공간·AI·출판·제조·예술인 다섯 갈래로 분산. 하나가 막혀도 나머지로</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="thesis">
+        <p>이번 주에 할 일은 세 개면 충분해요. 수강생 5명에게 진단 DM 보내기, 네이버 예약에 진단 상품 초안 만들기, 세무사에게 제조업 종목 추가 문의하기.</p>
+      </div>
+    </section>
+
+    <section id="sources">
+      <span class="eyebrow">출처</span>
+      <div class="src">
+        <p>지원사업 일정은 2026.11.25에 검색으로 확인한 공고·보도 기준입니다. 2027 일정과 금액은 바뀔 수 있으니 공고 원문으로 다시 확인하세요. 가격·매출 시나리오는 제 추정입니다.</p>
+        <ol>
+          <li><a href="https://www.venturesquare.net/announcement/1038822" target="_blank" rel="noopener">2026 북부 경기문화창조허브 스타트업 입주사 22기 모집 (벤처스퀘어)</a></li>
+          <li><a href="https://www.venturesquare.net/announcement/1105981" target="_blank" rel="noopener">2026 북부 경기문화창조허브 스타트업 입주사 23기 모집 (벤처스퀘어)</a></li>
+          <li><a href="https://www.venturesquare.net/announcement/1116548" target="_blank" rel="noopener">동국대학교 BMC창업보육센터(고양) 2026년 6차 모집 (벤처스퀘어)</a></li>
+          <li><a href="https://www.korea.kr/multi/visualNewsView.do?newsId=148957296" target="_blank" rel="noopener">2026 소상공인 지원사업 통합 공고 (정책브리핑)</a></li>
+          <li><a href="https://www.heraldk.com/article/2025122813000061427" target="_blank" rel="noopener">중기부 2026 소상공인 예산 5.4조, AI·디지털 전환 (헤럴드경제)</a></li>
+          <li><a href="https://studygov.kr/blog/0092-small-business-digital-transformation/" target="_blank" rel="noopener">2026 소상공인 디지털전환 지원사업 정리 (블로그, 참고용)</a></li>
+          <li><a href="https://thecheck.co.kr/?p=6816" target="_blank" rel="noopener">전자책 제작 지원 3차 접수 (thecheck)</a></li>
+          <li><a href="https://www.newsis.com/view/NISX20260203_0003501127" target="_blank" rel="noopener">출판진흥원 2026 사업 방향 (뉴시스)</a></li>
+          <li><a href="https://thevc.kr/grants/4cbbfb1a5c2b4cc22aef73af" target="_blank" rel="noopener">2026 소공인 스마트제조지원 추가 모집 (THE VC)</a></li>
+          <li><a href="https://www.heraldk.com/article/2026031915202935932" target="_blank" rel="noopener">예술활동준비금 1만 8천여 명에 300만 원 (헤럴드경제)</a></li>
+        </ol>
+      </div>
+      <footer>other than works · 이 문서와 진단 스튜디오 소스는 레포의 bulkup 폴더에 함께 있습니다.</footer>
+    </section>
+  </main>
+</div>
+
+<script>
+(() => {
+  const KEY = "otw-bulkup-checks";
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { saved = {}; }
+  document.querySelectorAll("#checklist input").forEach(cb => {
+    cb.checked = !!saved[cb.id];
+    cb.addEventListener("change", () => {
+      saved[cb.id] = cb.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+    });
+  });
+})();
+</script>
