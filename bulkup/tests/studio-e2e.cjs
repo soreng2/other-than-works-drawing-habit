@@ -26,6 +26,7 @@ const PROTOS = [
 const sample = async()=>({text:'x'});
 sample.limits = async()=>({maxPromptBytes:262144, images:{maxCount:5,maxInputBytes:2e7,mediaTypes:['image/png']}});
 sample.json = async (prompt, opts)=>{ window.__calls++; window.__lastPrompt = prompt; await new Promise(r=>setTimeout(r, 120));
+  if (window.__failNext) { const c = window.__failNext; window.__failNext = null; throw {code: c, message: 'x'}; }
   const size = opts.images[0].size; if (window.__photoSize && size === window.__photoSize) return {error:"not_artwork", reason:"사진"};
   const p = PROTOS[size % PROTOS.length]; const jitter = () => Math.round((Math.random()-.5)*8);
   const ax = {}; for (const [k,[pos,c]] of Object.entries(p.axes)) ax[k] = {position: pos + jitter(), consistency: c, evidence: k+" 근거"};
@@ -128,22 +129,75 @@ const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!o
   check(await p.evaluate(() => window.__calls) === 2 + 11, '총 호출 수 일치');
   await p.screenshot({ path: S + '/desk-lab.png', fullPage: true });
 
-  // 7) 자가진단 17문항
-  await p.click('#tab-self');
-  const segs = await p.$$('#self-qs .seg');
-  check(segs.length === 17, '자가진단 문항 17개');
-  for (let i = 0; i < segs.length; i++) await (await segs[i].$$('button'))[(i * 3) % 5].click();
-  await p.selectOption('#self-goal', 'goods');
-  await p.click('#btn-self');
-  const ss = await p.$eval('#self-status', e => e.innerText);
-  check(ss.startsWith('결과가 나왔어요'), '자가진단 결과: ' + ss);
-  check((await p.$eval('#market h4', e => e.textContent)) === '캐릭터 굿즈 시장분석', '자가진단 목표=굿즈 → 굿즈 시장분석');
+  // 7) 통합 진단: 본인 체크 + AI
+  await p.click('#tab-ai');
+  const fillSelf = async (picks) => { const segs = await p.$$('#self-qs .seg'); for (let i = 0; i < segs.length && i < picks.length; i++) if (picks[i] != null) await (await segs[i].$$('button'))[picks[i] - 1].click(); return segs.length; };
+  const clearThumbs = async () => { while (await p.$('.thumb button')) await p.click('.thumb button'); };
+  await p.click('#btn-self-reset');
+  await clearThumbs();
+  // 본인 생각: 선 3(50)/일관3, 형태 2/4, 색 2/4, 질감 4(75)/4, 구성 3/3, 정서 2(25)/3 | 신호 3,3,2,4,3
+  const SELF = [3, 3, 2, 4, 2, 4, 4, 4, 3, 3, 2, 3, 3, 3, 2, 4, 3];
+  check(await fillSelf(SELF) === 17, '본인 체크 문항 17개 (진단하기 화면 안)');
+  check((await p.$eval('#self-progress', e => e.textContent)) === '17/17', '진행 표시 17/17');
+  await p.setInputFiles('#in-files', [{ name: 'b.png', mimeType: 'image/png', buffer: Buffer.alloc(1001, 2) }]); // 이모티콘형
+  check((await p.$eval('#plan-line', e => e.textContent)).startsWith('본인 체크와 AI 분석을 합쳐'), '안내: 둘 다 합쳐 판정');
+  await p.selectOption('#in-goal', 'unknown');
+  await p.click('#btn-analyze');
+  await p.waitForSelector('#ai-status.ok', { timeout: 5000 });
+  const st7 = await p.evaluate(() => window.__otw.state);
+  check(st7.mode === 'both' && !!st7.sources.ai && !!st7.sources.self, '결과 모드 = AI + 본인 체크');
+  const A = st7.sources.ai.axes.line.position, Sv = st7.sources.self.axes.line.position;
+  check(st7.axes.line.position === Math.round(0.6 * A + 0.4 * Sv), `선 합산 = 0.6×AI(${A}) + 0.4×본인(${Sv}) = ${st7.axes.line.position}`);
+  check(st7.axes.line.consistency === Math.round(0.5 * st7.sources.ai.axes.line.consistency + 0.5 * 3), '일관성 합산 50:50');
+  check(await p.evaluate(() => !document.getElementById('gapbox').hidden), '인식 차이 박스 표시');
+  const gapTxt = await p.$eval('#gapbox', e => e.innerText);
+  console.log('--- gap ---\n' + gapTxt + '\n---');
+  check(/일치도 \d+/.test(gapTxt) && (gapTxt.match(/의도한 방향|정도 차이|본인 생각보다|더 높게/g) || []).length >= 2, '일치도와 차이 항목·해석 표시');
+  check((await p.$eval('#src-line', e => e.textContent)).includes('합산'), '축마다 AI·본인·합산 출처 줄');
+  check(st7.rx[0].how.includes('1순위'), '차이 가장 큰 축이 처방 1순위: ' + st7.rx[0].title);
+  check((await p.$eval('#dm', e => e.value)).includes('[본인 생각 vs 실제 그림]'), 'DM에 인식 차이 포함');
+  await p.waitForTimeout(300);
+  fs.writeFileSync(S + '/card-merged.png', Buffer.from(await p.evaluate(() => document.getElementById('card').toDataURL('image/png').split(',')[1]), 'base64'));
+  await p.screenshot({ path: S + '/desk-merged.png', fullPage: true });
+  await p.$eval('#rng-line', e => { e.value = 40; e.dispatchEvent(new Event('input')); });
+  check((await p.$eval('#src-line', e => e.textContent)).includes('대표 수정 40'), '대표가 고치면 출처 줄에 표시');
+  await p.click('#btn-save'); await p.waitForTimeout(200);
+
+  // 7-2) AI 실패 + 본인 체크 완료 → 본인 체크로 대체
+  await p.evaluate(() => { window.__failNext = 'upstream_error'; });
+  await p.click('#btn-analyze'); await p.waitForTimeout(500);
+  check((await p.$eval('#ai-status', e => e.textContent)).includes('본인 체크만으로'), 'AI 실패 시 본인 체크로 대체');
+  check((await p.evaluate(() => window.__otw.state.mode)) === 'self', '대체 결과 모드 = 본인');
+
+  // 7-3) 본인 체크만 (그림 없음)
+  await clearThumbs();
+  await p.selectOption('#in-goal', 'goods');
+  check((await p.$eval('#plan-line', e => e.textContent)).startsWith('본인 체크만으로'), '그림 없으면 본인 체크만 안내');
+  await p.click('#btn-analyze'); await p.waitForTimeout(300);
+  check((await p.$eval('#ai-status', e => e.textContent)).startsWith('본인 체크로 결과를'), '본인 체크만으로 결과');
+  check((await p.$eval('#market h4', e => e.textContent)) === '캐릭터 굿즈 시장분석', '목표=굿즈 → 굿즈 시장분석');
+  check(await p.evaluate(() => document.getElementById('gapbox').hidden), '한쪽만 있으면 차이 박스 숨김');
+
+  // 7-4) 본인 체크 일부만 + 그림 없음 → 버튼 잠김
+  await p.click('#btn-self-reset'); await fillSelf([3, 3, 3]);
+  check(await p.$eval('#btn-analyze', e => e.disabled) && (await p.$eval('#plan-line', e => e.textContent)).includes('지금 3개'), '본인 체크 일부만이면 버튼 잠김');
+  // 7-5) 본인 체크 일부 + 그림 → 답한 항목만 합산
+  await p.setInputFiles('#in-files', [{ name: 'c.png', mimeType: 'image/png', buffer: Buffer.alloc(1003, 3) }]);
+  check((await p.$eval('#plan-line', e => e.textContent)).includes('본인 체크 3개 항목'), '일부 체크 + 그림 안내');
+  await p.click('#btn-analyze'); await p.waitForSelector('#ai-status.ok', { timeout: 5000 });
+  const st75 = await p.evaluate(() => window.__otw.state);
+  check(st75.mode === 'both' && st75.axes.color.position === st75.sources.ai.axes.color.position && st75.axes.form.position === Math.round(0.6 * st75.sources.ai.axes.form.position + 0.4 * 50), '답한 축만 합산, 안 답한 축은 AI 값');
 
   // 8) 기록에서 다시 열기 (v1 기록 호환: signals 없음)
-  const v1 = await p.evaluate(() => { const s = window.__otw.state; return true; });
   await p.click('#tab-hist'); await p.waitForTimeout(200);
   await p.click('.hist-item .btn'); await p.waitForTimeout(300);
   check((await p.$eval('#res-who', e => e.textContent)).startsWith('테스트'), '기록 다시 열기');
+  await p.click('#tab-hist'); await p.waitForTimeout(150);
+  const metas = await p.$$eval('.hist-item .m', e => e.map(x => x.textContent));
+  check(metas.some(m => m.includes('AI+본인') && m.includes('일치')), '기록 목록에 AI+본인·일치도 표시');
+  const idx = metas.findIndex(m => m.includes('AI+본인'));
+  await (await p.$$('.hist-item'))[idx].$eval('.btn', b => b.click()); await p.waitForTimeout(300);
+  check(await p.evaluate(() => !document.getElementById('gapbox').hidden), '저장한 통합 진단을 다시 열면 차이 박스 복원');
 
   // 9) 모바일·다크·Claude 없음
   const m = await b.newPage({ viewport: { width: 390, height: 844 }, colorScheme: 'dark' });

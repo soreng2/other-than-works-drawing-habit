@@ -5,8 +5,8 @@
 | 파일 | 내용 | 게시본 |
 |---|---|---|
 | `bulkup-blueprint.html` | 벌크업 설계도: 수익 구조, AI 서비스 기획안(스펙·와이어프레임·프롬프트), 0원 트랙션 90일, 2027 지원사업 로드맵 | https://claude.ai/artifact/EvGxVg3fmuizs4LVZii4DX |
-| `six-axis-studio.html` | 6축 그림체 진단 스튜디오 v2: 그림 업로드 → Claude 관찰(6축 + 상업 신호 5) → 대표 감수 → 길별 상업성 점수·등급 → 목표 길(없으면 1위) 시장분석 → 무료 카드 / 유료 리포트(카드 2장) · 2주 처방 · DM · 기록 · 검증 실험실 | https://claude.ai/artifact/EkFy31tQyaVgejNoEWCfy1 |
-| `tests/studio-e2e.cjs` | 가짜 Claude 런타임으로 규칙 쏠림(무작위 5,000건), 아키타입 5종, 상업 신호 분기, 조사, 무료/유료, 실험실 판정, 모바일까지 33개 항목 확인 | – |
+| `six-axis-studio.html` | 6축 그림체 진단 스튜디오 v3: 본인 체크 17문항 + 그림 업로드를 한 화면에서 받아 합산(인식 차이·일치도 표시) → Claude 관찰(6축 + 상업 신호 5) → 대표 감수 → 길별 상업성 점수·등급 → 목표 길(없으면 1위) 시장분석 → 무료 카드 / 유료 리포트(카드 2장) · 2주 처방 · DM · 기록 · 검증 실험실 | https://claude.ai/artifact/EkFy31tQyaVgejNoEWCfy1 |
+| `tests/studio-e2e.cjs` | 가짜 Claude 런타임으로 규칙 쏠림(무작위 5,000건), 아키타입 5종, 상업 신호 분기, 조사, 무료/유료, 실험실 판정, 본인+AI 합산·대체·일부 응답, 모바일까지 54개 항목 확인 | – |
 
 ## 진단 스튜디오 구조
 

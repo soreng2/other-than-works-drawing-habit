@@ -189,6 +189,31 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 72ch
 .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); }
 .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 4px; background: var(--c); vertical-align: -1px; }
 
+.step-box { border: 1.5px solid var(--line); padding: 0 14px; display: grid; gap: 12px; }
+.step-box[open] { padding-bottom: 14px; }
+.step-box summary { list-style: none; display: flex; align-items: center; gap: 10px; padding: 12px 0; cursor: pointer; font-weight: 700; }
+.step-box summary::-webkit-details-marker { display: none; }
+.step-no { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: inline-grid; place-items: center; font-size: 13px; flex: 0 0 auto; }
+.step-t { flex: 1; }
+.step-p { font-size: 12px; color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; }
+.step-p.done { color: var(--green); }
+.srcline { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.srcline b { color: var(--ink); }
+.gapbox { border: 1.5px solid var(--line); border-left: 6px solid var(--accent); padding: 14px 16px; display: grid; gap: 10px; }
+.gapbox h4 { margin: 0; font-size: 16px; }
+.agree { font-size: 12px; font-weight: 700; padding: 2px 8px; border: 1.5px solid currentColor; margin-left: 8px; }
+.agree.hi { color: var(--green); } .agree.mid { color: var(--accent); } .agree.lo { color: var(--warn); }
+.gap-row { display: grid; gap: 4px; font-size: 14px; padding-top: 8px; border-top: 1px solid var(--line); }
+.gap-row:first-of-type { border-top: 0; padding-top: 0; }
+.mini { position: relative; height: 22px; }
+.mini::before { content: ""; position: absolute; left: 0; right: 0; top: 10px; height: 3px; background: var(--line); }
+.mini i { position: absolute; top: 4px; width: 14px; height: 14px; border-radius: 50%; margin-left: -7px; }
+.mini i.ai { background: var(--accent); }
+.mini i.me { background: var(--surface); border: 3px solid var(--warn); }
+.gap-legend { font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
+.gap-legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+.gap-legend .l-ai::before { background: var(--accent); }
+.gap-legend .l-me::before { border: 2px solid var(--warn); box-sizing: border-box; }
 .spinner { width: 16px; height: 16px; border: 3px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
@@ -199,19 +224,19 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 72ch
   <header class="top">
     <span class="pill">other than works</span>
     <h1>6축 그림체 진단 스튜디오</h1>
-    <p>그림을 올리면 AI가 6축 위치와 상업 신호 5가지를 관찰하고, 대표가 감수합니다. 길별 점수는 그림체 적합 45% + 상품 준비도 35% + 시장 매력 20%로 계산해요. 무료 카드는 그림체까지, 유료 리포트는 상업성 평가와 시장분석까지 담습니다.</p>
+    <p>본인 체크 17문항과 그림 AI 분석을 한 번에 받아 합쳐서 판정하고, 본인 생각과 실제 그림이 다른 곳을 짚어 줍니다. 대표가 감수해요. 길별 점수는 그림체 적합 45% + 상품 준비도 35% + 시장 매력 20%로 계산해요. 무료 카드는 그림체까지, 유료 리포트는 상업성 평가와 시장분석까지 담습니다.</p>
   </header>
 
   <nav class="tabs" role="tablist" aria-label="진단 방식">
-    <button class="tab" role="tab" id="tab-ai" aria-selected="true" aria-controls="pane-ai">AI 그림 진단</button>
-    <button class="tab" role="tab" id="tab-self" aria-selected="false" aria-controls="pane-self">자가 진단</button>
+    <button class="tab" role="tab" id="tab-ai" aria-selected="true" aria-controls="pane-ai">진단하기</button>
     <button class="tab" role="tab" id="tab-lab" aria-selected="false" aria-controls="pane-lab">검증 실험실</button>
     <button class="tab" role="tab" id="tab-hist" aria-selected="false" aria-controls="pane-hist">진단 기록</button>
   </nav>
 
   <div class="grid" id="main-grid">
     <section class="panel" id="pane-ai" role="tabpanel" aria-labelledby="tab-ai">
-      <h2>그림 올리기</h2>
+      <h2>새 진단</h2>
+      <p class="hint">본인 체크와 그림 AI 분석을 둘 다 하면 합쳐서 판정하고, 본인 생각과 실제 그림이 다른 곳을 짚어 줘요. 둘 중 하나만 해도 결과는 나옵니다.</p>
       <div class="field">
         <label for="in-name">수강생 이름 또는 닉네임</label>
         <input id="in-name" type="text" maxlength="20" placeholder="예: 소랭" autocomplete="off">
@@ -228,45 +253,35 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 72ch
         </select>
         <p class="hint">고르면 그 길의 시장분석이, 모르겠다면 점수 1위 길의 시장분석이 붙어요.</p>
       </div>
-      <div class="field">
-        <label for="in-note">대표 메모 <span class="hint" style="display:inline">(AI에게 함께 전달)</span></label>
-        <textarea id="in-note" maxlength="400" placeholder="예: 루틴반 4주차. 손은 빠른데 매번 그림체가 달라진다고 고민함."></textarea>
-      </div>
-      <label class="drop" id="drop" for="in-files">
-        <strong>그림 1~3장을 끌어다 놓거나 눌러서 고르기</strong>
-        <span class="hint">같은 사람의 그림 여러 장이면 일관성까지 읽어요. JPG·PNG·WebP</span>
-        <input id="in-files" class="sr" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
-      </label>
-      <div class="thumbs" id="thumbs"></div>
+
+      <details class="step-box" id="self-box" open>
+        <summary><span class="step-no">1</span><span class="step-t">본인 체크 17문항</span><span class="step-p" id="self-progress">0/17</span></summary>
+        <p class="hint">수강생이 직접 고르거나, 대표가 상담하며 대신 눌러도 돼요. AI에게는 이 답을 보여주지 않아서 서로 독립적으로 비교됩니다.</p>
+        <div id="self-qs"></div>
+        <button type="button" class="btn ghost" id="btn-self-reset">본인 체크 지우기</button>
+      </details>
+
+      <details class="step-box" id="ai-box" open>
+        <summary><span class="step-no">2</span><span class="step-t">그림 AI 분석</span><span class="step-p" id="ai-progress">그림 0장</span></summary>
+        <div class="field">
+          <label for="in-note">대표 메모 <span class="hint" style="display:inline">(AI에게 함께 전달)</span></label>
+          <textarea id="in-note" maxlength="400" placeholder="예: 루틴반 4주차. 손은 빠른데 매번 그림체가 달라진다고 고민함."></textarea>
+        </div>
+        <label class="drop" id="drop" for="in-files">
+          <strong>그림 1~3장을 끌어다 놓거나 눌러서 고르기</strong>
+          <span class="hint">같은 사람의 그림 여러 장이면 일관성까지 읽어요. JPG·PNG·WebP</span>
+          <input id="in-files" class="sr" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+        </label>
+        <div class="thumbs" id="thumbs"></div>
+        <p class="hint" id="ai-note">분석은 이 페이지를 연 사람의 Claude 계정 사용량으로 실행돼요. 첫 실행 때 허용 여부를 한 번 묻습니다.</p>
+      </details>
+
+      <p class="hint" id="plan-line"></p>
       <div class="row">
-        <button class="btn" id="btn-analyze" disabled>AI로 진단하기</button>
+        <button class="btn" id="btn-analyze" disabled>결과 만들기</button>
         <button class="btn ghost" id="btn-stop" hidden>멈추기</button>
       </div>
       <p class="status" id="ai-status" role="status"></p>
-      <p class="hint" id="ai-note">분석은 이 페이지를 연 사람의 Claude 계정 사용량으로 실행돼요. 첫 실행 때 허용 여부를 한 번 묻습니다.</p>
-    </section>
-
-    <section class="panel" id="pane-self" role="tabpanel" aria-labelledby="tab-self" hidden>
-      <h2>자가 진단 17문항</h2>
-      <p class="hint">그림체 6축은 위치와 일관성 두 가지씩, 상업 신호 5개는 하나씩 골라요. Claude 없이도 같은 결과지가 나옵니다.</p>
-      <div class="field">
-        <label for="self-name">이름 또는 닉네임</label>
-        <input id="self-name" type="text" maxlength="20" placeholder="예: 소랭" autocomplete="off">
-      </div>
-      <div class="field">
-        <label for="self-goal">하고 싶은 길</label>
-        <select id="self-goal">
-          <option value="unknown">아직 모르겠어요</option>
-          <option value="picturebook">그림책</option>
-          <option value="emoticon">이모티콘</option>
-          <option value="goods">캐릭터 굿즈</option>
-          <option value="instatoon">인스타툰</option>
-          <option value="portfolio">포트폴리오·외주</option>
-        </select>
-      </div>
-      <div id="self-qs"></div>
-      <button class="btn" id="btn-self">결과 보기</button>
-      <p class="status" id="self-status" role="status"></p>
     </section>
 
     <section class="panel" id="pane-lab" role="tabpanel" aria-labelledby="tab-lab" hidden>
@@ -353,6 +368,8 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 72ch
         <div class="listbox"><h3><label for="res-strengths">살릴 것</label></h3><textarea id="res-strengths"></textarea></div>
         <div class="listbox"><h3><label for="res-blockers">막히는 곳</label></h3><textarea id="res-blockers"></textarea></div>
       </div>
+
+      <div class="gapbox" id="gapbox" hidden></div>
 
       <div>
         <h3 id="score-title">길별 점수</h3>
@@ -592,6 +609,12 @@ const SAMPLE_STATE = {
 };
 SAMPLE_STATE.signals.craft.note = "윤곽과 채색 경계가 깔끔해요.";
 SAMPLE_STATE.signals.expression.note = "세 장 모두 비슷한 미소라 감정 폭이 좁아요.";
+/* 예시용 본인 체크: 질감·구성·표정 폭에서 AI 관찰과 일부러 어긋나게 둔다 */
+const SAMPLE_SELF = {
+  axes: { line: { position: 75, consistency: 4 }, form: { position: 50, consistency: 4 }, color: { position: 25, consistency: 5 },
+          texture: { position: 25, consistency: 4 }, comp: { position: 75, consistency: 2 }, mood: { position: 75, consistency: 3 } },
+  signals: { craft: 4, character: 4, expression: 4, narrative: 4, production: 3 }, complete: true,
+};
 let state = structuredClone(SAMPLE_STATE);
 let tier = "paid";
 
@@ -606,9 +629,10 @@ function buildAxes() {
       <div class="spectrum"><label class="sr" for="rng-${a.key}">${a.name} 위치</label><input type="range" id="rng-${a.key}" min="0" max="100" step="1">
       <div class="poles2"><span>${a.left}</span><span>${a.right}</span></div></div>
       <label class="sr" for="ev-${a.key}">${a.name} 근거</label>
+      <div class="srcline" id="src-${a.key}"></div>
       <textarea class="evidence" id="ev-${a.key}" rows="2" maxlength="160" placeholder="근거가 비어 있어요. 감수하면서 직접 적어 주세요."></textarea>`;
     box.appendChild(row);
-    row.querySelector("input").addEventListener("input", e => { state.axes[a.key].position = +e.target.value; refresh(); });
+    row.querySelector("input").addEventListener("input", e => { state.axes[a.key].position = +e.target.value; state.axes[a.key].edited = true; refresh(); });
     row.querySelector("textarea").addEventListener("input", e => { state.axes[a.key].evidence = e.target.value; });
     row.querySelectorAll(".dots button").forEach(b => b.addEventListener("click", () => { state.axes[a.key].consistency = +b.dataset.n; paintDots(row, +b.dataset.n); refresh(); }));
   });
@@ -617,10 +641,10 @@ function buildSignals() {
   const box = $("signals"); box.textContent = "";
   SIGNALS.forEach(x => {
     const row = document.createElement("div"); row.className = "sig"; row.id = "sg-" + x.key;
-    row.innerHTML = `<b>${x.name}</b>${dotsHTML(x.name)}<span class="d">${x.desc}</span>
+    row.innerHTML = `<b>${x.name}</b>${dotsHTML(x.name)}<span class="d">${x.desc}</span><span class="srcline d" id="ssrc-${x.key}"></span>
       <label class="sr" for="sgn-${x.key}">${x.name} 근거</label><textarea class="evidence" id="sgn-${x.key}" rows="1" maxlength="120" placeholder="근거 (선택)"></textarea>`;
     box.appendChild(row);
-    row.querySelectorAll(".dots button").forEach(b => b.addEventListener("click", () => { state.signals[x.key].score = +b.dataset.n; paintDots(row, +b.dataset.n); refresh(); }));
+    row.querySelectorAll(".dots button").forEach(b => b.addEventListener("click", () => { state.signals[x.key].score = +b.dataset.n; state.signals[x.key].edited = true; paintDots(row, +b.dataset.n); refresh(); }));
     row.querySelector("textarea").addEventListener("input", e => { state.signals[x.key].note = e.target.value; });
   });
 }
@@ -639,7 +663,7 @@ function renderRx() {
 }
 function renderAll() {
   const badge = $("res-badge");
-  badge.textContent = state.isSample ? "예시 결과 · 실제 수강생 아님" : (state.mode === "ai" ? "AI 진단 · 감수 중" : "자가 진단");
+  badge.textContent = state.isSample ? "예시 결과 · 실제 수강생 아님" : ({ both: "AI + 본인 체크 · 감수 중", ai: "AI 진단 · 감수 중", self: "본인 체크 진단" }[state.mode] || "진단");
   badge.classList.toggle("sample", !!state.isSample);
   $("res-summary").value = state.summary;
   AXES.forEach(a => { $("rng-" + a.key).value = state.axes[a.key].position; $("ev-" + a.key).value = state.axes[a.key].evidence || ""; paintDots($("ax-" + a.key), state.axes[a.key].consistency); });
@@ -661,6 +685,7 @@ $("tier-paid").addEventListener("click", () => setTier("paid"));
 let cardTimer = 0;
 function refresh() {
   $("res-who").textContent = `${state.name || "이름 없음"}님의 그림체`;
+  renderSources(); renderGap();
   const paths = scorePaths(state);
   const rec = recommendation(state, paths);
   // 점수표
@@ -715,11 +740,69 @@ function renderMarket(g, paths) {
     box.appendChild(alt);
   }
 }
+function renderSources() {
+  const src = state.sources || {};
+  AXES.forEach(a => {
+    const el = $("src-" + a.key); if (!el) return;
+    const A = src.ai && src.ai.axes[a.key], S = src.self && src.self.axes[a.key];
+    const parts = [];
+    if (A) parts.push(`AI ${A.position}`);
+    if (S && S.position != null) parts.push(`본인 ${S.position}`);
+    let t = parts.join(" · ");
+    if (A && S && S.position != null) t += ` → 합산 <b>${Math.round(MERGE.position * A.position + (1 - MERGE.position) * S.position)}</b> (AI ${MERGE.position * 100}%)`;
+    if (state.axes[a.key].edited) t += ` · 대표 수정 <b>${state.axes[a.key].position}</b>`;
+    el.innerHTML = t; el.hidden = !t;
+  });
+  SIGNALS.forEach(x => {
+    const el = $("ssrc-" + x.key); if (!el) return;
+    const A = src.ai && src.ai.signals[x.key], S = src.self && src.self.signals[x.key];
+    const parts = []; if (A != null) parts.push(`AI ${A}`); if (S != null) parts.push(`본인 ${S}`);
+    let t = parts.length > 1 ? parts.join(" · ") + ` → 합산 ${state.signals[x.key].score}` : "";
+    if (state.signals[x.key].edited) t += (t ? " · " : "") + `대표 수정 ${state.signals[x.key].score}`;
+    el.textContent = t; el.hidden = !t;
+  });
+}
+function renderGap() {
+  const box = $("gapbox"); box.textContent = "";
+  const g = computeGaps(state);
+  if (!g) { box.hidden = true; return; }
+  box.hidden = false;
+  const h = document.createElement("h4"); h.textContent = "본인 생각 vs 실제 그림";
+  const ag = document.createElement("span"); ag.className = "agree " + g.level; ag.textContent = `일치도 ${g.score} · ${AGREE_TXT[g.level]}`; h.appendChild(ag);
+  box.appendChild(h);
+  const note = document.createElement("p"); note.className = "hint";
+  note.textContent = g.level === "lo" ? "차이가 커요. 감수할 때 아래 항목부터 보고, 수강생에게 그림 2~3장을 더 받아 보세요. 이 차이가 곧 첫 수업 주제예요."
+    : g.items.length ? "아래가 본인이 느끼는 그림과 실제 그림이 갈리는 곳이에요. 차이가 가장 큰 축은 처방 1순위로 올렸어요."
+    : "큰 차이가 없어요. 본인이 자기 그림을 정확히 보고 있다는 뜻이에요.";
+  box.appendChild(note);
+  if (g.items.some(it => it.kind === "axis")) {
+    const lg = document.createElement("div"); lg.className = "gap-legend";
+    lg.innerHTML = '<span class="l-ai">AI가 본 그림</span><span class="l-me">본인 생각</span>'; box.appendChild(lg);
+  }
+  g.items.slice(0, 4).forEach(it => {
+    const row = document.createElement("div"); row.className = "gap-row";
+    const { head, tail } = gapSentence(it);
+    const b = document.createElement("b"); b.textContent = head; row.appendChild(b);
+    if (it.kind === "axis") {
+      const mini = document.createElement("div"); mini.className = "mini"; mini.setAttribute("role", "img"); mini.setAttribute("aria-label", head);
+      const i1 = document.createElement("i"); i1.className = "ai"; i1.style.left = it.ai + "%";
+      const i2 = document.createElement("i"); i2.className = "me"; i2.style.left = it.self + "%";
+      mini.append(i1, i2); row.appendChild(mini);
+    }
+    const t = document.createElement("span"); t.className = "hint"; t.textContent = tail; row.appendChild(t);
+    box.appendChild(row);
+  });
+}
 function dmText(paths, rec) {
   const name = state.name || "작가";
   const w = weakest(state, 1)[0];
   const sumLine = `한 줄로 정리하면 "${state.summary}"${hasBatchim(state.summary) ? "이에요" : "예요"}.`;
   const lines = [`${name}님, 6축 그림체 진단 결과 보내드려요.`, ``, sumLine];
+  const gp = computeGaps(state);
+  if (gp && gp.items.length) {
+    const n = tier === "paid" ? 2 : 1;
+    lines.push(``, `[본인 생각 vs 실제 그림] 일치도 ${gp.score}점`, ...gp.items.slice(0, n).map(it => { const { head, tail } = gapSentence(it); return `• ${head} → ${tail}`; }));
+  }
   if (tier === "free") {
     const st = [...paths].sort((a, b) => b.style - a.style)[0];
     lines.push(`그림체만 보면 ${st.name} 쪽에 가장 가깝고(${st.style}점), 가장 흔들리는 곳은 ${josa(w.name, "이에요", "예요")}.`, ``, `이번 주 처방`, `1. ${state.rx[0]?.title || ""} — ${state.rx[0]?.how || ""}`, ``,
@@ -783,10 +866,12 @@ async function drawCard(paths, rec) {
     ctx.fillText(a.right, trackX + trackW - ctx.measureText(a.right).width, y + 44);
     ctx.fillStyle = "#E2E7F0"; ctx.fillRect(trackX, y, trackW, 4);
     const r = 10 + ax.consistency * 2.4; const cx = clamp(trackX + trackW * (ax.position / 100), trackX + r, trackX + trackW - r);
+    const me = state.sources && state.sources.ai && state.sources.self && state.sources.self.axes[a.key] ? state.sources.self.axes[a.key].position : null;
+    if (me != null) { const mx = clamp(trackX + trackW * (me / 100), trackX + 14, trackX + trackW - 14); ctx.beginPath(); ctx.arc(mx, y + 2, 13, 0, Math.PI * 2); ctx.lineWidth = 4; ctx.strokeStyle = "#E0723A"; ctx.fillStyle = "#FFFFFF"; ctx.fill(); ctx.stroke(); }
     ctx.beginPath(); ctx.arc(cx, y + 2, r, 0, Math.PI * 2); ctx.fillStyle = "#1F3D8F"; ctx.globalAlpha = .35 + ax.consistency * .13; ctx.fill(); ctx.globalAlpha = 1;
     y += rowH;
   });
-  ctx.fillStyle = "#8A94A6"; ctx.font = '400 22px "Gothic A1", sans-serif'; ctx.fillText("점이 클수록 그 선택을 매번 일관되게 한다는 뜻이에요", PX, y + 8);
+  ctx.fillStyle = "#8A94A6"; ctx.font = '400 22px "Gothic A1", sans-serif'; ctx.fillText(state.sources && state.sources.ai && state.sources.self ? "● 종합 위치 (클수록 일관됨)   ○ 본인이 생각한 위치" : "점이 클수록 그 선택을 매번 일관되게 한다는 뜻이에요", PX, y + 8);
   const by = 1012; ctx.fillStyle = "#1F3D8F"; ctx.fillRect(0, by, W, 338);
   const paid = tier === "paid";
   const best = paid ? paths[0] : [...paths].sort((a, b) => b.style - a.style)[0];
@@ -831,7 +916,7 @@ async function drawCard2(paths, rec) {
 }
 
 /* ═════════ 6. 탭 ═════════ */
-const tabs = [["tab-ai", "pane-ai"], ["tab-self", "pane-self"], ["tab-lab", "pane-lab"], ["tab-hist", "pane-hist"]];
+const tabs = [["tab-ai", "pane-ai"], ["tab-lab", "pane-lab"], ["tab-hist", "pane-hist"]];
 function selectTab(id) {
   tabs.forEach(([t, p]) => { const on = t === id; $(t).setAttribute("aria-selected", String(on)); $(p).hidden = !on; });
   const wide = id === "tab-hist" || id === "tab-lab";
@@ -840,10 +925,13 @@ function selectTab(id) {
 }
 tabs.forEach(([t]) => $(t).addEventListener("click", () => selectTab(t)));
 
-/* ═════════ 7. 자가진단 ═════════ */
+/* ═════════ 7. 본인 체크 · 합치기 ═════════ */
 const selfAns = {};
+const SELF_TOTAL = AXES.length * 2 + SIGNALS.length;
+/* AI 비중. 위치·신호는 그림을 직접 본 AI를, 일관성은 평소 습관을 아는 본인을 더 믿는다 */
+const MERGE = { position: .6, consistency: .5, signal: .6 };
 function segHTML(label) { return `<div class="seg" role="group" aria-label="${label}">${[1,2,3,4,5].map(n => `<button type="button" data-v="${n}" aria-pressed="false">${n}</button>`).join("")}</div>`; }
-function bindSeg(seg, onPick) { seg.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; onPick(+b.dataset.v); seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); }); }
+function bindSeg(seg, onPick) { seg.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; onPick(+b.dataset.v); seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); updatePlan(); }); }
 function buildSelf() {
   const box = $("self-qs");
   const h1 = document.createElement("div"); h1.className = "qgroup"; h1.textContent = "그림체 6축"; box.appendChild(h1);
@@ -865,29 +953,115 @@ function buildSelf() {
     box.appendChild(q);
   });
 }
-$("btn-self").addEventListener("click", () => {
-  const st = $("self-status");
-  const missing = AXES.filter(a => selfAns[a.key].p == null || selfAns[a.key].c == null).map(a => a.name).concat(SIGNALS.filter(x => selfAns[x.key] == null).map(x => x.name));
-  if (missing.length) { st.className = "status err"; st.textContent = `아직 안 고른 문항이 있어요: ${missing.join(", ")}`; return; }
-  const next = { name: $("self-name").value.trim(), goal: $("self-goal").value, mode: "self", isSample: false, axes: {}, signals: {}, rx: [] };
-  AXES.forEach(a => { const { p, c } = selfAns[a.key]; next.axes[a.key] = { position: (p - 1) * 25, consistency: c, evidence: `본인 응답: ${p <= 2 ? a.left : p >= 4 ? a.right : "중간"} 쪽, 일관성 ${c}/5` }; });
-  SIGNALS.forEach(x => { next.signals[x.key] = { score: selfAns[x.key], note: "본인 응답" }; });
-  next.summary = summarize(next);
-  next.strengths = AXES.filter(a => next.axes[a.key].consistency >= 4).map(a => `• ${a.name}: ${next.axes[a.key].position >= 50 ? a.right : a.left} 쪽 선택이 안정적이에요`).concat(SIGNALS.filter(x => next.signals[x.key].score >= 4).map(x => `• ${josa(x.name, "이", "가")} 강점이에요`)).slice(0, 3).join("\n") || "• 아직 확실히 굳은 축은 없어요. 고를 수 있는 폭이 넓다는 뜻이기도 해요";
-  const weak = weakest(next, 3);
-  next.blockers = weak.slice(0, 2).map(w => `• ${josa(w.name, "이", "가")} 약해요 (${w.v}/5)`).join("\n");
-  next.rx = weak.map(w => ({ ...RX_LIB[w.key] }));
-  state = next; renderAll();
-  const paths = scorePaths(state);
-  st.className = "status ok"; st.textContent = `결과가 나왔어요. 상업성 1위는 ${josa(paths[0].name, "이에요", "예요")}.`;
-  if (matchMedia("(max-width: 880px)").matches) $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+$("btn-self-reset").addEventListener("click", () => {
+  AXES.forEach(a => { selfAns[a.key] = { p: null, c: null }; }); SIGNALS.forEach(x => { selfAns[x.key] = null; });
+  $("self-qs").querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", "false"));
+  updatePlan();
 });
+function selfCount() {
+  let n = 0;
+  AXES.forEach(a => { if (selfAns[a.key].p != null) n++; if (selfAns[a.key].c != null) n++; });
+  SIGNALS.forEach(x => { if (selfAns[x.key] != null) n++; });
+  return n;
+}
+function selfSource() {
+  const n = selfCount(); if (!n) return null;
+  const out = { axes: {}, signals: {}, complete: n === SELF_TOTAL, count: n };
+  AXES.forEach(a => { const { p, c } = selfAns[a.key]; out.axes[a.key] = { position: p == null ? null : (p - 1) * 25, consistency: c }; });
+  SIGNALS.forEach(x => { out.signals[x.key] = selfAns[x.key]; });
+  return out;
+}
+function updatePlan() {
+  const n = selfCount();
+  const sp = $("self-progress"); sp.textContent = `${n}/${SELF_TOTAL}`; sp.classList.toggle("done", n === SELF_TOTAL);
+  const ap = $("ai-progress"); ap.textContent = sampleFn ? `그림 ${files.length}장` : "이 화면에선 쓸 수 없음"; ap.classList.toggle("done", !!(files.length && sampleFn));
+  const useAI = files.length > 0 && !!sampleFn;
+  let plan, ok = true;
+  if (useAI && n === SELF_TOTAL) plan = "본인 체크와 AI 분석을 합쳐 판정하고, 둘이 다른 곳을 짚어 줘요.";
+  else if (useAI && n > 0) plan = `AI 분석에 본인 체크 ${n}개 항목을 합쳐요. 17개를 다 고르면 비교가 더 정확해져요.`;
+  else if (useAI) plan = "AI 분석만으로 판정해요. 본인 체크를 더하면 본인 생각과 실제 그림의 차이까지 볼 수 있어요.";
+  else if (n === SELF_TOTAL) plan = "본인 체크만으로 판정해요. 그림을 올리면 실제 그림과 비교할 수 있어요.";
+  else if (n > 0) { plan = `본인 체크만 쓰려면 17개를 모두 골라 주세요 (지금 ${n}개). 아니면 그림을 올려 주세요.`; ok = false; }
+  else { plan = "본인 체크를 하거나 그림을 올리면 결과를 만들 수 있어요."; ok = false; }
+  $("plan-line").textContent = plan;
+  $("btn-analyze").disabled = !ok || busy;
+}
 function summarize(s) {
   const pick = (k, l, r) => s.axes[k].position >= 55 ? r : s.axes[k].position <= 45 ? l : null;
   const adj = pick("line", "자유로운 선의", "단정한 선의") || pick("texture", "평면적인", "손맛 있는") || "균형 잡힌";
   const noun = pick("mood", "관찰자", "이야기꾼") || pick("form", "캐릭터 메이커", "묘사가") || "실험가";
   const mid = pick("color", "담백한", "선명한") || pick("comp", "차분한", "역동적인") || "";
   return [adj, mid, noun].filter(Boolean).join(" ");
+}
+const sideOf = (a, v) => v <= 40 ? a.left : v >= 60 ? a.right : "중간";
+/* 본인 생각 vs 실제 그림 */
+function computeGaps(s) {
+  const src = s.sources; if (!src || !src.ai || !src.self) return null;
+  const items = [], dA = [], dS = [];
+  AXES.forEach(a => {
+    const A = src.ai.axes[a.key].position, S = src.self.axes[a.key] && src.self.axes[a.key].position;
+    if (S == null) return; const d = Math.abs(A - S); dA.push(d);
+    if (d >= 25) items.push({ kind: "axis", key: a.key, name: a.name, ai: A, self: S, diff: d, w: d });
+  });
+  SIGNALS.forEach(x => {
+    const A = src.ai.signals[x.key], S = src.self.signals[x.key];
+    if (S == null) return; const d = Math.abs(A - S); dS.push(d);
+    if (d >= 2) items.push({ kind: "signal", key: x.key, name: x.name, ai: A, self: S, diff: d, w: d * 20 });
+  });
+  if (!dA.length && !dS.length) return null;
+  const score = Math.round(clamp(100 - (dA.length ? avg(dA) : 0) * 1.6 - (dS.length ? avg(dS) : 0) * 12, 0, 100));
+  items.sort((x, y) => y.w - x.w);
+  return { score, level: score >= 75 ? "hi" : score >= 55 ? "mid" : "lo", items };
+}
+const AGREE_TXT = { hi: "높음", mid: "보통", lo: "낮음" };
+function gapSentence(it) {
+  if (it.kind === "axis") {
+    const a = AXES.find(x => x.key === it.key);
+    const sS = sideOf(a, it.self), sA = sideOf(a, it.ai);
+    const head = `${a.name}: 본인은 ${sS}(${it.self}), 그림은 ${sA}(${it.ai})`;
+    const tail = sS !== sA && sS !== "중간" && sA !== "중간" ? "의도한 방향이 그림에 아직 안 나와요." : "방향은 비슷한데 정도 차이가 커요.";
+    return { head, tail };
+  }
+  const head = `${it.name}: 본인 ${it.self}/5 · 그림 ${it.ai}/5`;
+  const tail = it.self > it.ai ? "스스로 더 높게 보고 있어요. 상품으로 낼 때 먼저 걸리는 곳이에요." : "그림이 본인 생각보다 나아요. 강점으로 써도 됩니다.";
+  return { head, tail };
+}
+function buildResult(base, ai, self) {
+  const s = ai ? structuredClone(ai) : { axes: {}, signals: {}, rx: [] };
+  s.name = base.name; s.goal = base.goal; s.isSample = false;
+  s.mode = ai && self ? "both" : ai ? "ai" : "self";
+  s.sources = {
+    ai: ai ? { axes: Object.fromEntries(AXES.map(a => [a.key, { position: ai.axes[a.key].position, consistency: ai.axes[a.key].consistency }])), signals: Object.fromEntries(SIGNALS.map(x => [x.key, ai.signals[x.key].score])) } : null,
+    self: self ? { axes: Object.fromEntries(AXES.map(a => [a.key, { ...self.axes[a.key] }])), signals: { ...self.signals } } : null,
+  };
+  AXES.forEach(a => {
+    const A = ai && ai.axes[a.key], S = self && self.axes[a.key];
+    if (A) {
+      const pos = S && S.position != null ? Math.round(MERGE.position * A.position + (1 - MERGE.position) * S.position) : A.position;
+      const cons = S && S.consistency != null ? Math.round(MERGE.consistency * A.consistency + (1 - MERGE.consistency) * S.consistency) : A.consistency;
+      s.axes[a.key] = { position: pos, consistency: clamp(cons, 1, 5), evidence: A.evidence };
+    } else {
+      s.axes[a.key] = { position: S.position, consistency: S.consistency, evidence: `본인 응답: ${sideOf(a, S.position)} 쪽, 일관성 ${S.consistency}/5` };
+    }
+  });
+  SIGNALS.forEach(x => {
+    const A = ai && ai.signals[x.key], S = self && self.signals[x.key];
+    if (A) s.signals[x.key] = { score: S != null ? clamp(Math.round(MERGE.signal * A.score + (1 - MERGE.signal) * S), 1, 5) : A.score, note: A.note };
+    else s.signals[x.key] = { score: S, note: "본인 응답" };
+  });
+  if (!ai) {
+    s.summary = summarize(s);
+    s.strengths = AXES.filter(a => s.axes[a.key].consistency >= 4).map(a => `• ${a.name}: ${s.axes[a.key].position >= 50 ? a.right : a.left} 쪽 선택이 안정적이에요`).concat(SIGNALS.filter(x => s.signals[x.key].score >= 4).map(x => `• ${josa(x.name, "이", "가")} 강점이에요`)).slice(0, 3).join("\n") || "• 아직 확실히 굳은 축은 없어요. 고를 수 있는 폭이 넓다는 뜻이기도 해요";
+    const weak = weakest(s, 3);
+    s.blockers = weak.slice(0, 2).map(w => `• ${josa(w.name, "이", "가")} 약해요 (${w.v}/5)`).join("\n");
+    s.rx = weak.map(w => ({ ...RX_LIB[w.key] }));
+  }
+  const g = computeGaps(s);
+  const topAxis = g && g.items.find(it => it.kind === "axis");
+  if (topAxis && !s.rx.some(r => r.title === RX_LIB[topAxis.key].title)) {
+    s.rx = [{ title: RX_LIB[topAxis.key].title, how: `${RX_LIB[topAxis.key].how} (본인 생각과 그림이 ${topAxis.diff}점 달라서 1순위)` }, ...s.rx].slice(0, 3);
+  }
+  return s;
 }
 
 /* ═════════ 8. 이미지 입력 ═════════ */
@@ -900,7 +1074,7 @@ function renderThumbs() {
     const x = document.createElement("button"); x.type = "button"; x.textContent = "×"; x.setAttribute("aria-label", `그림 ${i + 1} 빼기`); x.onclick = () => { files.splice(i, 1); renderThumbs(); };
     d.append(img, x); box.appendChild(d);
   });
-  $("btn-analyze").disabled = !files.length || !sampleFn || busy;
+  updatePlan();
 }
 const isImg = f => /^image\/(jpeg|png|webp|gif)$/.test(f.type);
 function addFiles(list) {
@@ -991,27 +1165,46 @@ const FATAL = ["not_granted", "sampling_disabled", "images_unavailable", "not_de
 function runAI(imgs, goal, note, signal) {
   return sampleFn.json(buildPrompt(imgs.length, goal, note), { images: imgs, modelTier: "default", signal, cache: false });
 }
+function scrollResult() { if (matchMedia("(max-width: 880px)").matches) $("result").scrollIntoView({ behavior: "smooth", block: "start" }); }
 $("btn-analyze").addEventListener("click", async () => {
-  if (!sampleFn || !files.length || busy) return;
-  const st = $("ai-status"), stop = $("btn-stop");
-  ctl = new AbortController(); busy = true; renderThumbs(); stop.hidden = false;
+  if (busy) return;
+  const self = selfSource();
+  const useAI = files.length > 0 && !!sampleFn;
+  if (!useAI && !(self && self.complete)) return;
+  const base = { name: $("in-name").value.trim(), goal: $("in-goal").value };
+  const st = $("ai-status");
+  if (!useAI) {
+    state = buildResult(base, null, self); renderAll();
+    st.className = "status ok"; st.textContent = `본인 체크로 결과를 만들었어요. 상업성 1위는 ${josa(scorePaths(state)[0].name, "이에요", "예요")}.`;
+    scrollResult(); return;
+  }
+  const stop = $("btn-stop");
+  ctl = new AbortController(); busy = true; updatePlan(); updateLab(); stop.hidden = false;
   st.className = "status"; st.innerHTML = '<span class="row"><span class="spinner"></span><span id="tick">그림을 보고 있어요</span></span>';
   const t0 = Date.now();
   const tick = setInterval(() => { const el = $("tick"); if (el) el.textContent = `그림을 보고 있어요 · ${Math.round((Date.now() - t0) / 1000)}초 (보통 20~60초)`; }, 1000);
-  const base = { name: $("in-name").value.trim(), goal: $("in-goal").value };
   try {
     const raw = await runAI(files, base.goal, $("in-note").value, ctl.signal);
-    state = coerceAI(raw, base); renderAll();
-    st.className = "status ok"; st.textContent = "AI 관찰이 끝났어요. 오른쪽 결과지를 감수해 주세요.";
-    if (matchMedia("(max-width: 880px)").matches) $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+    state = buildResult(base, coerceAI(raw, base), self); renderAll();
+    const g = computeGaps(state);
+    st.className = "status ok";
+    st.textContent = g ? `AI 분석과 본인 체크를 합쳤어요. 일치도 ${g.score}점(${AGREE_TXT[g.level]}). 결과지를 감수해 주세요.` : "AI 관찰이 끝났어요. 결과지를 감수해 주세요.";
+    scrollResult();
   } catch (e) {
     const code = e && e.code;
     if (code === "cancelled") { st.className = "status"; st.textContent = "멈췄어요."; }
-    else { st.className = "status err"; st.textContent = ERR_COPY[code] || "연결이 끊겼어요. 잠시 뒤 다시 눌러 주세요."; if (FATAL.includes(code)) disableAI(); }
-  } finally { clearInterval(tick); stop.hidden = true; ctl = null; busy = false; renderThumbs(); updateLab(); }
+    else {
+      if (FATAL.includes(code)) disableAI();
+      const msg = ERR_COPY[code] || "연결이 끊겼어요. 잠시 뒤 다시 눌러 주세요.";
+      if (self && self.complete) {
+        state = buildResult(base, null, self); renderAll();
+        st.className = "status err"; st.textContent = `${msg} 대신 본인 체크만으로 결과를 만들었어요.`;
+      } else { st.className = "status err"; st.textContent = msg; }
+    }
+  } finally { clearInterval(tick); stop.hidden = true; ctl = null; busy = false; updatePlan(); updateLab(); }
 });
 $("btn-stop").addEventListener("click", () => ctl?.abort());
-function disableAI(msg) { sampleFn = null; $("ai-note").textContent = msg || "이 화면에서는 AI 진단을 쓸 수 없어요. 자가 진단 탭으로 같은 결과지를 만들 수 있어요."; renderThumbs(); updateLab(); }
+function disableAI(msg) { sampleFn = null; $("ai-note").textContent = msg || "이 화면에서는 AI 분석을 쓸 수 없어요. 본인 체크 17문항만으로도 같은 결과지가 나옵니다."; renderThumbs(); updateLab(); }
 
 /* ═════════ 10. 검증 실험실 ═════════ */
 let labFiles = [], labCtl = null;
@@ -1154,7 +1347,8 @@ function snapshotForSave() {
     name: state.name || "", goal: state.goal || "unknown", mode: state.mode, tier, summary: state.summary,
     axes: AXES.map(a => ({ key: a.key, position: state.axes[a.key].position, consistency: state.axes[a.key].consistency, evidence: state.axes[a.key].evidence || "" })),
     signals: SIGNALS.map(x => ({ key: x.key, score: state.signals[x.key].score, note: state.signals[x.key].note || "" })),
-    strengths: state.strengths, blockers: state.blockers, rx: state.rx,
+    strengths: state.strengths, blockers: state.blockers, rx: state.rx, sources: state.sources || null,
+    agreement: (computeGaps(state) || {}).score ?? null,
     topGenre: paths[0].key, topScore: paths[0].total, topGrade: paths[0].grade, createdAt: Date.now(),
   };
 }
@@ -1177,7 +1371,7 @@ function renderHist(docs) {
     const t = document.createElement("div"); t.className = "t"; t.textContent = `${v.name || "이름 없음"} · ${v.summary || ""}`;
     const g = GENRES.find(x => x.key === v.topGenre);
     const m = document.createElement("div"); m.className = "m";
-    m.textContent = `${new Date(Number(v.createdAt) || 0).toLocaleDateString("ko-KR")} · ${v.mode === "ai" ? "AI" : "자가"} · ${v.tier === "free" ? "무료" : "유료"} · ${g ? g.name : "-"} ${Number(v.topScore) || ""}${v.topGrade ? " " + String(v.topGrade).slice(0, 1) : ""}`;
+    m.textContent = `${new Date(Number(v.createdAt) || 0).toLocaleDateString("ko-KR")} · ${({ ai: "AI", both: "AI+본인", self: "본인" })[v.mode] || "본인"}${Number.isFinite(v.agreement) ? " · 일치 " + v.agreement : ""} · ${v.tier === "free" ? "무료" : "유료"} · ${g ? g.name : "-"} ${Number(v.topScore) || ""}${v.topGrade ? " " + String(v.topGrade).slice(0, 1) : ""}`;
     left.append(t, m);
     const acts = document.createElement("div"); acts.className = "row";
     const open = document.createElement("button"); open.className = "btn ghost"; open.textContent = "열기";
@@ -1191,21 +1385,34 @@ function renderHist(docs) {
     acts.append(open, del); it.append(left, acts); box.appendChild(it);
   });
 }
+function sanitizeSources(src) {
+  if (!src || typeof src !== "object") return null;
+  const one = (o) => {
+    if (!o || typeof o !== "object" || !o.axes) return null;
+    const num = (v, lo, hi) => v == null || !Number.isFinite(Number(v)) ? null : clamp(Number(v), lo, hi);
+    return { axes: Object.fromEntries(AXES.map(a => [a.key, { position: num(o.axes[a.key]?.position, 0, 100), consistency: num(o.axes[a.key]?.consistency, 1, 5) }])),
+      signals: Object.fromEntries(SIGNALS.map(x => [x.key, num(o.signals?.[x.key], 1, 5)])) };
+  };
+  return { ai: one(src.ai), self: one(src.self) };
+}
 function fromSaved(v) {
-  const s = { name: String(v.name || ""), goal: String(v.goal || "unknown"), mode: v.mode === "ai" ? "ai" : "self", isSample: false,
+  const s = { name: String(v.name || ""), goal: String(v.goal || "unknown"), mode: ["ai", "both", "self"].includes(v.mode) ? v.mode : "self", isSample: false,
     summary: String(v.summary || ""), strengths: String(v.strengths || ""), blockers: String(v.blockers || ""), axes: {}, signals: {}, rx: [] };
   if (!GENRES.some(g => g.key === s.goal)) s.goal = "unknown";
   AXES.forEach(a => { const x = (Array.isArray(v.axes) ? v.axes : []).find(y => y && y.key === a.key) || {};
     s.axes[a.key] = { position: clamp(Number(x.position ?? 50), 0, 100), consistency: clamp(Number(x.consistency) || 3, 1, 5), evidence: String(x.evidence || "") }; });
   SIGNALS.forEach(k => { const x = (Array.isArray(v.signals) ? v.signals : []).find(y => y && y.key === k.key) || {};
     s.signals[k.key] = { score: clamp(Number(x.score) || 3, 1, 5), note: String(x.note || "") }; });
+  s.sources = sanitizeSources(v.sources);
   s.rx = (Array.isArray(v.rx) ? v.rx : []).slice(0, 3).map(r => ({ title: String(r?.title || ""), how: String(r?.how || "") }));
   weakest(s, 11).forEach(w => { if (s.rx.length < 3 && !s.rx.some(r => r.title === RX_LIB[w.key].title)) s.rx.push({ ...RX_LIB[w.key] }); });
   return s;
 }
 
 /* ═════════ 12. 시작 ═════════ */
-buildAxes(); buildSignals(); buildSelf(); renderAll(); setTier("paid"); renderSim(); updateLab();
+buildAxes(); buildSignals(); buildSelf();
+state = Object.assign(buildResult({ name: SAMPLE_STATE.name, goal: SAMPLE_STATE.goal }, SAMPLE_STATE, SAMPLE_SELF), { isSample: true });
+renderAll(); setTier("paid"); renderSim(); updateLab(); updatePlan();
 try { const t = localStorage.getItem("otw6-tab"); if (t && $(t)) selectTab(t); } catch (e) {}
 
 const C = window.claude;
@@ -1232,6 +1439,6 @@ function renderHistUnavailable(msg) {
   const e = document.createElement("div"); e.className = "empty"; e.textContent = msg || "이 화면에서는 진단 기록을 쓸 수 없어요. 소유자 계정으로 claude.ai에서 열면 보여요.";
   box.appendChild(e);
 }
-window.__otw = { scorePaths, recommendation, summarize, coerceAI, renderSim, gapsFor, hasBatchim, dmText: () => $("dm").value, setTier, get state() { return state; }, set state(v) { state = v; renderAll(); } };
+window.__otw = { buildResult, computeGaps, MERGE, scorePaths, recommendation, summarize, coerceAI, renderSim, gapsFor, hasBatchim, dmText: () => $("dm").value, setTier, get state() { return state; }, set state(v) { state = v; renderAll(); } };
 })();
 </script>
