@@ -8,19 +8,35 @@
 "use strict";
 
 /* ═════════ 0. 설정 (링크·가격) ═════════ */
+const LINKS = {
+  insta: "https://www.instagram.com/other.than.works/",
+  notion: "https://otherthanworks.notion.site/Other-than-Works-1ef94681837c801fb46be82f3ce30b67",
+  clubForm: "https://docs.google.com/forms/d/e/1FAIpQLSdMA5IyvWvyUHV39iuQckXqlgUk3viVKqgXHVQG7DjlfEi5BQ/viewform",
+};
 const CONFIG = {
   brand: "아더댄웍스",
   insta: "@other.than.works",
-  instaUrl: "https://www.instagram.com/other.than.works/",
+  instaUrl: LINKS.insta,
   price: { report: 29000, launch: 19000 },
-  // 아래 링크는 대표가 채운다. 비어 있으면 버튼이 '준비 중'으로 보인다.
+  // 비어 있으면 죽이지 않고 폴백한다: report·kakao → 인스타 DM, classes → 공식 노션 (linkFor 참고)
   links: {
-    report: "",   // 유료 리포트 결제 (네이버 예약·스마트스토어)
-    classes: "",  // 수업 안내 페이지 (블로그·노션)
-    kakao: "",    // 카카오톡 채널 1:1 문의
+    report: "",              // 유료 리포트 결제 (네이버 예약·스마트스토어). 비면 인스타 DM
+    classes: LINKS.notion,   // 수업 안내 (공식 노션)
+    kakao: "",               // 카카오톡 채널 1:1 문의. 비면 인스타 DM
   },
   leadEndpoint: "", // 구글 Apps Script 웹앱 주소 (lead-collector.gs 배포 후)
+  assets: { typeDir: "./assets/types/" }, // 유형 일러스트: {typeDir}{유형 key}.png
 };
+const isHttps = (u) => typeof u === "string" && /^https:\/\/[^\s]+$/.test(u);
+/* 버튼에 쓸 링크. 비어 있으면 자연스러운 대안으로 바꾼다. via: "link" | "dm" | "notion" */
+function linkFor(kind) {
+  const L = CONFIG.links;
+  if (kind === "report") return isHttps(L.report) ? { url: L.report, label: "유료 리포트 신청", via: "link" } : { url: LINKS.insta, label: "인스타 DM으로 리포트 신청", via: "dm" };
+  if (kind === "kakao") return isHttps(L.kakao) ? { url: L.kakao, label: "카카오톡 문의", via: "link" } : { url: LINKS.insta, label: "인스타 DM 문의", via: "dm" };
+  if (kind === "classes") return { url: isHttps(L.classes) ? L.classes : LINKS.notion, label: "수업 둘러보기", via: "notion" };
+  return { url: LINKS.insta, label: CONFIG.insta, via: "dm" };
+}
+const typeImage = (key) => CONFIG.assets.typeDir + key + ".png";
 
 /* ═════════ 1. 규칙 ═════════ */
 const AXES = [
@@ -55,7 +71,7 @@ const SIGNALS = [
 /* target = 6축 목표 위치, w = 6축 가중치, ready = 준비도 가중치 (완성도, 캐릭터, 표정, 서사, 상품화, 일관성) */
 const GENRES = [
   { key: "picturebook", name: "그림책", target: [45, 40, 50, 65, 62, 78], w: [.4, .5, .5, .8, .8, 1],
-    ready: [.25, .15, .1, .3, 0, .2], product: "픽처포지(그림책반)", extra: "그림책 만들기 자습서 2장 '캐릭터와 스타일'부터" },
+    ready: [.25, .15, .1, .3, 0, .2], product: "픽처포지(그림책반)", extra: "그림책 만들기 자습서 3장 '캐릭터/스타일'부터" },
   { key: "emoticon", name: "이모티콘", target: [76, 15, 66, 22, 32, 80], w: [.8, 1, .5, .7, .4, .6],
     ready: [.1, .25, .45, 0, .1, .1], product: "이모티콘반", extra: "표정 24컷 시트로 선 두께부터 통일" },
   { key: "goods", name: "캐릭터 굿즈", target: [72, 28, 62, 30, 38, 45], w: [1, .8, .6, .7, .4, .5],
@@ -69,6 +85,14 @@ const MIX = { style: .45, ready: .35, market: .20 };
 /* 이모티콘 문턱: 귀엽고 깔끔하다고 이모티콘이 아니다. 대화에 쓰일 표정 폭과 고정 캐릭터가 있어야 한다.
    문턱을 못 넘으면 감점해서 굿즈·그림책 쪽으로 넘긴다. */
 const EMOTICON_GATE = { expression: 4, character: 4, line: 62, penalty: { expression: 9, character: 7, line: 5 } };
+/* 그림책 만들기 자습서 실제 목차 (4단계) */
+const TUTORIAL = [
+  { no: 1, title: "기획", does: "누구에게 무슨 이야기를 할지 한 줄로 정하고 16장면의 뼈대를 세워요" },
+  { no: 2, title: "글", does: "그림이 말할 것과 글이 말할 것을 나누고, 소리 내어 읽히는 문장으로 다듬어요" },
+  { no: 3, title: "캐릭터/스타일", does: "주인공 설정표와 그림체 규칙(선·색·질감)을 고정하고 대표 장면을 완성해요" },
+  { no: 4, title: "공모전/투고", does: "더미북과 기획서로 투고 패키지를 만들고 공모전·출판사 일정에 맞춰 보내요" },
+];
+const TUTORIAL_LINE = TUTORIAL.map(t => `${t.no}.${t.title}`).join(" → ");
 const ROUTINE = { key: "routine", name: "드로잉 루틴반", why: "위치보다 반복이 먼저예요. 같은 선택을 4주 반복하면 그림체가 생깁니다." };
 const GRADE_TXT = { A: "바로 상품화 가능", B: "3개월 준비하면 상품화", C: "기초를 다진 뒤 도전", D: "지금은 다른 길이 유리" };
 
@@ -353,7 +377,7 @@ const PATH_GUIDE = {
       ["독립출판", "정가 15,000원 × 300부 − 제작비 (부당 6,000~8,000원 추정)", "약 210~270만 원"],
       ["2차 수익", "그림책 수업·도서관 강연·원화 전시·아트 프린트", "책 한 권이 명함이 되어 계속 발생"],
     ],
-    roadmap: [["1~2주", "주인공 설정표 (도형 비율·특징 3가지·말버릇) + 이야기 한 줄 요약"], ["3~4주", "16장면 썸네일 스토리보드. 펼침면 단위로 넘김의 리듬 만들기"], ["5~6주", "러프 더미북 1권. 글을 붙여 소리 내어 읽어 보기"], ["7~8주", "대표 장면 원화 3장으로 그림체 고정 (질감·팔레트 확정)"], ["9~10주", "주변 독자 5명 피드백 → 글과 그림이 같은 말을 하는 장면 덜어내기"], ["11주", "투고 패키지: 기획서 1쪽, 더미북 PDF, 원화 3장"], ["12주", "출판사 10곳 투고 + 공모전 일정표 정리"]],
+    roadmap: [["1~2주 · 1.기획", "이야기 한 줄 요약 + 16장면 썸네일 스토리보드 (펼침면 단위로 넘김의 리듬 만들기)"], ["3~4주 · 2.글", "장면별 글 초안 → 소리 내어 읽기 → 그림이 이미 말하는 문장 덜어내기"], ["5~6주 · 3.캐릭터/스타일", "주인공 설정표 (도형 비율·특징 3가지·말버릇) + 그림체 규칙 (선·팔레트·질감) 고정"], ["7~8주 · 3.캐릭터/스타일", "대표 장면 원화 3장 + 러프 더미북 1권"], ["9~10주 · 4.공모전/투고", "주변 독자 5명 피드백 반영, 투고 패키지 (기획서 1쪽, 더미북 PDF, 원화 3장)"], ["11~12주 · 4.공모전/투고", "공모전 일정표 정리 + 출판사 10곳 투고"]],
     checklist: ["같은 캐릭터가 나오는 장면 3장 이상", "펼침면 구도 1장 (왼쪽 → 오른쪽으로 시선이 넘어가는지)", "감정이 바뀌는 연속 장면 2장", "표지 시안 1장", "글과 그림이 서로 다른 것을 말하는 장면 1장"],
     mistakes: ["예쁜 한 장만 모으기: 출판사는 '이야기를 끌고 갈 사람'을 찾아요", "캐릭터가 장면마다 달라지기: 머리 비율·옷 색이 바뀌면 다른 인물로 읽혀요", "글이 그림을 설명만 하기: 그림이 보여 주는 걸 글이 또 말하면 지루해져요", "계약 조건을 모른 채 서명하기: 2차 저작물·원화 소유권 조항부터 확인하세요"],
     refs: ["서점 그림책 코너에서 같은 출판사 책 5권의 판형·쪽수·글밥을 메모하기", "볼로냐 라가치상 수상작 목록 훑어보기", "가고 싶은 출판사 3곳의 투고 안내 페이지 저장하기"],
@@ -422,31 +446,66 @@ const PATH_GUIDE = {
 
 /* 수업 소개: 대표가 실제 커리큘럼으로 바꿔 쓰는 곳 */
 const CLASSES = {
-  routine: { name: "드로잉 루틴반", promise: "4주 뒤, 매번 바뀌던 그림이 '내 그림'으로 굳어요",
+  routine: { name: "드로잉 루틴반", link: LINKS.notion, promise: "4주 뒤, 매번 바뀌던 그림이 '내 그림'으로 굳어요",
     why: "지금은 어떤 길보다 반복이 먼저예요. 혼자 하면 2주 차에 끊기는 부분을 수업은 매일 과제와 피드백으로 이어 줍니다.",
     steps: ["1주: 내 그림 10장에서 축별 습관 찾기", "2주: 선·색 규칙 고정 (브러시 1종, 팔레트 4색)", "3주: 같은 주인공 매일 1컷", "4주: 6축 재진단으로 변화 확인"],
     outcome: "같은 규칙으로 그린 20장 + 재진단 리포트" },
-  picturebook: { name: "픽처포지(그림책반)", promise: "더미북 한 권과 투고 패키지를 손에 쥐고 끝나요",
+  picturebook: { name: "픽처포지(그림책반)", link: LINKS.notion, promise: "더미북 한 권과 투고 패키지를 손에 쥐고 끝나요",
     why: "그림책은 '한 장을 잘 그리는 것'과 '열여섯 장면을 끌고 가는 것'이 전혀 다른 기술이에요. 수업에서는 장면 설계와 그림체 고정을 같이 다룹니다.",
-    steps: ["캐릭터·세계관 설정표", "16장면 스토리보드와 넘김의 리듬", "더미북 제작과 낭독 피드백", "원화 3장과 투고 패키지"],
+    steps: ["1.기획: 이야기 한 줄과 16장면 스토리보드", "2.글: 그림과 글이 할 말 나누기, 낭독 피드백", "3.캐릭터/스타일: 설정표·그림체 규칙·원화 3장", "4.공모전/투고: 더미북과 투고 패키지"],
     outcome: "더미북 1권, 원화 3장, 투고 기획서" },
-  emoticon: { name: "이모티콘반", promise: "제안 가능한 24컷 한 세트로 끝나요",
+  emoticon: { name: "이모티콘반", link: LINKS.notion, promise: "제안 가능한 24컷 한 세트로 끝나요",
     why: "이모티콘은 그림 실력보다 '어떤 감정을 고르느냐'에서 승부가 나요. 수업에서는 대화 빈도로 감정을 고르고 작은 화면 가독성을 같이 잡습니다.",
     steps: ["캐릭터 1종 확정과 실루엣 테스트", "감정 24개 고르기", "러프 → 클린업 (선 두께·색 통일)", "플랫폼별 규격 변환과 제안"],
     outcome: "제안용 24컷 세트, 플랫폼별 파일" },
-  goods: { name: "굿즈반 + 캐릭터 키트", promise: "팔 수 있는 굿즈 2종과 원가표로 끝나요",
+  goods: { name: "굿즈반 + 캐릭터 키트", link: LINKS.notion, promise: "팔 수 있는 굿즈 2종과 원가표로 끝나요",
     why: "굿즈는 그림을 물건에 얹는 일이 아니라 '쓰임'을 디자인하는 일이에요. 아더댄웍스 작업실의 크리컷·3D 프린터로 시제품까지 직접 만들어 봅니다.",
     steps: ["대표 캐릭터와 포즈 6종", "스티커 칼선·인쇄 규칙", "크리컷·3D 시제품 제작", "원가표와 판매 채널 정하기"],
     outcome: "스티커 시트 1종, 키링 1종, 원가표" },
-  instatoon: { name: "콘텐츠반(릴스·협찬)", promise: "12편 연재와 미디어킷으로 끝나요",
+  instatoon: { name: "콘텐츠반(릴스·협찬)", link: LINKS.notion, promise: "12편 연재와 미디어킷으로 끝나요",
     why: "인스타툰은 그림보다 '계속 올리는 구조'가 매출을 만들어요. 소재 노트, 포맷 고정, 협찬 제안까지 한 흐름으로 다룹니다.",
     steps: ["캐릭터·말투·세계관", "소재 노트 30개와 4컷 구조", "12편 연재와 반응 분석", "광고툰 샘플과 미디어킷"],
     outcome: "연재 12편, 광고툰 2편, 미디어킷" },
-  portfolio: { name: "포트폴리오반", promise: "단가를 부를 수 있는 6장 묶음으로 끝나요",
+  portfolio: { name: "포트폴리오반", link: LINKS.notion, promise: "단가를 부를 수 있는 6장 묶음으로 끝나요",
     why: "의뢰인은 실력보다 '맡기면 뭐가 나오는지'를 봐요. 수업에서는 분야 하나를 정해 같은 그림체 6장과 가격표를 만듭니다.",
     steps: ["분야 정하기와 가상 브리프", "같은 그림체 6장 제작", "포트폴리오 PDF·가격표", "제안 메일과 첫 의뢰"],
     outcome: "포트폴리오 6장, PDF, 가격표, 제안 메일 템플릿" },
+  vintageClub: { name: "12월 빈티지 온라인 드로잉 클럽", link: LINKS.clubForm, online: true,
+    promise: "12월 2일(수) 저녁 8시 30분 개강 · 프로크리에이트 4주 과정",
+    why: "집에서 아이패드로 4주 동안 같은 톤의 그림을 쌓는 클럽이에요. 매주 정해진 시간에 함께 그리니 혼자 할 때 끊기는 2주 차를 넘기기 쉬워요.",
+    steps: ["매주 수요일 저녁 8시 30분 온라인 라이브", "주차별 워크시트 과제", "놓친 수업은 녹화본으로 복습", "4주 동안 한 가지 빈티지 톤으로 작품 쌓기"],
+    outcome: "같은 톤으로 그린 4주치 작품과 프로크리에이트 작업 습관",
+    startsAt: "2026-12-02T20:30:00+09:00", closeAt: "2026-12-02T20:30:00+09:00", cta: "클럽 신청하기" },
+  workshop: { name: "1:1 맞춤 워크숍", link: "", online: true,
+    promise: "단기 4회 55만 원 · 중기 12회 프로젝트형 · 온라인/오프라인 조율",
+    why: "리포트에서 나온 막히는 지점을 내 그림 기준으로 바로 고치는 수업이에요. 단기는 한 가지 문제를 집중 해결하고, 중기는 그림책·굿즈·포트폴리오 같은 프로젝트 하나를 끝까지 완성해요.",
+    steps: ["상담: 목표와 지금 그림 확인 (이 리포트를 출발점으로)", "단기 4회 (55만 원): 막힌 지점 하나 집중 해결", "중기 12회 (프로젝트형, 상담 후 안내): 프로젝트 하나 완성", "온라인·오프라인 중 편한 방식으로 일정 조율"],
+    outcome: "단기는 고쳐진 그림체 규칙과 작업 루틴, 중기는 완성된 프로젝트 1개",
+    cta: "1:1 워크숍 상담" },
 };
+/* 지금 바로 신청할 수 있는 상품. closeAt이 지나면 자동으로 빠진다 */
+const OPEN_NOW = ["vintageClub", "workshop"];
+function openProducts(now) {
+  const t = now == null ? Date.now() : now;
+  return OPEN_NOW.map(k => Object.assign({ key: k }, CLASSES[k])).filter(c => !c.closeAt || Date.parse(c.closeAt) > t).map(c => {
+    const link = isHttps(c.link) ? { url: c.link, via: "link" } : { url: LINKS.insta, via: "dm" };
+    let badge = "상시 상담";
+    if (c.startsAt) {
+      const kstDay = (ms) => Math.floor((ms + 9 * 3600000) / 86400000); // 한국 시간 달력 날짜
+      const days = kstDay(Date.parse(c.startsAt)) - kstDay(t);
+      badge = days > 1 ? `모집 중 · 개강 D-${days}` : days === 1 ? "모집 중 · 내일 개강" : "모집 중 · 오늘 개강";
+    }
+    return Object.assign(c, { url: link.url, via: link.via, badge, ctaLabel: link.via === "dm" ? `${c.cta} (인스타 DM)` : c.cta });
+  });
+}
+/* 진단 결과에 맞춰 지금 신청 가능한 상품의 순서를 정한다 */
+function suggestOpen(s, now) {
+  const list = openProducts(now);
+  const cons = avg(AXES.map(a => s.axes[a.key].consistency));
+  const top = scorePaths(s)[0];
+  const workshopFirst = cons >= 2.6 && (top.grade === "A" || top.grade === "B");
+  return list.sort((a, b) => (workshopFirst ? (a.key === "workshop" ? -1 : 1) : (a.key === "vintageClub" ? -1 : 1)));
+}
 
 /* ═════════ 6. 리포트 빌더 ═════════ */
 const won = (n) => n.toLocaleString("ko-KR") + "원";
@@ -533,9 +592,11 @@ function buildReport(s, opts) {
       { t: "h", text: "12주 로드맵" }, { t: "weeks", items: G.roadmap },
       { t: "h", text: "포트폴리오 체크리스트" }, { t: "list", items: G.checklist, check: true },
       { t: "h", text: "이 길에서 흔한 실수" }, { t: "list", items: G.mistakes },
+      p.key === "picturebook" ? { t: "h", text: "그림책 만들기 자습서와 함께 보기" } : null,
+      p.key === "picturebook" ? { t: "weeks", items: TUTORIAL.map(x => [`${x.no}. ${x.title}`, x.does]) } : null,
       { t: "h", text: "이번 주에 찾아볼 것" }, { t: "list", items: G.refs },
       { t: "src", items: M.src },
-    ]});
+    ].filter(Boolean)});
   });
 
   const rest = paths.filter(p => !focus.includes(p));
@@ -554,14 +615,21 @@ function buildReport(s, opts) {
 
   const ck = rec.classKey === "routine" ? "routine" : rec.target.key;
   const C = CLASSES[ck];
-  const priceLine = CONFIG.links.classes ? "수업 일정과 신청은 아래 링크에서 확인할 수 있어요." : "수업 일정과 신청은 아더댄웍스로 문의해 주세요.";
+  const priceLine = "전체 수업 일정은 아래 공식 노션에서 확인할 수 있어요.";
+  const open = suggestOpen(s, opts.now);
   sections.push({ id: "class", title: `이 분석으로 배우면: ${C.name}`, lead: C.promise, blocks: [
     { t: "p", text: C.why },
     { t: "p", text: gaps && gaps.items.length ? `특히 ${name}님은 ${gaps.items.slice(0, 2).map(x => x.name).join("·")}에서 본인 생각과 그림이 달라요. 이 부분은 혼자 연습하면 방향을 잃기 쉬워서, 수업 첫 주에 바로 다룹니다.` : `${name}님의 가장 흔들리는 곳(${weak.map(x => x.name).join("·")})을 첫 주 과제로 잡습니다.` },
     { t: "h", text: "배우는 순서" }, { t: "weeks", items: C.steps.map((x, i) => [`${i + 1}단계`, x]) },
     { t: "h", text: "끝나면 손에 남는 것" }, { t: "p", text: C.outcome },
     { t: "callout", text: `이 리포트의 6축 점수가 수업의 출발점이에요. 수업이 끝나면 같은 기준으로 재진단해서 무엇이 바뀌었는지 숫자로 보여 드립니다. ${priceLine}` },
+    { t: "links", items: [[`${C.name} 안내 (공식 노션)`, isHttps(C.link) ? C.link : LINKS.notion]] },
   ]});
+  if (open.length) sections.push({ id: "open", title: "지금 바로 신청할 수 있는 수업", lead: "리포트를 읽은 지금이 가장 빨리 바뀌는 때예요.", blocks: open.flatMap(o => [
+    { t: "h", text: `${o.name} · ${o.badge}` }, { t: "p", text: o.promise }, { t: "p", text: o.why },
+    { t: "list", items: o.steps },
+    { t: "links", items: [[o.ctaLabel, o.url]] },
+  ]) });
 
   sections.push({ id: "note", title: "리포트를 읽는 법", blocks: [
     { t: "list", items: [
@@ -571,7 +639,7 @@ function buildReport(s, opts) {
     ] },
   ]});
 
-  return { title: `${name}님의 6축 그림체 리포트`, name, date, type, paths, rec, gaps, sections, cta: { classKey: ck, className: C.name } };
+  return { title: `${name}님의 6축 그림체 리포트`, name, date, type, paths, rec, gaps, sections, open, cta: { classKey: ck, className: C.name, url: isHttps(C.link) ? C.link : LINKS.notion } };
 }
 
 /* 무료 결과용 티저: 궁금하게 만드는 한 가지 + 잠긴 목차 */
@@ -607,12 +675,14 @@ function blockToHTML(b) {
     case "kv": return `<dl class="kv">${b.rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>`;
     case "table": return `<div class="tw"><table><thead><tr>${b.head.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${b.rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
     case "weeks": return `<ol class="weeks">${b.items.map(([k, v]) => `<li><b>${esc(k)}</b><span>${esc(v)}</span></li>`).join("")}</ol>`;
+    case "links": return `<p class="links">${b.items.filter(([, u]) => isHttps(u)).map(([l, u]) => `<a class="lk" href="${esc(u)}" target="_blank" rel="noopener">${esc(l)} →</a>`).join("")}</p>`;
     case "src": return `<p class="src">출처: ${b.items.map(([l, u]) => /^https:\/\//.test(u) ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(l)}</a>` : esc(l)).join(" · ")}</p>`;
     default: return "";
   }
 }
-function reportBodyHTML(r) {
-  return `<header class="r-head"><span class="r-pill">other than works</span><p class="r-eyebrow">6축 그림체 리포트 · ${esc(r.date)}</p><h1>${esc(r.title)}</h1><p class="r-type">${esc(r.type.name)}</p></header>`
+function reportBodyHTML(r, opt) {
+  const art = opt && opt.art && (/^data:image\/(png|jpeg|webp);base64,/.test(opt.art) || /^\.\/assets\/types\/[a-z-]+\.png$/.test(opt.art)) ? `<img class="r-art" src="${esc(opt.art)}" alt="${esc(r.type.name)} 일러스트">` : "";
+  return `<header class="r-head">${art}<span class="r-pill">other than works</span><p class="r-eyebrow">6축 그림체 리포트 · ${esc(r.date)}</p><h1>${esc(r.title)}</h1><p class="r-type">${esc(r.type.name)}</p></header>`
     + `<nav class="r-toc"><b>목차</b><ol>${r.sections.map(s => `<li><a href="#${s.id}">${esc(s.title)}</a></li>`).join("")}</ol></nav>`
     + r.sections.map(s => `<section id="${s.id}"><h2>${esc(s.title)}</h2>${s.lead ? `<p class="lead">${esc(s.lead)}</p>` : ""}${s.blocks.map(blockToHTML).join("")}</section>`).join("")
     + `<footer class="r-foot">${esc(CONFIG.brand)} · ${esc(CONFIG.insta)}</footer>`;
@@ -625,7 +695,10 @@ const REPORT_CSS = `
 .otw-report p{margin:6px 0}
 .otw-report .lead{font-weight:500;color:var(--navy)}
 .otw-report .drill{color:var(--muted);font-size:14px;border-left:3px solid var(--lime);padding-left:10px}
-.otw-report .r-head{background:var(--navy);color:#fff;padding:28px 24px;margin-bottom:18px}
+.otw-report .r-head{background:var(--navy);color:#fff;padding:28px 24px;margin-bottom:18px;overflow:hidden}
+.otw-report .r-art{float:right;width:132px;height:132px;object-fit:contain;margin:0 0 8px 12px}
+.otw-report .links{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.otw-report .lk{display:inline-block;background:var(--navy);color:#fff;text-decoration:none;font-weight:700;padding:10px 14px}
 .otw-report .r-head h1{color:#fff}
 .otw-report .r-pill{display:inline-block;font-family:"Gaegu",sans-serif;font-weight:700;letter-spacing:.18em;background:#F1F4FB;color:#16181D;border-radius:60px;padding:4px 14px}
 .otw-report .r-eyebrow{color:#A9B8E4;font-size:13px;letter-spacing:.06em;margin-top:14px}
@@ -655,10 +728,10 @@ const REPORT_CSS = `
 .otw-report .r-foot{margin-top:30px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
 @media (max-width:560px){.otw-report .kv div{grid-template-columns:minmax(0,1fr);gap:2px}.otw-report .r-toc ol{columns:1}.otw-report .weeks li{grid-template-columns:minmax(0,1fr);gap:0}}
 @media print{.otw-report h2{break-before:auto}.otw-report section{break-inside:auto}}`;
-function reportToHTMLDoc(r) {
+function reportToHTMLDoc(r, opt) {
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(r.title)}</title>`
     + `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&family=Gothic+A1:wght@400;500;700&family=Jua&display=swap">`
-    + `<style>body{margin:0;background:#fff;padding:0 16px 48px}${REPORT_CSS}</style></head><body><article class="otw-report">${reportBodyHTML(r)}</article></body></html>`;
+    + `<style>body{margin:0;background:#fff;padding:0 16px 48px}${REPORT_CSS}</style></head><body><article class="otw-report">${reportBodyHTML(r, opt)}</article></body></html>`;
 }
 function blockToText(b) {
   switch (b.t) {
@@ -669,6 +742,7 @@ function blockToText(b) {
     case "table": return [b.head.join(" | ")].concat(b.rows.map(r => r.join(" | "))).join("\n");
     case "weeks": return b.items.map(([k, v]) => `${k}  ${v}`).join("\n");
     case "src": return "출처: " + b.items.map(([l, u]) => `${l} ${u}`).join(" / ");
+    case "links": return b.items.map(([l, u]) => `▶ ${l}: ${u}`).join("\n");
     default: return "";
   }
 }
@@ -678,7 +752,7 @@ function reportToText(r) {
   ).join("\n") + `\n\n${CONFIG.brand} · ${CONFIG.insta}`;
 }
 
-const OTW = { CONFIG, AXES, SIGNALS, GENRES, MIX, EMOTICON_GATE, ROUTINE, GRADE_TXT, MARKET, RX_LIB, TYPES, MERGE, AGREE_TXT,
+const OTW = { CONFIG, LINKS, TUTORIAL, TUTORIAL_LINE, isHttps, linkFor, typeImage, openProducts, suggestOpen, AXES, SIGNALS, GENRES, MIX, EMOTICON_GATE, ROUTINE, GRADE_TXT, MARKET, RX_LIB, TYPES, MERGE, AGREE_TXT,
   AXIS_GUIDE, SIGNAL_GUIDE, PATH_GUIDE, CLASSES, CAL,
   clamp, avg, hasBatchim, josa, rng, gauss, scorePaths, recommendation, gapsFor, weakest, strongest, summarize, sideOf, typeOf,
   computeGaps, gapSentence, buildResult, buildReport, freeTeaser, reportBodyHTML, reportToHTMLDoc, reportToText, REPORT_CSS, esc, won };

@@ -4,8 +4,7 @@ const { chromium } = require('playwright');
 const wrap = require('./wrap.cjs');
 const fs = require('fs');
 const path = require('path');
-const S = require('os').tmpdir() + '/otw-e2e';
-fs.mkdirSync(S, { recursive: true });
+const S = fs.mkdtempSync(require('os').tmpdir() + '/otw-e2e-'); // 실행마다 새 폴더 (이전 실행의 일러스트가 섞이지 않게)
 fs.writeFileSync(S + '/studio.html', wrap(path.join(__dirname, '..', 'six-axis-studio.html')));
 fs.copyFileSync(path.join(__dirname, '..', 'otw-core.js'), S + '/otw-core.js');
 
@@ -43,7 +42,7 @@ const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!o
   const errors = [];
   const p = await b.newPage({ viewport: { width: 1280, height: 900 } });
   p.on('pageerror', e => errors.push('pageerror: ' + e.message));
-  p.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
+  p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push('console: ' + m.text()); }); // 일러스트가 없을 때의 404는 정상
   await p.addInitScript(MOCK);
   await p.goto('file://' + S + '/studio.html');
   await p.waitForTimeout(800);
@@ -108,12 +107,14 @@ const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!o
   const mk2 = await p.$eval('#market h4', e => e.textContent);
   check(mk2 === `${top} 시장분석`, `목표 모름이면 1위(${top}) 시장분석`);
   const dmPaid = await p.$eval('#dm', e => e.value);
-  check(dmPaid.includes('12주 로드맵') && dmPaid.includes('리포트') && !/을\(를\)|이\(가\)|은\(는\)/.test(dmPaid), '유료 DM: 리포트 안내, 깨진 조사 없음');
+  check(dmPaid.includes('12주 로드맵') && dmPaid.includes('리포트') && dmPaid.includes('otherthanworks.notion.site') && !/을\(를\)|이\(가\)|은\(는\)/.test(dmPaid), '유료 DM: 리포트 안내 + 공식 노션, 깨진 조사 없음');
   console.log('--- DM(유료) ---\n' + dmPaid + '\n---');
   await p.click('#tier-free'); await p.waitForTimeout(200);
   const dmFree = await p.$eval('#dm', e => e.value);
   console.log('--- DM(무료) ---\n' + dmFree + '\n---');
   check(dmFree.includes('형이에요') && dmFree.includes('의외였던 점') && dmFree.includes('런칭가') && !dmFree.includes('12주 로드맵을'), '무료 DM: 유형 공개 + 의외의 한 가지 + 잠긴 목차 + 가격');
+  const openNow = await p.evaluate(() => window.__otw.openProducts().map(o => o.key));
+  check(dmFree.includes("이 DM으로 '리포트'") && (openNow.length === 0 || dmFree.includes('[지금 신청할 수 있는 수업]')) && (!openNow.includes('vintageClub') || dmFree.includes('docs.google.com/forms')), `무료 DM: 결제 링크 없으면 DM 신청 + 모집 중 수업 (${openNow.join(', ')})`);
   check(await p.$eval('#market', e => e.hidden) && await p.$eval('#signals', e => e.closest('[data-paid]').hidden), '무료 카드에서 상업 신호·시장분석 숨김');
   await p.click('#tier-paid'); await p.waitForTimeout(400);
   await p.click('#btn-png2'); await p.waitForTimeout(200);
@@ -129,6 +130,9 @@ const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!o
   await p.screenshot({ path: S + '/report-view.png', fullPage: false });
   await p.click('#btn-report-html'); await p.waitForTimeout(200);
   check((await p.evaluate(() => window.__saved || '')).endsWith('.html') && (await p.evaluate(() => (window.__savedData || '').startsWith('<!doctype html>'))), 'HTML 파일 저장 (완결된 문서)');
+  const rlinks = await p.evaluate(() => [...document.querySelectorAll('#report-body a.lk')].map(a => a.href));
+  check(rlinks.some(h => h.includes('otherthanworks.notion.site')) && (!openNow.includes('vintageClub') || rlinks.some(h => h.includes('docs.google.com/forms'))) && rlinks.every(h => h.startsWith('https://')), `리포트 수업 장: 노션·신청 링크 버튼 ${rlinks.length}개`);
+  check(await p.evaluate(() => !document.querySelector('#report-body .r-art')), '일러스트 없으면 리포트 표지 이미지 자리 깔끔히 제거');
   fs.writeFileSync(S + '/report.html', await p.evaluate(() => window.__savedData));
   await p.click('#btn-report-close'); await p.waitForTimeout(200);
   check(await p.evaluate(() => document.getElementById('report-view').hidden && !document.getElementById('result').hidden && !document.getElementById('pane-ai').hidden), '리포트 닫으면 결과지로 복귀');
@@ -221,6 +225,28 @@ const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!o
   const idx = metas.findIndex(m => m.includes('AI+본인'));
   await (await p.$$('.hist-item'))[idx].$eval('.btn', b => b.click()); await p.waitForTimeout(300);
   check(await p.evaluate(() => !document.getElementById('gapbox').hidden), '저장한 통합 진단을 다시 열면 차이 박스 복원');
+
+  // 8-2) 유형 일러스트 슬롯: 없을 때 숨김, 있을 때 결과지·카드 1·리포트 표지에 표시
+  check(await p.evaluate(() => getComputedStyle(document.getElementById('res-art')).display === 'none' && getComputedStyle(document.getElementById('res-svg')).display !== 'none'), '스튜디오: 일러스트 없으면 기본 캐릭터 (실제 화면 기준)');
+  const tkey = await p.evaluate(() => window.OTW.typeOf(window.__otw.state).key);
+  fs.mkdirSync(S + '/assets/types', { recursive: true });
+  const png2 = await p.evaluate(() => { const c = document.createElement('canvas'); c.width = 300; c.height = 300; const x = c.getContext('2d'); x.fillStyle = '#A8D96A'; x.fillRect(40, 40, 220, 220); return c.toDataURL('image/png').split(',')[1]; });
+  fs.writeFileSync(`${S}/assets/types/${tkey}.png`, Buffer.from(png2, 'base64'));
+  const a2 = await b.newPage({ viewport: { width: 1280, height: 900 } });
+  a2.on('pageerror', e => errors.push('art: ' + e.message));
+  await a2.addInitScript(MOCK);
+  await a2.goto('file://' + S + '/studio.html'); await a2.waitForTimeout(1200);
+  const k2 = await a2.evaluate(() => window.OTW.typeOf(window.__otw.state).key);
+  if (k2 !== tkey) fs.writeFileSync(`${S}/assets/types/${k2}.png`, Buffer.from(png2, 'base64'));
+  await a2.reload(); await a2.waitForTimeout(1200);
+  check(await a2.evaluate(() => getComputedStyle(document.getElementById('res-art')).display !== 'none' && getComputedStyle(document.getElementById('res-svg')).display === 'none' && /^\.\/assets\/types\/[a-z-]+\.png$/.test(document.getElementById('res-art').getAttribute('src'))), '스튜디오: 일러스트 있으면 결과지 머리에 표시, 기본 캐릭터는 실제로 숨김');
+  await a2.click('#btn-png'); await a2.waitForTimeout(400);
+  const pngSt = await a2.$eval('#png-status', e => e.textContent);
+  check((await a2.evaluate(() => window.__saved || '')).includes('style'), '스튜디오: 일러스트 카드 저장 (출처 제한 시 이미지 없이 대체) · ' + pngSt);
+  await a2.click('#btn-report'); await a2.waitForTimeout(500);
+  check(await a2.evaluate(() => !!document.querySelector('#report-body .r-art')), '스튜디오: 리포트 표지에 일러스트');
+  await a2.screenshot({ path: S + '/report-art.png' });
+  await a2.close();
 
   // 9) 모바일·다크·Claude 없음
   const m = await b.newPage({ viewport: { width: 390, height: 844 }, colorScheme: 'dark' });

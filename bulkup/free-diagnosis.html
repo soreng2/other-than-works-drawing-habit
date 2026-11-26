@@ -122,6 +122,13 @@ fieldset { border: 0; padding: 0; margin: 0; }
 .toc li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; font-size: 14.5px; }
 .toc li::before { content: "🔒"; font-size: 13px; }
 .toc li.open::before { content: "✓"; color: var(--green); font-weight: 700; }
+.type-art { width: 132px; height: 132px; object-fit: contain; }
+.open { display: grid; gap: 12px; }
+.open-item { border: 1.5px solid var(--line); background: var(--surface); padding: 16px; display: grid; gap: 8px; }
+.open-item .badge { justify-self: start; font-size: 12px; font-weight: 700; padding: 3px 9px; background: var(--lime); color: #16181D; }
+.open-item .badge.calm { background: var(--ice); color: var(--ink); }
+.open-item h3 { margin: 0; font-size: 18px; }
+.open-item ul { margin: 0; padding-left: 1.1em; font-size: 14px; display: grid; gap: 2px; }
 .offer { border: 2px solid var(--accent); background: var(--surface); padding: 18px; display: grid; gap: 12px; }
 .price { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .price s { color: var(--muted); }
@@ -189,7 +196,8 @@ fieldset { border: 0; padding: 0; margin: 0; }
   <!-- 3. 결과 -->
   <section class="screen" id="s-result" hidden>
     <div class="reveal">
-      <svg viewBox="0 0 120 110" aria-hidden="true">
+      <img class="type-art" id="r-art" alt="" hidden>
+      <svg id="r-svg" viewBox="0 0 120 110" aria-hidden="true">
         <ellipse cx="60" cy="103" rx="30" ry="5" fill="#0B1230" opacity=".85"/>
         <rect x="42" y="84" width="9" height="16" rx="4" fill="#9AA1AE"/><rect x="69" y="84" width="9" height="16" rx="4" fill="#9AA1AE"/>
         <path d="M10 46 q-8 8 -2 20" stroke="#9AA1AE" stroke-width="7" stroke-linecap="round" fill="none"/>
@@ -233,9 +241,15 @@ fieldset { border: 0; padding: 0; margin: 0; }
       <p class="muted small" id="r-size"></p>
       <div class="price"><s id="r-price"></s><b id="r-launch"></b><span class="muted small">런칭 기념가</span></div>
       <ol class="steps"><li>신청 후 최근 그림 3장을 보내 주세요</li><li>AI 분석 + 대표 감수 (영업일 2일 안)</li><li>리포트 파일과 결과 카드 2장 전달</li></ol>
-      <a class="btn" id="cta-report" target="_blank" rel="noopener">유료 리포트 신청</a>
-      <div class="row"><a class="btn ghost" id="cta-classes" target="_blank" rel="noopener">수업 둘러보기</a><a class="btn ghost" id="cta-kakao" target="_blank" rel="noopener">카카오톡 문의</a></div>
+      <a class="btn" id="cta-report" target="_blank" rel="noopener" data-cta="report">유료 리포트 신청</a>
+      <div class="row"><a class="btn ghost" id="cta-classes" target="_blank" rel="noopener" data-cta="classes">수업 둘러보기</a><a class="btn ghost" id="cta-kakao" target="_blank" rel="noopener" data-cta="ask">문의하기</a></div>
       <p class="muted small" id="cta-note"></p>
+    </div>
+
+    <div class="card open" id="open-box" hidden>
+      <h2>지금 신청할 수 있는 수업</h2>
+      <p class="muted small" id="open-lead"></p>
+      <div id="open-list" class="open"></div>
     </div>
 
     <div class="card share">
@@ -344,15 +358,18 @@ function selfSource() {
   O.SIGNALS.forEach(x => { out.signals[x.key] = ans[x.key]; });
   return out;
 }
+let submitted = false;
 $("lead-form").addEventListener("submit", (e) => {
   e.preventDefault();
+  if (submitted) return;
   const bad = validate();
   if (bad) { $("lead-err").textContent = bad[0]; $(bad[1]).focus(); return; }
   $("lead-err").textContent = "";
+  submitted = true; $("btn-submit").disabled = true;
   const base = { name: $("f-name").value.trim(), goal: $("f-goal").value };
   state = O.buildResult(base, null, selfSource());
   lead = {
-    name: base.name, email: $("f-email").value.trim(), phone: normPhone($("f-phone").value), insta: $("f-insta").value.trim(),
+    leadId: newId(), name: base.name, email: $("f-email").value.trim(), phone: normPhone($("f-phone").value), insta: $("f-insta").value.trim(),
     goal: base.goal, interests: [...picked], question: $("f-question").value.trim(),
     consentPrivacy: true, consentMarketing: $("c-marketing").checked,
   };
@@ -360,6 +377,8 @@ $("lead-form").addEventListener("submit", (e) => {
   show("s-result");
   sendLead();
 });
+
+function newId() { try { return crypto.randomUUID(); } catch (e) { return "L" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); } }
 
 /* ───── 결과 ───── */
 function renderResult() {
@@ -386,17 +405,61 @@ function renderResult() {
   tz.toc.forEach((t, i) => { const li = document.createElement("li"); li.textContent = t; if (i === 0) li.className = "open"; toc.appendChild(li); });
   $("r-size").textContent = `약 ${tz.approxChars.toLocaleString("ko-KR")}자 분량 · 길마다 시장 규모, 수익 계산, 12주 로드맵, 포트폴리오 체크리스트, 흔한 실수, 수업 안내`;
   $("r-price").textContent = O.won(C.price.report); $("r-launch").textContent = O.won(C.price.launch);
-  wireCTA("cta-report", C.links.report, "결제 페이지 준비 중");
-  wireCTA("cta-classes", C.links.classes, "수업 안내 준비 중");
-  wireCTA("cta-kakao", C.links.kakao, "카카오 채널 준비 중");
-  $("cta-note").textContent = C.links.report ? "" : `지금은 인스타그램 ${C.insta} DM으로 '리포트'라고 보내 주시면 안내해 드려요.`;
+  const rl = O.linkFor("report"), cl = O.linkFor("classes"), kl = O.linkFor("kakao");
+  wireCTA("cta-report", rl); wireCTA("cta-classes", cl); wireCTA("cta-kakao", kl);
+  $("cta-note").textContent = rl.via === "dm" ? `버튼을 누르면 신청 문구가 복사돼요. 인스타그램 ${C.insta} DM 창에 붙여 넣기만 하면 됩니다.` : "";
+  renderOpen();
+  showTypeArt(ty.key);
   drawCard(ty);
 }
-function wireCTA(id, url, fallback) {
+function wireCTA(id, l) {
   const a = $(id);
-  if (url && /^https:\/\//.test(url)) { a.href = url; a.removeAttribute("aria-disabled"); }
-  else { a.removeAttribute("href"); a.setAttribute("aria-disabled", "true"); a.title = fallback; if (id !== "cta-report") a.textContent = fallback; }
+  a.href = l.url; a.textContent = l.label; a.dataset.via = l.via; a.removeAttribute("aria-disabled");
 }
+function dmMessage(kind) {
+  const ty = O.typeOf(state);
+  if (kind === "report") return `[6축 리포트 신청] ${state.name} / ${ty.name}형 / 1위 ${O.scorePaths(state)[0].name}`;
+  if (kind === "workshop") return `[1:1 맞춤 워크숍 상담] ${state.name} / ${ty.name}형 / 단기 4회·중기 12회 중 상담 원해요`;
+  return `[문의] ${state.name} / ${ty.name}형`;
+}
+function renderOpen() {
+  const list = O.suggestOpen(state), box = $("open-list");
+  box.textContent = "";
+  $("open-box").hidden = !list.length;
+  $("open-lead").textContent = list.length && list[0].key === "workshop" ? "지금 그림이면 내 그림 기준으로 바로 고치는 1:1이 가장 빨라요." : "혼자 하면 끊기는 2주 차를 같이 넘기는 방법이에요.";
+  list.forEach(o => {
+    const it = document.createElement("div"); it.className = "open-item";
+    const b = document.createElement("span"); b.className = "badge" + (o.startsAt ? "" : " calm"); b.textContent = o.badge;
+    const h = document.createElement("h3"); h.textContent = o.name;
+    const pr = document.createElement("p"); pr.className = "small"; pr.textContent = o.promise;
+    const why = document.createElement("p"); why.className = "muted small"; why.textContent = o.why;
+    const ul = document.createElement("ul"); o.steps.forEach(x => { const li = document.createElement("li"); li.textContent = x; ul.appendChild(li); });
+    const a = document.createElement("a"); a.className = "btn" + (o.key === "vintageClub" ? " lime" : ""); a.href = o.url; a.target = "_blank"; a.rel = "noopener";
+    a.textContent = o.ctaLabel; a.dataset.cta = o.key; a.dataset.via = o.via;
+    it.append(b, h, pr, why, ul, a); box.appendChild(it);
+  });
+}
+/* 유형 일러스트: ./assets/types/{key}.png 가 있으면 보이고, 없으면 기본 캐릭터 */
+const artCache = {};
+function loadTypeImage(key) {
+  if (!artCache[key]) artCache[key] = new Promise(res => { const im = new Image(); im.onload = () => res(im.naturalWidth ? im : null); im.onerror = () => res(null); im.src = O.typeImage(key); });
+  return artCache[key];
+}
+function showTypeArt(key) {
+  const img = $("r-art"), svg = $("r-svg");
+  img.hidden = true; svg.toggleAttribute("hidden", false);
+  loadTypeImage(key).then(im => { if (!im || !state || O.typeOf(state).key !== key) return; img.setAttribute("src", O.typeImage(key)); img.alt = `${O.typeOf(state).name} 일러스트`; img.hidden = false; svg.toggleAttribute("hidden", true); });
+}
+/* 버튼 클릭: DM 폴백이면 신청 문구 복사, 수집 주소가 있으면 어떤 버튼을 눌렀는지 기록 */
+document.addEventListener("click", (e) => {
+  const a = e.target.closest("a[data-cta]"); if (!a || !state) return;
+  const kind = a.dataset.cta;
+  if (a.dataset.via === "dm") {
+    const msg = dmMessage(kind === "workshop" ? "workshop" : kind === "report" ? "report" : "ask");
+    try { navigator.clipboard.writeText(msg).then(() => { $("cta-note").textContent = `복사했어요: "${msg}" · DM 창에 붙여 넣어 주세요.`; }, () => {}); } catch (err) {}
+  }
+  sendEvent(kind, a.dataset.via || "");
+});
 
 /* ───── 수집 ───── */
 function resultText() {
@@ -404,6 +467,11 @@ function resultText() {
   return [`${state.name}님의 그림체 유형은 '${ty.name}'이에요.`, `“${ty.hook}”`, ty.desc, ``, `의외였던 점: ${tz.surprise}`, `지금 그림으로 돈이 되는 길 1위: ${tz.top.name}`,
     `이번 주에 해 볼 것: ${state.rx[0] ? state.rx[0].title + " — " + state.rx[0].how : ""}`, ``,
     `2·3위 길과 등급, 길마다 시장·수익 계산·12주 로드맵은 유료 리포트에서 볼 수 있어요.`, `아더댄웍스 ${C.insta}`].join("\n");
+}
+function sendEvent(cta, via) {
+  if (!C.leadEndpoint || !lead) return;
+  const ev = { kind: "cta-click", at: new Date().toISOString(), leadId: lead.leadId, name: lead.name, cta, via, type: O.typeOf(state).name, utm };
+  try { fetch(C.leadEndpoint, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(ev), keepalive: true }).catch(() => {}); } catch (e) {}
 }
 async function sendLead() {
   const st = $("send-status");
@@ -428,23 +496,45 @@ async function sendLead() {
 
 /* ───── 결과 카드 ───── */
 function wrapLines(ctx, text, maxW, maxLines) {
+  // 띄어쓰기 단위로 줄을 나누고, 한 단어가 한 줄보다 길 때만 글자 단위로 자른다
   const out = []; let line = "";
-  for (const ch of String(text)) { const t = line + ch; if (ctx.measureText(t).width > maxW && line) { out.push(line); line = ch; if (out.length === maxLines) break; } else line = t; }
-  if (out.length < maxLines && line) out.push(line);
+  const push = (l) => { if (out.length < maxLines) out.push(l); };
+  for (const word of String(text).split(/(\s+)/)) {
+    if (!word) continue;
+    const t = line + word;
+    if (ctx.measureText(t).width <= maxW) { line = t; continue; }
+    if (line.trim()) { push(line.trimEnd()); line = ""; }
+    if (/^\s+$/.test(word)) continue;
+    if (ctx.measureText(word).width <= maxW) { line = word; continue; }
+    for (const ch of word) { if (ctx.measureText(line + ch).width > maxW && line) { push(line); line = ch; } else line += ch; }
+  }
+  if (line.trim()) push(line.trimEnd());
+  const full = String(text).replace(/\s+/g, "");
+  if (out.length === maxLines && out.join("").replace(/\s+/g, "").length < full.length) {
+    let last = out[maxLines - 1]; while (ctx.measureText(last + "…").width > maxW && last.length) last = last.slice(0, -1); out[maxLines - 1] = last + "…";
+  }
   return out;
 }
-async function drawCard(ty) {
+let cardHasArt = false;
+async function drawCard(ty, noArt) {
   try { await Promise.all([document.fonts.load('72px "Jua"', "그림"), document.fonts.load('700 28px "Gothic A1"', "그림"), document.fonts.load('700 30px "Gaegu"', "other")]); } catch (e) {}
   const c = $("share-card"), x = c.getContext("2d"), W = 1080, PX = 78;
   x.fillStyle = "#1F3D8F"; x.fillRect(0, 0, W, 1350);
   x.font = '700 30px "Gaegu", sans-serif'; x.letterSpacing = "6px"; const lw = x.measureText("other than works").width;
   x.fillStyle = "#F1F4FB"; x.beginPath(); x.roundRect ? x.roundRect(PX, 88, lw + 68, 62, 31) : x.rect(PX, 88, lw + 68, 62); x.fill();
   x.fillStyle = "#16181D"; x.textBaseline = "middle"; x.fillText("other than works", PX + 34, 120); x.letterSpacing = "0px"; x.textBaseline = "alphabetic";
+  const art = noArt ? null : await loadTypeImage(ty.key);
+  cardHasArt = !!art;
+  const ART = 260, textW = W - PX * 2 - (art ? ART + 20 : 0);
+  if (art) { const r = Math.min(ART / art.naturalWidth, ART / art.naturalHeight); const w = art.naturalWidth * r, h = art.naturalHeight * r; x.drawImage(art, W - PX - ART + (ART - w) / 2, 180 + (ART - h) / 2, w, h); }
   x.fillStyle = "#A9B8E4"; x.font = '700 30px "Gothic A1", sans-serif'; x.fillText("내 그림체 유형은", PX, 250);
   x.fillStyle = "#A8D96A"; x.font = '84px "Jua", sans-serif';
-  let lines = wrapLines(x, ty.name, W - PX * 2, 2); lines.forEach((l, i) => x.fillText(l, PX, 350 + i * 100));
+  let lines = wrapLines(x, ty.name, textW, 2);
+  if (lines.some(l => l.endsWith("…"))) { x.font = '68px "Jua", sans-serif'; lines = wrapLines(x, ty.name, textW, 2); }
+  lines.forEach((l, i) => x.fillText(l, PX, 350 + i * 100));
   let y = 350 + lines.length * 100;
-  x.fillStyle = "#C3D0F0"; x.font = '400 32px "Gothic A1", sans-serif'; wrapLines(x, `“${ty.hook}”`, W - PX * 2, 2).forEach((l, i) => x.fillText(l, PX, y + i * 46)); y += 120;
+  if (art) y = Math.max(y, 480);
+  x.fillStyle = "#C3D0F0"; x.font = '400 32px "Gothic A1", sans-serif'; wrapLines(x, `“${ty.hook}”`, W - PX * 2, 2).forEach((l, i) => x.fillText(l, PX, y + i * 46)); y = Math.max(y, 180 + 260 + 20) + 110;
   const trackX = PX + 120, trackW = W - PX - trackX;
   O.AXES.forEach(a => {
     const v = state.axes[a.key].position;
@@ -462,7 +552,14 @@ async function drawCard(ty) {
 let downloadsApi = null;
 $("btn-card").addEventListener("click", async () => {
   const st = $("share-status");
-  const blob = await new Promise(r => $("share-card").toBlob(r, "image/png"));
+  const toBlob = () => new Promise((res, rej) => { try { $("share-card").toBlob(res, "image/png"); } catch (err) { rej(err); } });
+  let blob = null;
+  try { blob = await toBlob(); }
+  catch (err) {
+    // 다른 출처 이미지로 캔버스가 오염되면 다시 그려도 오염이 남는다 → 새 캔버스로 바꿔 일러스트 없이 다시 그린다
+    const old = $("share-card"); old.replaceWith(old.cloneNode(false));
+    await drawCard(O.typeOf(state), true); blob = await toBlob().catch(() => null);
+  }
   if (!blob) { st.textContent = "카드를 만들지 못했어요."; return; }
   const fname = `내그림체-${O.typeOf(state).name.replace(/\s/g, "")}.png`;
   if (downloadsApi) { try { await downloadsApi.save({ filename: fname, data: blob }); st.className = "status ok"; st.textContent = "저장했어요."; return; } catch (e) { if (e && e.code === "declined") return; } }
@@ -484,6 +581,6 @@ $("btn-restart").addEventListener("click", () => {
   state = null; lead = null; show("s-intro");
 });
 if (window.claude && typeof window.claude.use === "function") window.claude.use("downloads").then(d => { downloadsApi = d; }).catch(() => {});
-window.__free = { get state() { return state; }, get lead() { return lead; }, ans, CHIPS };
+window.__free = { get state() { return state; }, get lead() { return lead; }, get cardHasArt() { return cardHasArt; }, ans, CHIPS };
 })();
 </script>

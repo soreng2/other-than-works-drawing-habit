@@ -12,15 +12,17 @@
  * 만드는 것:
  * - "무료진단" 시트: 응답 한 줄씩 (연락처, 궁금한 점, 결과, 유입 경로)
  * - "관심사 집계" 시트: 어떤 고민이 많은지 자동 집계 → 다음 콘텐츠·수업 주제로 사용
+ * - "클릭" 시트: 결과 화면에서 누른 버튼 (리포트·클럽·워크숍·노션·문의) → 어떤 제안이 먹히는지 확인
  * - 방문자 메일로 결과 발송 (이메일을 적은 경우), 대표 메일로 새 응답 알림
  */
-const OWNER_EMAIL = "";          // 새 응답 알림 받을 메일 (비우면 알림 없음)
+const OWNER_EMAIL = "mon.mut.friends@gmail.com"; // 새 응답 알림 받을 메일 (비우면 알림 없음)
 const SEND_RESULT_EMAIL = true;  // 방문자에게 결과 메일 보내기
 const SHEET = "무료진단";
 const TALLY = "관심사 집계";
+const CLICKS = "클릭";
 const HEAD = ["받은 시각", "닉네임", "이메일", "휴대폰", "인스타", "하고 싶은 길", "관심사", "질문", "마케팅 동의",
   "유형", "1위", "2위", "3위", "선", "형태", "색", "질감", "구성", "정서",
-  "utm_source", "utm_medium", "utm_campaign", "ref", "유입 페이지", "리퍼러", "상태", "메모"];
+  "utm_source", "utm_medium", "utm_campaign", "ref", "유입 페이지", "리퍼러", "상태", "메모", "leadId"];
 const GOAL = { unknown: "아직 모름", picturebook: "그림책", emoticon: "이모티콘", goods: "캐릭터 굿즈", instatoon: "인스타툰", portfolio: "포트폴리오·외주" };
 
 function doPost(e) {
@@ -28,6 +30,7 @@ function doPost(e) {
   lock.waitLock(10000);
   try {
     const d = JSON.parse(e.postData.contents || "{}");
+    if (d.kind === "cta-click") return logClick(d);
     if (d.kind !== "free-diagnosis" || !d.name || (!d.email && !d.phone) || d.consentPrivacy !== true) return json({ ok: false, reason: "invalid" });
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sh = ss.getSheetByName(SHEET) || ss.insertSheet(SHEET);
@@ -35,7 +38,7 @@ function doPost(e) {
     const a = d.axes || {}, u = d.utm || {};
     sh.appendRow([new Date(), d.name, d.email, d.phone ? "'" + d.phone : "", d.insta, GOAL[d.goal] || d.goal, (d.interests || []).join(", "), d.question,
       d.consentMarketing ? "동의" : "미동의", d.type, d.top1, d.top2, d.top3, a.line, a.form, a.color, a.texture, a.comp, a.mood,
-      u.source, u.medium, u.campaign, u.ref, d.page, d.referrer, "신규", ""].map(safe));
+      u.source, u.medium, u.campaign, u.ref, d.page, d.referrer, "신규", "", d.leadId || ""].map(safe));
     tally(ss, d.interests || []);
     if (SEND_RESULT_EMAIL && isEmail(d.email)) {
       MailApp.sendEmail({ to: d.email, name: "아더댄웍스", subject: `[아더댄웍스] ${clip(d.name, 20)}님의 그림체 유형 결과`,
@@ -51,6 +54,16 @@ function doPost(e) {
   } finally {
     lock.releaseLock();
   }
+}
+const CTA_NAME = { report: "유료 리포트", vintageClub: "12월 빈티지 클럽", workshop: "1:1 워크숍", classes: "수업 둘러보기(노션)", ask: "문의" };
+function logClick(d) {
+  if (!d.leadId || !d.cta) return json({ ok: false, reason: "invalid" });
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(CLICKS) || ss.insertSheet(CLICKS);
+  if (sh.getLastRow() === 0) { sh.appendRow(["누른 시각", "닉네임", "누른 버튼", "연결", "유형", "utm_source", "utm_campaign", "leadId"]); sh.setFrozenRows(1); }
+  const u = d.utm || {};
+  sh.appendRow([new Date(), clip(d.name, 20), CTA_NAME[d.cta] || clip(d.cta, 30), d.via === "dm" ? "인스타 DM" : "링크", clip(d.type, 30), clip(u.source, 40), clip(u.campaign, 60), clip(d.leadId, 60)].map(safe));
+  return json({ ok: true });
 }
 function tally(ss, items) {
   const sh = ss.getSheetByName(TALLY) || ss.insertSheet(TALLY);

@@ -6,28 +6,43 @@
 |---|---|---|
 | `bulkup-blueprint.html` | 벌크업 설계도: 수익 구조, AI 서비스 기획안, 0원 트랙션 90일, 마케팅 퍼널, 2027 지원사업 로드맵 | https://claude.ai/artifact/EvGxVg3fmuizs4LVZii4DX |
 | `six-axis-studio.html` | 대표용 진단 스튜디오: 본인 체크 + 그림 AI 분석 합산, 대표 감수, 상업성 점수, 무료 카드 / 유료 장문 리포트(HTML 파일 저장·텍스트 복사), 검증 실험실, 기록 | https://claude.ai/artifact/EkFy31tQyaVgejNoEWCfy1 |
-| `free-diagnosis.html` | 공개 무료 진단: 17문항 → 연락처·궁금한 점·동의 → 그림체 유형 공개 + 잠긴 목차 → 유료 리포트·수업·문의 | (아래 '공개하기' 참고) |
-| `otw-core.js` | 두 페이지가 함께 쓰는 규칙·유형·리포트 문장 라이브러리. 대표 기준으로 바꾸는 곳 | – |
-| `lead-collector.gs` | 무료 진단 응답을 구글 시트에 쌓고 결과 메일을 보내는 Apps Script | – |
-| `tools/build-public.cjs` | 무료 진단을 외부 호스팅용 `public/` 폴더로 묶기 | – |
+| `free-diagnosis.html` | 공개 무료 진단: 17문항 → 연락처·궁금한 점·동의 → 그림체 유형 공개 + 잠긴 목차 → 유료 리포트·지금 신청 가능한 수업·문의 | https://claude.ai/artifact/4LNvvQNZnBUkNdfn5U3Je9 (미리보기) |
+| `otw-core.js` | 두 페이지가 함께 쓰는 규칙·유형·리포트 문장·수업·링크. 대표 기준으로 바꾸는 곳 | – |
+| `lead-collector.gs` | 응답을 구글 시트에 쌓고, 방문자에게 결과 메일, 대표(mon.mut.friends@gmail.com)에게 알림, 버튼 클릭 기록 | – |
+| `assets/types/` | 그림체 유형 일러스트 8장 넣는 곳 (파일 이름·규격은 폴더 안 README) | – |
+| `tools/build-public.cjs` | 무료 진단을 외부 호스팅용 `public/` 폴더로 묶기 (일러스트 포함) | – |
 | `tests/` | `studio-e2e.cjs`(스튜디오), `free-e2e.cjs`(무료 진단 + 수집기) | – |
 
-## 진단 규칙 (otw-core.js)
+## 수업과 링크 (otw-core.js)
+
+| 항목 | 위치 | 지금 값 |
+|---|---|---|
+| 12월 빈티지 온라인 드로잉 클럽 | `CLASSES.vintageClub` | 12/2(수) 20:30 개강, 프로크리에이트 4주, 구글폼 신청. `closeAt`(개강 시각)이 지나면 결과 화면·리포트·DM에서 자동으로 빠짐 |
+| 1:1 맞춤 워크숍 | `CLASSES.workshop` | 단기 4회 55만 원 · 중기 12회 프로젝트형, 온라인/오프라인 조율. 링크가 비어 있어 인스타 DM 상담으로 연결 |
+| 오프라인 6개 반 | `CLASSES.routine` 외 5개의 `link` | 공식 노션 |
+| 수업 둘러보기 | `CONFIG.links.classes` | 공식 노션 |
+| 리포트 결제 · 카카오 문의 | `CONFIG.links.report` · `kakao` | 비어 있음 → 인스타 DM(@other.than.works)으로 자동 연결, 누르면 신청 문구가 복사됨 |
+
+다음 기수가 열리면 `CLASSES`에 항목을 추가하고 `OPEN_NOW` 배열에 키를 넣으면 됩니다. 그림책 자습서 안내는 실제 목차(1.기획 → 2.글 → 3.캐릭터/스타일 → 4.공모전/투고)를 따릅니다 (`TUTORIAL`).
+
+## 진단 규칙
 
 - **AI는 관찰만** 합니다. 6축 위치·일관성·상업 신호 5가지와 근거 문장을 JSON으로 받습니다.
 - **해석은 규칙**입니다. 종합 = 그림체 적합 45% + 상품 준비도 35% + 시장 매력 20%. 그림체 적합은 표준화해서 특정 길로 쏠리지 않게 했습니다.
 - **이모티콘 문턱**: 표정 폭 4, 캐릭터 고정성 4, 선 정돈 62를 못 넘으면 감점해 굿즈·그림책 쪽으로 넘깁니다 (`EMOTICON_GATE`).
 - **본인 체크 + AI 합산**: 위치·신호는 AI 60%, 일관성은 50:50 (`MERGE`). 차이가 큰 축은 처방 1순위.
-- **그림체 유형 8종**: 선(정돈/러프) × 형태(데포르메/사실) × 정서(서사/담백) (`TYPES`).
-- **장문 리포트**: `PATH_GUIDE`(길별 시장·경로·수익 계산·12주 로드맵·체크리스트·실수), `AXIS_GUIDE`, `SIGNAL_GUIDE`, `CLASSES`(수업 소개)를 대표의 실제 커리큘럼·말투로 바꿔 쓰면 됩니다.
+- **그림체 유형 8종**: 선(정돈/러프) × 형태(데포르메/사실) × 정서(서사/담백) (`TYPES`). 일러스트는 `assets/types/{key}.png`.
+- **장문 리포트**: `PATH_GUIDE`, `AXIS_GUIDE`, `SIGNAL_GUIDE`, `CLASSES`를 대표의 실제 커리큘럼·말투로 바꿔 쓰면 됩니다.
 
 ## 공개하기 (무료 진단)
 
 1. 구글 시트를 만들고 `lead-collector.gs`를 Apps Script 웹 앱으로 배포 (파일 맨 위 순서 참고)
-2. `otw-core.js`의 `CONFIG`에 웹 앱 주소, 결제·수업·카카오 링크, 가격 입력
-3. `node bulkup/tools/build-public.cjs` → `bulkup/public/` 생성
+2. `otw-core.js`의 `CONFIG.leadEndpoint`에 웹 앱 주소 입력 (결제 링크가 생기면 `links.report`도)
+3. 일러스트를 `assets/types/`에 넣고 `node bulkup/tools/build-public.cjs` → `bulkup/public/` 생성
 4. `public` 폴더를 Netlify Drop에 끌어다 놓거나 GitHub Pages로 배포
 5. 인스타 프로필 링크에 걸고 게시물마다 `?utm_source=instagram&utm_campaign=게시물이름`
+
+시트에는 `무료진단`(응답), `관심사 집계`(많이 받은 고민), `클릭`(누른 버튼: 리포트·클럽·워크숍·노션·문의) 세 장이 자동으로 생깁니다.
 
 ## 테스트
 

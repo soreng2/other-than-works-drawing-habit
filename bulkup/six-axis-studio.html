@@ -222,6 +222,7 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 72ch
 .report-bar { position: sticky; top: env(safe-area-inset-top, 0px); background: #FFFFFF; padding-block: 8px; z-index: 2; border-bottom: 1px solid #E2E7F0; }
 .report-bar .btn.ghost { color: #16181D; border-color: #E2E7F0; }
 .report-bar .hint { color: #5F6A80; }
+.type-art { flex: 0 0 auto; width: 84px; height: 84px; object-fit: contain; }
 .typetag { display: inline-block; font-size: 12px; font-weight: 700; color: var(--green); border: 1.5px solid currentColor; padding: 1px 8px; margin-top: 4px; }
 .spinner { width: 16px; height: 16px; border: 3px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -352,7 +353,8 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 72ch
         </div>
       </div>
       <div class="result-head">
-        <svg viewBox="0 0 120 110" aria-hidden="true">
+        <img class="type-art" id="res-art" alt="" hidden>
+        <svg id="res-svg" viewBox="0 0 120 110" aria-hidden="true">
           <ellipse cx="60" cy="103" rx="30" ry="5" fill="#16181D" opacity=".85"/>
           <rect x="42" y="84" width="9" height="16" rx="4" fill="var(--char-limb)"/>
           <rect x="69" y="84" width="9" height="16" rx="4" fill="var(--char-limb)"/>
@@ -451,7 +453,7 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 72ch
 "use strict";
 /* ═════════ 1~2. 규칙과 계산은 otw-core.js (공개 무료 진단과 공유) ═════════ */
 const OTW = window.OTW;
-const { CONFIG, AXES, SIGNALS, GENRES, MARKET, RX_LIB, GRADE_TXT, MERGE, AGREE_TXT, clamp, avg, hasBatchim, josa, rng, gauss,
+const { CONFIG, LINKS, linkFor, typeImage, openProducts, suggestOpen, AXES, SIGNALS, GENRES, MARKET, RX_LIB, GRADE_TXT, MERGE, AGREE_TXT, clamp, avg, hasBatchim, josa, rng, gauss,
   scorePaths, recommendation, gapsFor, weakest, summarize, sideOf, typeOf, computeGaps, gapSentence, buildResult, buildReport, freeTeaser } = OTW;
 const $ = (id) => document.getElementById(id);
 
@@ -558,7 +560,7 @@ let cardTimer = 0;
 function refresh() {
   $("res-who").textContent = `${state.name || "이름 없음"}님의 그림체`;
   renderSources(); renderGap();
-  const ty = typeOf(state); $("res-type").textContent = `${ty.name}형 · ${ty.hook}`;
+  const ty = typeOf(state); $("res-type").textContent = `${ty.name}형 · ${ty.hook}`; showTypeArt(ty.key);
   const paths = scorePaths(state);
   const rec = recommendation(state, paths);
   // 점수표
@@ -681,8 +683,9 @@ function dmText(paths, rec) {
       `• 길마다 시장 규모, 수익 계산, 12주 로드맵, 포트폴리오 체크리스트`,
       `• 6축 하나하나의 의미와 연습법, 본인 생각과 그림의 차이 해석`,
       `• 2주 처방 3개와 4주 연습표`, ``,
-      `리포트는 ${OTW.won(CONFIG.price.report)}이고, 지금은 런칭가 ${OTW.won(CONFIG.price.launch)}예요.${CONFIG.links.report ? " 신청: " + CONFIG.links.report : " 신청은 이 DM으로 '리포트'라고 보내 주세요."}`,
-      `— 아더댄웍스 소랭`);
+      `리포트는 ${OTW.won(CONFIG.price.report)}이고, 지금은 런칭가 ${josa(OTW.won(CONFIG.price.launch), "이에요", "예요")}.${linkFor("report").via === "link" ? " 신청: " + linkFor("report").url : " 신청은 이 DM으로 '리포트'라고 보내 주세요."}`);
+    lines.push(...openLines(state));
+    lines.push(``, `— 아더댄웍스 소랭`);
     return lines.join("\n");
   }
   const g = rec.target;
@@ -694,9 +697,38 @@ function dmText(paths, rec) {
     `• 6축과 상업 신호 5가지 하나하나의 해설과 연습법`,
     `• 2주 처방 3개와 4주 연습표`, ``,
     `가장 먼저 할 일은 '${state.rx[0]?.title || ""}'이에요. ${state.rx[0]?.how || ""}`, ``,
-    `리포트 마지막 장에 이 분석을 바탕으로 한 ${rec.title} 과정도 정리해 뒀어요. 4주 뒤 같은 그림 3장 보내주시면 재진단해서 변화를 숫자로 보여 드릴게요.`,
-    `— 아더댄웍스 소랭`);
+    `리포트 마지막 장에 이 분석을 바탕으로 한 ${rec.title} 과정도 정리해 뒀어요. 4주 뒤 같은 그림 3장 보내주시면 재진단해서 변화를 숫자로 보여 드릴게요.`);
+  lines.push(...openLines(state), ``, `전체 수업 안내: ${linkFor("classes").url}`, `— 아더댄웍스 소랭`);
   return lines.join("\n");
+}
+function openLines(s) {
+  const list = suggestOpen(s);
+  if (!list.length) return [];
+  return [``, `[지금 신청할 수 있는 수업]`].concat(list.map(o => `• ${o.name} (${o.badge}) · ${o.promise}${o.via === "link" ? "\n  신청: " + o.url : "\n  상담: 이 DM으로 '워크숍'이라고 보내 주세요"}`));
+}
+
+/* ═════════ 4-0. 유형 일러스트 (./assets/types/{key}.png, 없으면 기본 캐릭터) ═════════ */
+const artCache = {};
+function loadTypeImage(key) {
+  if (!artCache[key]) artCache[key] = new Promise(res => { const im = new Image(); im.onload = () => res(im.naturalWidth ? im : null); im.onerror = () => res(null); im.src = typeImage(key); });
+  return artCache[key];
+}
+function showTypeArt(key) {
+  const img = $("res-art"), svg = $("res-svg");
+  loadTypeImage(key).then(im => {
+    if (typeOf(state).key !== key) return;
+    if (im) { img.setAttribute("src", typeImage(key)); img.alt = `${typeOf(state).name} 일러스트`; img.hidden = false; svg.toggleAttribute("hidden", true); }
+    else { img.hidden = true; svg.toggleAttribute("hidden", false); }
+  });
+}
+async function typeImageDataURL(key) {
+  const im = await loadTypeImage(key); if (!im) return null;
+  try {
+    const c = document.createElement("canvas"); const r = Math.min(1, 520 / Math.max(im.naturalWidth, im.naturalHeight));
+    c.width = Math.round(im.naturalWidth * r); c.height = Math.round(im.naturalHeight * r);
+    c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+    return c.toDataURL("image/png");
+  } catch (e) { return null; } // 다른 출처 이미지면 파일에 넣지 않고 넘어간다
 }
 
 /* ═════════ 4-1. 유료 리포트 전체 ═════════ */
@@ -708,7 +740,9 @@ function ensureReportCSS() {
 function openReport() {
   ensureReportCSS();
   currentReport = buildReport(state);
-  $("report-body").innerHTML = OTW.reportBodyHTML(currentReport);
+  $("report-body").innerHTML = OTW.reportBodyHTML(currentReport, { art: typeImage(currentReport.type.key) });
+  const rimg = $("report-body").querySelector(".r-art");
+  if (rimg) { rimg.addEventListener("error", () => rimg.remove()); loadTypeImage(currentReport.type.key).then(im => { if (!im) rimg.remove(); }); }
   const chars = OTW.reportToText(currentReport).length;
   $("report-meta").textContent = `${currentReport.sections.length}개 장 · 약 ${Math.round(chars / 100) * 100}자`;
   $("report-status").textContent = state.isSample ? "예시 결과로 만든 리포트예요. 실제 진단 후 다시 열면 그 사람 기준으로 바뀝니다." : "";
@@ -733,7 +767,7 @@ $("btn-report-text").addEventListener("click", () => {
 $("btn-report-html").addEventListener("click", async () => {
   const st = $("report-status");
   const r = currentReport || buildReport(state);
-  const html = OTW.reportToHTMLDoc(r);
+  const html = OTW.reportToHTMLDoc(r, { art: await typeImageDataURL(r.type.key) });
   const fname = `아더댄웍스-6축리포트-${(state.name || "작가").replace(/[^\w가-힣-]/g, "")}-${r.date.replaceAll(".", "")}.html`;
   if (downloadsApi) {
     try { await downloadsApi.save({ filename: fname, data: html }); st.className = "status ok"; st.textContent = "저장했어요. 파일을 수강생에게 보내면 휴대폰 브라우저에서 바로 열려요."; return; }
@@ -749,10 +783,23 @@ function loadFonts() {
   return fontsReady;
 }
 function wrapLines(ctx, text, maxW, maxLines) {
+  // 띄어쓰기 단위로 줄을 나누고, 한 단어가 한 줄보다 길 때만 글자 단위로 자른다
   const out = []; let line = "";
-  for (const ch of String(text)) { const t = line + ch; if (ctx.measureText(t).width > maxW && line) { out.push(line); line = ch; if (out.length === maxLines) break; } else line = t; }
-  if (out.length < maxLines && line) out.push(line);
-  if (out.length === maxLines && out.join("").length < String(text).length) { let last = out[maxLines - 1]; while (ctx.measureText(last + "…").width > maxW && last.length) last = last.slice(0, -1); out[maxLines - 1] = last + "…"; }
+  const push = (l) => { if (out.length < maxLines) out.push(l); };
+  for (const word of String(text).split(/(\s+)/)) {
+    if (!word) continue;
+    const t = line + word;
+    if (ctx.measureText(t).width <= maxW) { line = t; continue; }
+    if (line.trim()) { push(line.trimEnd()); line = ""; }
+    if (/^\s+$/.test(word)) continue;
+    if (ctx.measureText(word).width <= maxW) { line = word; continue; }
+    for (const ch of word) { if (ctx.measureText(line + ch).width > maxW && line) { push(line); line = ch; } else line += ch; }
+  }
+  if (line.trim()) push(line.trimEnd());
+  const full = String(text).replace(/\s+/g, "");
+  if (out.length === maxLines && out.join("").replace(/\s+/g, "").length < full.length) {
+    let last = out[maxLines - 1]; while (ctx.measureText(last + "…").width > maxW && last.length) last = last.slice(0, -1); out[maxLines - 1] = last + "…";
+  }
   return out;
 }
 function roundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
@@ -772,7 +819,7 @@ function cardFooter(ctx, by) {
   const acct = "@other.than.works"; ctx.fillText(acct, W - PX - ctx.measureText(acct).width, by);
   ctx.fillText(new Date().toISOString().slice(0, 10).replaceAll("-", "."), PX, by);
 }
-async function drawCard(paths, rec) {
+async function drawCard(paths, rec, noArt) {
   await loadFonts();
   const c = $("card"), ctx = c.getContext("2d"); const W = 1080, PX = 78;
   cardBase(ctx, `6축 그림체 진단 · ${typeOf(state).name}형`);
@@ -797,12 +844,16 @@ async function drawCard(paths, rec) {
   });
   ctx.fillStyle = "#8A94A6"; ctx.font = '400 22px "Gothic A1", sans-serif'; ctx.fillText(state.sources && state.sources.ai && state.sources.self ? "● 종합 위치 (클수록 일관됨)   ○ 본인이 생각한 위치" : "점이 클수록 그 선택을 매번 일관되게 한다는 뜻이에요", PX, y + 8);
   const by = 1012; ctx.fillStyle = "#1F3D8F"; ctx.fillRect(0, by, W, 338);
+  const art = noArt ? null : await loadTypeImage(typeOf(state).key);
+  const ART = 230;
+  if (art) { const r = Math.min(ART / art.naturalWidth, ART / art.naturalHeight); const w = art.naturalWidth * r, h = art.naturalHeight * r; ctx.drawImage(art, W - PX - ART + (ART - w) / 2, by + 24 + (ART - h) / 2, w, h); }
+  const textW = W - PX * 2 - (art ? ART + 24 : 0);
   const paid = tier === "paid";
   const best = paid ? paths[0] : [...paths].sort((a, b) => b.style - a.style)[0];
   ctx.fillStyle = "#A9B8E4"; ctx.font = '700 26px "Gothic A1", sans-serif'; ctx.fillText(paid ? "가장 상업성이 높은 길" : "그림체가 가장 가까운 길", PX, by + 62);
   ctx.fillStyle = "#A8D96A"; ctx.font = '60px "Jua", sans-serif'; ctx.fillText(`${best.name}  ${paid ? best.total : best.style}`, PX, by + 134);
   ctx.fillStyle = "#C3D0F0"; ctx.font = '400 28px "Gothic A1", sans-serif';
-  wrapLines(ctx, state.rx[0] ? `처방 1 · ${state.rx[0].title}` : "", W - PX * 2, 1).forEach(l => ctx.fillText(l, PX, by + 190));
+  wrapLines(ctx, state.rx[0] ? `처방 1 · ${state.rx[0].title}` : "", textW, 1).forEach(l => ctx.fillText(l, PX, by + 190));
   cardFooter(ctx, by + 262);
   $("card-img").hidden = true; c.hidden = false;
 }
@@ -1171,7 +1222,14 @@ $("btn-copy").addEventListener("click", () => {
 let downloadsApi = null;
 async function savePng(canvasId, imgId, statusId, suffix) {
   const st = $(statusId);
-  const blob = await new Promise(r => $(canvasId).toBlob(r, "image/png"));
+  const toBlob = () => new Promise((res, rej) => { try { $(canvasId).toBlob(res, "image/png"); } catch (err) { rej(err); } });
+  let blob = null;
+  try { blob = await toBlob(); }
+  catch (err) {
+    // 다른 출처 이미지로 캔버스가 오염되면 다시 그려도 오염이 남는다 → 새 캔버스로 바꿔 일러스트 없이 다시 그린다
+    if (canvasId === "card") { const old = $("card"); old.replaceWith(old.cloneNode(false)); const ps = scorePaths(state); await drawCard(ps, recommendation(state, ps), true); }
+    blob = await toBlob().catch(() => null);
+  }
   if (!blob) { st.className = "status err"; st.textContent = "카드를 이미지로 만들지 못했어요."; return; }
   const fname = `otw-6axis-${(state.name || "result").replace(/[^\w가-힣-]/g, "")}-${suffix}-${new Date().toISOString().slice(0, 10)}.png`;
   if (downloadsApi) {
@@ -1283,6 +1341,6 @@ function renderHistUnavailable(msg) {
   const e = document.createElement("div"); e.className = "empty"; e.textContent = msg || "이 화면에서는 진단 기록을 쓸 수 없어요. 소유자 계정으로 claude.ai에서 열면 보여요.";
   box.appendChild(e);
 }
-window.__otw = { openReport, buildReport, freeTeaser, buildResult, computeGaps, MERGE, scorePaths, recommendation, summarize, coerceAI, renderSim, gapsFor, hasBatchim, dmText: () => $("dm").value, setTier, get state() { return state; }, set state(v) { state = v; renderAll(); } };
+window.__otw = { openProducts, linkFor, openReport, buildReport, freeTeaser, buildResult, computeGaps, MERGE, scorePaths, recommendation, summarize, coerceAI, renderSim, gapsFor, hasBatchim, dmText: () => $("dm").value, setTier, get state() { return state; }, set state(v) { state = v; renderAll(); } };
 })();
 </script>

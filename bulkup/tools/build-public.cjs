@@ -23,4 +23,12 @@ const dist = path.join(root, 'public');
 fs.mkdirSync(dist, { recursive: true });
 fs.writeFileSync(path.join(dist, 'index.html'), out);
 fs.copyFileSync(path.join(root, 'otw-core.js'), path.join(dist, 'otw-core.js'));
+// 유형 일러스트: bulkup/assets/types/*.png|jpg|webp 만 복사 (없으면 페이지가 기본 캐릭터로 대신 보여 줌)
+const artSrc = path.join(root, 'assets', 'types'), artDst = path.join(dist, 'assets', 'types');
+let arts = 0;
+if (fs.existsSync(artSrc)) {
+  fs.mkdirSync(artDst, { recursive: true });
+  for (const f of fs.readdirSync(artSrc)) if (/\.(png|jpe?g|webp)$/i.test(f)) { fs.copyFileSync(path.join(artSrc, f), path.join(artDst, f)); arts++; }
+}
+console.log('type art files:', arts);
 console.log('built', path.join(dist, 'index.html'), out.length, 'bytes');
