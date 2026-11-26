@@ -166,6 +166,18 @@ fieldset { border: 0; padding: 0; margin: 0; }
 .method ol { margin: 10px 0 0; padding-left: 1.2em; display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
 .hist-row { display: grid; grid-template-columns: 4em minmax(0, 1fr) 4.5em; gap: 8px; font-size: 14px; align-items: center; }
 .hist-row .d { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.seg.na { grid-template-columns: repeat(5, minmax(0, 1fr)) 1.6fr; }
+.seg button.na { font-size: 12px; font-weight: 700; line-height: 1.2; padding: 4px 2px; }
+.stage-box { display: grid; gap: 8px; }
+.stage-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.stage-steps span { font-size: 11.5px; text-align: center; padding: 6px 2px; background: var(--bg); color: var(--muted); border-top: 4px solid var(--line); }
+.stage-steps span.on { color: var(--ink); font-weight: 700; border-top-color: var(--accent); background: var(--ice); }
+.stage-next { font-size: 14px; padding: 10px 12px; background: var(--bg); border-left: 4px solid var(--lime); }
+.strong-list, .tip-list { display: grid; gap: 10px; }
+.strong-item, .tip-item { display: grid; gap: 3px; padding: 12px; border: 1.5px solid var(--line); background: var(--surface); }
+.strong-item b, .tip-item b { font-size: 15px; }
+.strong-item span, .tip-item span { font-size: 14px; color: var(--muted); }
+.tip-item small { font-size: 12px; color: var(--accent); font-weight: 700; }
 .type-art { width: 132px; height: 132px; object-fit: contain; }
 .open { display: grid; gap: 12px; }
 .open-item { border: 1.5px solid var(--line); background: var(--surface); padding: 16px; display: grid; gap: 8px; }
@@ -260,6 +272,20 @@ fieldset { border: 0; padding: 0; margin: 0; }
 
     <div class="surprise" id="r-surprise"></div>
 
+    <div class="card stage-box" id="r-stage">
+      <h2 id="r-stage-title">지금 단계</h2>
+      <div class="stage-steps" id="r-stage-steps"></div>
+      <p class="small" id="r-stage-line"></p>
+      <p class="stage-next" id="r-stage-next"></p>
+      <p class="muted small">답변 기준이에요. 실제 그림 기준의 기본기 8항목(형태·선·색·명암·구도·마감·디지털·자기 색) 점수는 유료 리포트에서 나와요.</p>
+    </div>
+
+    <div class="card">
+      <h2>내가 몰랐던 숨은 강점</h2>
+      <p class="muted small">점수가 낮아도 그 안에서 가장 앞선 곳이 있어요. 여기서 시작하면 가장 빨리 늘어요.</p>
+      <div class="strong-list" id="r-strong"></div>
+    </div>
+
     <div class="card" id="r-profile">
       <h2 id="r-profile-title">유형 프로필</h2>
       <div class="prof">
@@ -287,6 +313,12 @@ fieldset { border: 0; padding: 0; margin: 0; }
       <h2>팔 수 있는 형태인가 · 상업 신호 5가지</h2>
       <p class="muted small">답변 기준이에요. 실제 그림에서는 다르게 나오는 경우가 많아서, 유료 리포트에서는 그림 3장으로 다시 재고 대표가 감수해요.</p>
       <div id="r-sigs" style="display:grid;gap:8px"></div>
+    </div>
+
+    <div class="card">
+      <h2>디지털이 대신 해 주는 것</h2>
+      <p class="muted small">아이패드·태블릿으로 그린다면, 막히는 곳 대부분은 손이 아니라 기능으로 풀려요.</p>
+      <div class="tip-list" id="r-tips"></div>
     </div>
 
     <div class="card">
@@ -362,7 +394,9 @@ const CHIPS = ["제 그림체가 돈이 될까요?", "그림체가 매번 바뀌
 const ans = {};
 O.AXES.forEach(a => { ans[a.key] = { p: null, c: null }; });
 O.SIGNALS.forEach(x => { ans[x.key] = null; });
-const STEPS = O.AXES.map(a => ({ kind: "axis", a })).concat([{ kind: "signals" }]);
+const habit = {}; O.HABITS.forEach(h => { habit[h.key] = null; });
+const NA = 0; // '해당 없음'
+const STEPS = O.AXES.map(a => ({ kind: "axis", a })).concat([{ kind: "signals" }, { kind: "habits" }]);
 let step = 0, state = null, lead = null;
 const params = new URLSearchParams(location.search);
 const utm = { source: params.get("utm_source") || "", medium: params.get("utm_medium") || "", campaign: params.get("utm_campaign") || "", ref: params.get("ref") || "" };
@@ -374,35 +408,38 @@ Object.values(O.TYPES).forEach(t => { const s = document.createElement("span"); 
 $("btn-start").addEventListener("click", () => { step = 0; renderStep(); show("s-quiz"); });
 
 /* ───── 질문 ───── */
-function seg(label, current, onPick) {
-  const wrap = document.createElement("div"); wrap.className = "seg"; wrap.setAttribute("role", "group"); wrap.setAttribute("aria-label", label);
-  for (let n = 1; n <= 5; n++) {
-    const b = document.createElement("button"); b.type = "button"; b.textContent = n; b.setAttribute("aria-pressed", String(current === n));
-    b.addEventListener("click", () => { onPick(n); wrap.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); $("quiz-err").textContent = ""; });
+function seg(label, current, onPick, naLabel) {
+  const wrap = document.createElement("div"); wrap.className = "seg" + (naLabel ? " na" : ""); wrap.setAttribute("role", "group"); wrap.setAttribute("aria-label", label);
+  for (let n = 1; n <= (naLabel ? 6 : 5); n++) {
+    const val = n === 6 ? NA : n;
+    const b = document.createElement("button"); b.type = "button"; b.textContent = n === 6 ? naLabel : n; if (n === 6) b.className = "na"; b.setAttribute("aria-pressed", String(current === val));
+    b.addEventListener("click", () => { onPick(val); wrap.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); $("quiz-err").textContent = ""; });
     wrap.appendChild(b);
   }
   return wrap;
 }
-function qcard(title, left, right, current, onPick) {
+function qcard(title, left, right, current, onPick, naLabel) {
   const c = document.createElement("div"); c.className = "qcard";
   const h = document.createElement("h3"); h.textContent = title;
   const poles = document.createElement("div"); poles.className = "poles";
   const l = document.createElement("span"); l.textContent = left; const r = document.createElement("span"); r.textContent = right; poles.append(l, r);
-  c.append(h, poles, seg(title, current, onPick));
+  c.append(h, poles, seg(title, current, onPick, naLabel));
   return c;
 }
 function renderStep() {
   const body = $("quiz-body"); body.textContent = "";
   const st = STEPS[step];
-  $("step-label").textContent = `${step + 1} / ${STEPS.length} · ${st.kind === "axis" ? st.a.name : "팔 수 있는 형태인가"}`;
+  $("step-label").textContent = `${step + 1} / ${STEPS.length} · ${st.kind === "axis" ? st.a.name : st.kind === "signals" ? "팔 수 있는 형태인가" : "작업 습관"}`;
   $("progress").setAttribute("aria-valuenow", String(step)); $("progress").firstElementChild.style.width = (step / STEPS.length * 100) + "%";
   if (st.kind === "axis") {
     const a = st.a;
     body.append(qcard(a.q, a.lq, a.rq, ans[a.key].p, v => { ans[a.key].p = v; }), document.createElement("div"));
     body.lastChild.style.height = "4px";
     body.append(qcard(`이 선택, 그림마다 같은가요?`, "그때그때 달라요", "매번 같아요", ans[a.key].c, v => { ans[a.key].c = v; }));
+  } else if (st.kind === "habits") {
+    O.HABITS.forEach((h, i) => { body.append(qcard(h.q, h.left, h.right, habit[h.key], v => { habit[h.key] = v; }, h.na)); if (i < O.HABITS.length - 1) { const sp = document.createElement("div"); sp.style.height = "2px"; body.append(sp); } });
   } else {
-    O.SIGNALS.forEach((x, i) => { body.append(qcard(x.sq, "전혀 아니다", "매우 그렇다", ans[x.key], v => { ans[x.key] = v; })); if (i < O.SIGNALS.length - 1) { const sp = document.createElement("div"); sp.style.height = "2px"; body.append(sp); } });
+    O.SIGNALS.forEach((x, i) => { body.append(qcard(x.sq, "전혀 아니다", "매우 그렇다", ans[x.key], v => { ans[x.key] = v; }, O.SIGNAL_NA[x.key])); if (i < O.SIGNALS.length - 1) { const sp = document.createElement("div"); sp.style.height = "2px"; body.append(sp); } });
   }
   $("btn-prev").textContent = step === 0 ? "처음으로" : "이전";
   $("btn-next").textContent = step === STEPS.length - 1 ? "결과 만들기" : "다음";
@@ -411,6 +448,7 @@ function renderStep() {
 function stepComplete() {
   const st = STEPS[step];
   if (st.kind === "axis") return ans[st.a.key].p != null && ans[st.a.key].c != null;
+  if (st.kind === "habits") return O.HABITS.every(h => habit[h.key] != null);
   return O.SIGNALS.every(x => ans[x.key] != null);
 }
 $("btn-next").addEventListener("click", () => {
@@ -437,9 +475,10 @@ function validate() {
   return null;
 }
 function selfSource() {
-  const out = { axes: {}, signals: {}, complete: true };
+  const out = { axes: {}, signals: {}, craft: {}, complete: true };
   O.AXES.forEach(a => { out.axes[a.key] = { position: (ans[a.key].p - 1) * 25, consistency: ans[a.key].c }; });
-  O.SIGNALS.forEach(x => { out.signals[x.key] = ans[x.key]; });
+  O.SIGNALS.forEach(x => { out.signals[x.key] = ans[x.key] === NA ? null : ans[x.key]; });
+  O.HABITS.forEach(h => { out.craft[h.key] = habit[h.key] === NA ? null : habit[h.key] * 2; });
   return out;
 }
 let submitted = false;
@@ -473,6 +512,15 @@ function renderResult() {
   $("r-desc").textContent = ty.desc;
   $("r-surprise").textContent = "의외였던 점 · " + tz.surprise;
   const fi = O.freeInsights(state);
+  const steps = $("r-stage-steps"); steps.textContent = "";
+  O.STAGES.forEach(x => { const sp = document.createElement("span"); sp.textContent = x.name; if (fi.stage && fi.stage.key === x.key) sp.className = "on"; steps.appendChild(sp); });
+  $("r-stage-title").textContent = fi.stage ? `지금 단계 · ${fi.stage.name}` : "지금 단계";
+  $("r-stage-line").textContent = fi.stage ? fi.stage.line : "";
+  $("r-stage-next").textContent = fi.stage ? `다음 단계로 가는 가장 빠른 과제: ${fi.stage.next}` : "";
+  const sl = $("r-strong"); sl.textContent = "";
+  fi.hidden.forEach(h => { const d = document.createElement("div"); d.className = "strong-item"; const b = document.createElement("b"); b.textContent = `${h.name} · ${h.score}`; const sp = document.createElement("span"); sp.textContent = h.why; d.append(b, sp); sl.appendChild(d); });
+  const tl = $("r-tips"); tl.textContent = "";
+  fi.tips.forEach(t => { const d = document.createElement("div"); d.className = "tip-item"; const sm = document.createElement("small"); sm.textContent = `${t.for} 보강`; const b = document.createElement("b"); b.textContent = t.name; const sp = document.createElement("span"); sp.textContent = t.tip; d.append(sm, b, sp); tl.appendChild(d); });
   const fill = (id, items, tag) => { const el = $(id); el.textContent = ""; items.forEach(t => { const x = document.createElement(tag || "li"); x.textContent = t; el.appendChild(x); }); };
   $("r-profile-title").textContent = `${ty.name}형 프로필`;
   fill("r-strengths", ty.strengths); fill("r-pitfalls", ty.pitfalls); fill("r-worries", ty.worries.map(w => "“" + w + "”"), "span");
@@ -481,7 +529,7 @@ function renderResult() {
   fill("r-fixed", fi.fixed.length ? fi.fixed : ["아직 없어요. 하나만 정해도 그림체가 생겨요"], "span");
   fill("r-shaky", fi.shaky.length ? fi.shaky : ["크게 흔들리는 축은 없어요"], "span");
   const sg = $("r-sigs"); sg.textContent = "";
-  fi.signals.forEach(x => { const row = document.createElement("div"); row.className = "sigrow"; const n = document.createElement("span"); n.textContent = x.name; const bar = document.createElement("div"); bar.className = "sigbar"; bar.setAttribute("role", "img"); bar.setAttribute("aria-label", `${x.name} ${x.v}/5`); const i = document.createElement("i"); i.style.width = (x.v / 5 * 100) + "%"; bar.appendChild(i); const v = document.createElement("span"); v.textContent = x.v + "/5"; row.append(n, bar, v); sg.appendChild(row); });
+  fi.signals.forEach(x => { const row = document.createElement("div"); row.className = "sigrow"; const n = document.createElement("span"); n.textContent = x.name; const bar = document.createElement("div"); bar.className = "sigbar"; bar.setAttribute("role", "img"); bar.setAttribute("aria-label", x.v == null ? `${x.name} 해당 없음` : `${x.name} ${x.v}/5`); const i = document.createElement("i"); i.style.width = (x.v == null ? 0 : x.v / 5 * 100) + "%"; bar.appendChild(i); const v = document.createElement("span"); v.textContent = x.v == null ? "해당 없음" : x.v + "/5"; if (x.v == null) { v.className = "muted small"; row.style.gridTemplateColumns = "7.2em minmax(0, 1fr) 5em"; } row.append(n, bar, v); sg.appendChild(row); });
   const rxl = $("r-rx"); rxl.textContent = "";
   fi.sevenDay.forEach(([d, t]) => { const li = document.createElement("li"); const b = document.createElement("b"); b.textContent = d; const sp = document.createElement("span"); sp.textContent = t; li.append(b, sp); rxl.appendChild(li); });
   const pvCut = Math.min(fi.preview.text.length, 95);
@@ -600,6 +648,8 @@ function renderHistory(fi) {
 function resultText() {
   const ty = O.typeOf(state), tz = O.freeTeaser(state);
   return [`${state.name}님의 그림체 유형은 '${ty.name}'이에요.`, `“${ty.hook}”`, ty.desc, ``, `의외였던 점: ${tz.surprise}`, `지금 그림으로 돈이 되는 길 1위: ${tz.top.name}`, ...(tz.goalLine ? [tz.goalLine + "."] : []),
+    ...(O.freeInsights(state).stage ? [`지금 단계: ${O.freeInsights(state).stage.name} · ${O.freeInsights(state).stage.line}`] : []),
+    `숨은 강점: ${O.freeInsights(state).hidden.map(h => h.name).join(", ")}`,
     `이 유형의 강점: ${ty.strengths.join(" / ")}`, `빠지기 쉬운 함정: ${ty.pitfalls.join(" / ")}`, ``,
     `7일 미니 루틴`, ...O.freeInsights(state).sevenDay.map(([d, t]) => `${d}  ${t}`), ``,
     `나머지 순위와 등급, 길마다 시장·수익 계산·12주 로드맵은 유료 리포트에서 볼 수 있어요.`, `아더댄웍스 ${C.insta}`].join("\n");
@@ -712,7 +762,7 @@ $("btn-link").addEventListener("click", () => {
     .catch(() => { st.className = "status"; st.textContent = text; });
 });
 $("btn-restart").addEventListener("click", () => {
-  O.AXES.forEach(a => { ans[a.key] = { p: null, c: null }; }); O.SIGNALS.forEach(x => { ans[x.key] = null; });
+  O.AXES.forEach(a => { ans[a.key] = { p: null, c: null }; }); O.SIGNALS.forEach(x => { ans[x.key] = null; }); O.HABITS.forEach(h => { habit[h.key] = null; });
   state = null; lead = null; show("s-intro");
 });
 if (window.claude && typeof window.claude.use === "function") window.claude.use("downloads").then(d => { downloadsApi = d; }).catch(() => {});

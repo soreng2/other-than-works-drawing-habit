@@ -58,9 +58,16 @@ function runCollector(payload) {
   const sigSegs = await p.$$('#quiz-body .seg');
   check(sigSegs.length === 5, '마지막 단계: 상업 신호 5문항');
   for (const [i, v] of [4, 4, 3, 2, 5].entries()) await (await sigSegs[i].$$('button'))[v - 1].click();
+  check(await p.evaluate(() => document.querySelectorAll('#quiz-body .seg button.na').length === 2), '캐릭터·표정 문항에 "해당 없음" 버튼');
   await p.screenshot({ path: OUT + '/2-quiz.png' });
   await p.click('#btn-next');
-  check(await p.$eval('#s-lead', e => !e.hidden), '17문항 끝 → 연락처 화면 (결과보다 먼저)');
+  const hbSegs = await p.$$('#quiz-body .seg');
+  check(hbSegs.length === 4, '작업 습관 4문항 (마무리·색·구도·디지털)');
+  await p.click('#btn-next');
+  check((await p.$eval('#quiz-err', e => e.textContent)).includes('골라 주세요'), '습관 안 고르면 안내');
+  for (const [i, v] of [4, 4, 3, 4].entries()) await (await hbSegs[i].$$('button'))[v - 1].click();
+  await p.click('#btn-next');
+  check(await p.$eval('#s-lead', e => !e.hidden), '21문항 끝 → 연락처 화면 (결과보다 먼저)');
   check(await p.$eval('#s-result', e => e.hidden && getComputedStyle(e).display === 'none') && await p.$eval('#s-intro', e => getComputedStyle(e).display === 'none'), '연락처 전에는 결과·훅 화면이 실제로 안 보임');
 
   // 검증 규칙
@@ -109,7 +116,10 @@ function runCollector(payload) {
   check(rich.means === 6 && rich.badges === 6 && rich.fixed >= 1 && rich.shaky >= 1, '6축 한 줄 해석 + 굳음/흔들림 표시 + 축 지도');
   check(rich.sigs === 5 && rich.seven === 7, '상업 신호 5개(답변 기준) + 7일 미니 루틴');
   check(rich.pvOpen <= 96 && /blur/.test(rich.pvBlur), '내 리포트 미리보기: 앞부분만 공개, 나머지 흐림');
-  check(rich.cmp === 10 && rich.method === 4, '무료 vs 유료 비교표 10줄 + 진단 방법 4줄');
+  check(rich.cmp >= 10 && rich.method >= 4, `무료 vs 유료 비교표 ${rich.cmp}줄 + 진단 방법 ${rich.method}줄`);
+  const extra = await p.evaluate(() => ({ stage: document.getElementById('r-stage-title').textContent, strong: document.querySelectorAll('#r-strong .strong-item').length, tips: document.querySelectorAll('#r-tips .tip-item').length }));
+  console.log('extra:', JSON.stringify(extra));
+  check(/탐색기|기초 다지기|그림체 형성기|상업 준비 단계/.test(extra.stage) && extra.strong >= 2 && extra.tips >= 2, '무료: 지금 단계 + 숨은 강점 2 + 디지털 팁 2 이상');
   check(await p.evaluate(() => { try { return JSON.parse(localStorage.getItem('otw-free-history')).length >= 1; } catch (e) { return false; } }), '이 기기에 진단 기록 저장 (재진단 비교용)');
   const freeTxt = await p.evaluate(() => document.getElementById('s-result').innerText.replace(document.getElementById('r-goal').innerText, ''));
   check(!/(그림책|이모티콘|캐릭터 굿즈|인스타툰|포트폴리오·외주)\s*·?\s*[2-5]위/.test(freeTxt) && !/\d+점\s*\([A-D]\)/.test(freeTxt) && !/[A-D]등급/.test(freeTxt), '무료 화면 전체: 2~5위 길 이름·점수·등급 문구 없음');
@@ -185,7 +195,7 @@ function runCollector(payload) {
   // 4) 스튜디오와 같은 답 → 같은 결과
   const parity = await p.evaluate(() => { const s = window.__free.state; const O = window.OTW; return { top: O.scorePaths(s)[0].key, type: O.typeOf(s).key, axes: O.AXES.map(a => s.axes[a.key].position) }; });
   const O = require(path.join(root, 'otw-core.js'));
-  const self = { axes: {}, signals: {}, complete: true };
+  const self = { axes: {}, signals: {}, craft: { finish: 8, colorh: 8, compo: 6, digital: 8 }, complete: true };
   O.AXES.forEach((a, i) => { self.axes[a.key] = { position: (AX[i][0] - 1) * 25, consistency: AX[i][1] }; });
   ['craft', 'character', 'expression', 'narrative', 'production'].forEach((k, i) => { self.signals[k] = [4, 4, 3, 2, 5][i]; });
   const st2 = O.buildResult({ name: '소랭', goal: 'emoticon' }, null, self);
@@ -204,6 +214,8 @@ function runCollector(payload) {
   await q.click('#btn-start');
   for (const [pv, cv] of AX) { const segs = await q.$$('#quiz-body .seg'); await (await segs[0].$$('button'))[pv - 1].click(); await (await segs[1].$$('button'))[cv - 1].click(); await q.click('#btn-next'); }
   const sg2 = await q.$$('#quiz-body .seg'); for (const [i, v] of [4, 4, 3, 2, 5].entries()) await (await sg2[i].$$('button'))[v - 1].click();
+  await q.click('#btn-next');
+  const hb2 = await q.$$('#quiz-body .seg'); for (const [i, v] of [4, 4, 3, 4].entries()) await (await hb2[i].$$('button'))[v - 1].click();
   await q.click('#btn-next');
   await q.fill('#f-name', '테스트'); await q.fill('#f-phone', '010-2222-3333'); await q.check('#c-privacy'); await q.click('#btn-submit');
   await q.waitForTimeout(900);

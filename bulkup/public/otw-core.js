@@ -68,6 +68,54 @@ const SIGNALS = [
   { key: "production", name: "상품화 적합",   fix: "윤곽 정리와 작은 크기 식별성", desc: "윤곽이 분명하고 작게 줄여도 알아보며 색 면이 분리되는가 (스티커·인쇄·커팅)", sq: "작게 줄여도 알아볼 수 있고 윤곽이 분명하다" },
 ];
 
+/* 기본기 8항목 (10점 척도, 그림에서 볼 수 없으면 null = 해당 없음). 형태는 '사실적인가'가 아니라 '고른 그림체 안에서 안정적인가' */
+const CRAFT = [
+  { key: "drawing", name: "형태 안정감", desc: "고른 그림체 안에서 형태·비율이 흔들리지 않는가 (사실적인지가 아님)",
+    digital: "캔버스를 좌우 반전해 보면 어색한 비율이 바로 보여요. 틀어진 곳은 올가미 + '변형 → 휘기'로 고치면 다시 그리지 않아도 돼요." },
+  { key: "lineq", name: "선 품질", desc: "선이 정리돼 있고 굵기·끊김이 의도대로인가",
+    digital: "브러시의 손떨림 보정(스트림라인)을 올리고 선화 레이어를 따로 두면, 러프는 그대로 두고 선만 다시 그을 수 있어요." },
+  { key: "colorh", name: "색 조화", desc: "색끼리 싸우지 않고 한 팔레트로 묶여 있는가 (흑백이면 해당 없음)",
+    digital: "마음에 드는 그림에서 스포이트로 5색을 뽑아 팔레트로 저장하고, '색조·채도' 조정으로 전체 톤을 한 번에 맞출 수 있어요." },
+  { key: "value", name: "명암·빛", desc: "밝고 어두운 단계로 덩어리와 공간이 보이는가",
+    digital: "흑백 확인용 레이어(채도 0)를 맨 위에 켜 두고, 그림자는 곱하기 레이어, 빛은 스크린 레이어로 따로 올리면 언제든 고칠 수 있어요." },
+  { key: "compo", name: "구도·배치", desc: "시선이 머물 곳과 흐름, 여백이 계획돼 있는가",
+    digital: "작은 캔버스에 썸네일을 여러 개 그린 뒤, 올가미 + 자유 변형으로 주인공 위치를 옮겨 보며 정할 수 있어요. 종이였다면 다시 그려야 했을 일이에요." },
+  { key: "finish", name: "마감도", desc: "끝까지 칠했는가, 경계와 디테일이 정리돼 있는가 (미완성은 여기에만 반영)",
+    digital: "레이어를 '선·밑색·명암·디테일' 네 장으로 나누면 하루에 한 장씩만 끝내도 완성까지 가요. 마지막에 확대해서 경계만 다듬는 5분을 넣으세요." },
+  { key: "digital", name: "디지털 활용", desc: "레이어·브러시·질감 같은 도구의 장점을 쓰고 있는가 (아날로그 그림이면 해당 없음)",
+    digital: "브러시는 2~3개만 즐겨찾기로 고정하고, 클리핑 마스크로 칠하면 선 밖으로 안 나가요. 도구를 늘리기보다 줄이는 게 먼저예요." },
+  { key: "voice", name: "자기 색", desc: "다른 사람과 구별되는 이 사람만의 선택이 보이는가",
+    digital: "잘 나온 그림의 브러시·팔레트·캔버스 크기를 '내 세팅'으로 저장해 두면 매번 같은 출발점에서 그려서 그림체가 빨리 생겨요." },
+];
+/* 길마다 중요한 기본기 */
+const CRAFT_W = {
+  picturebook: { colorh: .2, value: .15, compo: .3, finish: .15, voice: .2 },
+  emoticon: { lineq: .3, drawing: .25, finish: .3, voice: .15 },
+  goods: { lineq: .3, colorh: .2, finish: .35, drawing: .15 },
+  instatoon: { drawing: .2, lineq: .2, compo: .2, finish: .2, voice: .2 },
+  portfolio: { drawing: .2, colorh: .15, value: .15, compo: .15, finish: .25, voice: .1 },
+};
+/* 성장 단계: 기본기 평균(10점)으로 정한다. A~D 같은 판정 대신 '지금 어디쯤인지'를 말한다 */
+const STAGES = [
+  { key: "explore", min: 0, name: "탐색기", line: "손에 익히는 중이에요. 그림 그린 지 얼마 안 됐다면 대부분 여기서 시작해요. 이상한 게 아니라 정상이에요.", next: "도구 하나·주제 하나로 20장 채우기" },
+  { key: "base", min: 4.5, name: "기초 다지기", line: "좋아하는 방향은 보이는데, 끝까지 같은 품질로 가는 힘을 기르는 단계예요. 미완성 그림이 많다면 딱 여기예요.", next: "마감 순서를 정해 10장을 '끝까지' 완성하기" },
+  { key: "form", min: 6, name: "그림체 형성기", line: "내 그림이라고 부를 만한 선택이 생기고 있어요. 이제 묶음과 일관성이 중요해요.", next: "같은 규칙으로 6장 묶음 만들기" },
+  { key: "ready", min: 7.5, name: "상업 준비 단계", line: "상품·외주로 바로 옮길 수 있는 기본기가 있어요. 이제 길과 시장을 고르는 단계예요.", next: "첫 상품 하나를 실제로 팔아 보기" },
+];
+/* 6축·상업 신호의 약점을 어떤 기본기 팁으로 풀지 */
+const TIP_FOR = { line: "lineq", form: "drawing", color: "colorh", texture: "digital", comp: "compo", mood: "voice",
+  craft: "finish", character: "voice", expression: "drawing", narrative: "compo", production: "lineq" };
+
+/* 무료·자가 진단용 작업 습관 4문항 → 기본기 점수(답변 기준, 값×2) */
+const HABITS = [
+  { key: "finish", q: "그리기 시작한 그림을 끝까지 마무리하는 편이다", left: "거의 못 끝내요", right: "대부분 끝내요" },
+  { key: "colorh", q: "색을 고를 때 어울리게 고르는 자신이 있다", left: "늘 헤매요", right: "자신 있어요" },
+  { key: "compo", q: "그리기 전에 화면 배치·구도를 먼저 생각한다", left: "바로 그려요", right: "먼저 계획해요" },
+  { key: "digital", q: "레이어·브러시 저장 같은 디지털 기능을 잘 쓴다", left: "거의 안 써요", right: "잘 써요", na: "아날로그로 그려요" },
+];
+/* 그림에 대상이 없으면 고를 수 있는 '해당 없음' */
+const SIGNAL_NA = { character: "캐릭터를 그리지 않아요", expression: "캐릭터를 그리지 않아요" };
+
 /* target = 6축 목표 위치, w = 6축 가중치, ready = 준비도 가중치 (완성도, 캐릭터, 표정, 서사, 상품화, 일관성) */
 const GENRES = [
   { key: "picturebook", name: "그림책", target: [45, 40, 50, 65, 62, 78], w: [.4, .5, .5, .8, .8, 1],
@@ -96,7 +144,7 @@ const TUTORIAL_LINE = TUTORIAL.map(t => `${t.no}.${t.title}`).join(" → ");
 /* 하고 싶은 길 우선: 동기 가산점을 공개적으로 더하고, 그래도 2위 밖이면 순위만 2위로 올린다 (점수는 그대로 보여 준다) */
 const GOAL_RULE = { bonus: 6, maxRank: 2 };
 const ROUTINE = { key: "routine", name: "드로잉 루틴반", why: "위치보다 반복이 먼저예요. 같은 선택을 4주 반복하면 그림체가 생깁니다." };
-const GRADE_TXT = { A: "바로 상품화 가능", B: "3개월 준비하면 상품화", C: "기초를 다진 뒤 도전", D: "지금은 다른 길이 유리" };
+const GRADE_TXT = { A: "바로 시작할 수 있는 길", B: "3개월 준비하면 열리는 길", C: "기초를 다지면 열리는 길", D: "기초부터 차근차근 쌓을 길" };
 
 const MARKET = {
   picturebook: { attract: 55, asOf: "2026.11",
@@ -148,6 +196,14 @@ const RX_LIB = {
   expression: { title: "표정 12칸", how: "같은 캐릭터로 기쁨·슬픔·화남·놀람 등 12표정을 한 장에. 눈썹과 입만 바꾼다." },
   narrative:  { title: "앞뒤 한 컷씩", how: "완성한 그림의 바로 앞 장면과 뒷장면을 러프로 한 컷씩 그려 세 컷으로 만든다." },
   production: { title: "2cm 테스트", how: "그림을 2cm로 줄여 출력해 알아보는지 확인하고, 안 보이는 디테일은 지운다." },
+  drawing: { title: "반전 체크 10장", how: "그릴 때마다 캔버스를 좌우 반전해 어색한 비율을 바로 고친다. 10장 연속." },
+  lineq: { title: "선화 따로 긋기", how: "러프 위에 새 레이어를 만들고 손떨림 보정을 올린 뒤, 한 번에 긋는 선으로만 선화를 다시 그린다. 5장." },
+  colorh: { title: "팔레트 5색 저장", how: "좋아하는 그림에서 5색을 뽑아 저장하고 2주 동안 그 안에서만 칠한다." },
+  value: { title: "흑백 3단계", how: "채색 전에 밝음·중간·어둠 세 가지 회색으로만 칠해 덩어리를 먼저 잡는다. 5장." },
+  compo: { title: "주인공 자리 정하기", how: "화면을 3등분한 선 위에 주인공을 두고, 시선이 향하는 쪽에 여백을 남긴다. 5장." },
+  finish: { title: "끝내는 4단계", how: "선 → 밑색 → 명암 → 디테일 레이어로 나누고 하루에 한 단계씩이라도 끝까지 간다. 완성작 5장." },
+  digital: { title: "내 세팅 저장", how: "브러시 3개·팔레트 1개·캔버스 크기를 정해 저장하고 2주 동안 그것만 쓴다." },
+  voice: { title: "좋아하는 것 3가지", how: "마음에 드는 내 그림 3장의 공통점 3가지를 적고, 다음 그림에 일부러 넣는다." },
 };
 
 /* ═════════ 2. 그림체 유형 8종 (선 · 형태 · 정서) ═════════ */
@@ -228,32 +284,54 @@ const CAL = (() => { const r = rng(7); return GENRES.map(g => { let s = 0, s2 = 
   const m = s / N; return { m, sd: Math.sqrt(s2 / N - m * m) }; }); })();
 /* 길의 준비도 가중치 (scorePaths 결과의 ready는 점수라서 원본 규칙에서 읽는다) */
 const readyW = (p) => GENRES.find(g => g.key === p.key).ready;
-const sigScore = (s, k) => (s.signals && s.signals[k] && s.signals[k].score != null ? s.signals[k].score : 3);
+/* 상업 신호: 기록이 없으면 3(옛 기록 호환), 명시적 null이면 '해당 없음' */
+const sigScore = (s, k) => { const o = s.signals && s.signals[k]; if (!o) return 3; if (o.score === null) return null; return o.score != null ? o.score : 3; };
+const craftVal = (s, k) => { const o = s.craft && s.craft[k]; const v = o && typeof o === "object" ? o.score : o; return Number.isFinite(v) ? v : null; };
+function craftIndex(s) { const v = CRAFT.map(c => craftVal(s, c.key)).filter(x => x != null); return v.length ? avg(v) : null; }
+function stageOf(s) {
+  const ci = craftIndex(s); if (ci == null) return null;
+  let st = STAGES[0]; STAGES.forEach(x => { if (ci >= x.min) st = x; });
+  const n = CRAFT.filter(c => craftVal(s, c.key) != null).length;
+  // 답변만으로는 '상업 준비 단계'를 주지 않는다: 그림을 보고 확인해야 열리는 단계
+  const selfCap = s.mode === "self" && st.key === "ready";
+  if (selfCap) st = Object.assign({}, STAGES[2], { line: STAGES[2].line + " 답변으로는 여기까지만 판정해요. 상업 준비 단계인지는 실제 그림을 봐야 알 수 있어요." });
+  return Object.assign({}, st, { index: Math.round(ci * 10) / 10, items: n, selfCap, basis: s.mode === "self" ? "답변 기준" : "그림 기준" });
+}
 
 function scorePaths(s) {
   const pos = AXES.map(a => s.axes[a.key].position);
   let list;
   const consAvg = avg(AXES.map(a => s.axes[a.key].consistency));
-  const sig = SIGNALS.map(x => sigScore(s, x.key));
-  const readyVals = [...sig, consAvg].map(v => (v - 1) / 4 * 100);
+  const consW = s.mixedSubjects ? .5 : 1;
+  const st = stageOf(s);
+  const gradeCap = st ? { explore: "C", base: "B", form: "A", ready: "A" }[st.key] : null; // 탐색기 최대 C, 기초 다지기 최대 B
   list = GENRES.map((g, i) => {
     const style = Math.round(clamp(50 + 18 * (CAL[i].m - styleDist(g, pos)) / CAL[i].sd, 0, 100));
-    const ready = Math.round(readyVals.reduce((t, v, j) => t + v * g.ready[j], 0));
+    let num = 0, den = 0;
+    SIGNALS.forEach((x, j) => { const v = sigScore(s, x.key); if (v == null) return; num += g.ready[j] * (v - 1) / 4 * 100; den += g.ready[j]; });
+    num += g.ready[5] * consW * (consAvg - 1) / 4 * 100; den += g.ready[5] * consW;
+    const sigReady = den ? num / den : 50;
+    let cn = 0, cd = 0;
+    Object.entries(CRAFT_W[g.key]).forEach(([k, w]) => { const v = craftVal(s, k); if (v == null) return; cn += w * (v - 1) / 9 * 100; cd += w; });
+    const ready = Math.round(cd ? .5 * sigReady + .5 * (cn / cd) : sigReady);
     const market = MARKET[g.key].attract;
     let total = MIX.style * style + MIX.ready * ready + MIX.market * market;
     const gate = [];
     if (g.key === "emoticon") {
       const G = EMOTICON_GATE;
-      if (sigScore(s, "expression") < G.expression) { total -= G.penalty.expression; gate.push("표정 폭"); }
-      if (sigScore(s, "character") < G.character) { total -= G.penalty.character; gate.push("캐릭터 고정성"); }
+      const ex = sigScore(s, "expression"), ch = sigScore(s, "character"); // 캐릭터가 없으면(null) 이모티콘 문턱은 넘지 못한다
+      if (ex == null || ex < G.expression) { total -= G.penalty.expression; gate.push(ex == null ? "캐릭터 없음" : "표정 폭"); }
+      if (ch == null || ch < G.character) { total -= G.penalty.character; if (ch != null) gate.push("캐릭터 고정성"); }
       if (s.axes.line.position < G.line) { total -= G.penalty.line; gate.push("선 정돈"); }
     }
     const isGoal = s.goal === g.key;
     const bonus = isGoal ? GOAL_RULE.bonus : 0;
     const base = Math.round(clamp(total, 0, 100));
     total = Math.round(clamp(total + bonus, 0, 100));
-    const grade = total >= 75 ? "A" : total >= 62 ? "B" : total >= 50 ? "C" : "D";
-    return { ...g, style, ready, market, base, bonus, total, grade, gate, isGoal, priority: false, scoreRank: 0 };
+    let grade = total >= 75 ? "A" : total >= 62 ? "B" : total >= 50 ? "C" : "D";
+    const capped = gradeCap && grade < gradeCap; // "A" < "B" < "C" < "D"
+    if (capped) grade = gradeCap;
+    return { ...g, style, ready, market, base, bonus, total, grade, capped, gate, isGoal, priority: false, scoreRank: 0 };
   }).sort((a, b) => b.total - a.total || b.style - a.style);
   list.forEach((p, i) => { p.scoreRank = i + 1; });
   const gi = list.findIndex(p => p.isGoal);
@@ -284,19 +362,51 @@ function gapsFor(s, g) {
   });
   SIGNALS.forEach((x, j) => {
     const v = sigScore(s, x.key);
-    if (v <= 2 && readyW(g)[j] >= .2) out.push(`${x.name} ${v}/5 → ${x.fix}`);
+    if (v != null && v <= 2 && readyW(g)[j] >= .2) out.push(`${x.name} ${v}/5 → ${x.fix}`);
   });
   return out.slice(0, 4);
 }
-function weakest(s, n) {
-  const items = AXES.map(a => ({ key: a.key, name: a.name, v: s.axes[a.key].consistency }))
-    .concat(SIGNALS.map(x => ({ key: x.key, name: x.name, v: sigScore(s, x.key) })));
-  return items.sort((a, b) => a.v - b.v).slice(0, n);
+function judgeItems(s) {
+  const mixed = !!s.mixedSubjects;
+  return AXES.map(a => ({ key: a.key, name: a.name + (mixed ? " 습관" : ""), v: s.axes[a.key].consistency, raw: s.axes[a.key].consistency, max: 5, kind: "axis" }))
+    .concat(SIGNALS.map(x => { const v = sigScore(s, x.key); return { key: x.key, name: x.name, v, raw: v, max: 5, kind: "signal" }; }).filter(x => !(x.key === "craft" && craftVal(s, "finish") != null)))
+    .concat(CRAFT.map(c => { const v = craftVal(s, c.key); return { key: c.key, name: c.name, v: v == null ? null : v / 2, raw: v, max: 10, kind: "craft" }; }))
+    .filter(x => x.v != null);
 }
+const fmtScore = (x) => `${x.raw}/${x.max}`;
+function weakest(s, n) {
+  const all = judgeItems(s);
+  const strongKeys = all.length > 4 ? strongest(s, 2).map(x => x.key) : [];
+  return all.filter(x => !strongKeys.includes(x.key)).sort((a, b) => a.v - b.v || (a.kind === "craft" ? -1 : 1)).slice(0, n);
+}
+/* 강점은 항상 찾아 준다. 절대 점수가 낮아도 그 사람 안에서 가장 나은 곳 */
 function strongest(s, n) {
-  const items = AXES.map(a => ({ key: a.key, name: a.name, v: s.axes[a.key].consistency, kind: "axis" }))
-    .concat(SIGNALS.map(x => ({ key: x.key, name: x.name, v: sigScore(s, x.key), kind: "signal" })));
-  return items.sort((a, b) => b.v - a.v).slice(0, n);
+  const all = judgeItems(s).sort((a, b) => b.v - a.v || (a.kind === "craft" ? -1 : 1));
+  // 축의 일관성은 '흑백만 쓴다' 같은 이유로도 높게 나와서, 기본기·상업 신호에서 먼저 찾고 모자랄 때만 축을 쓴다
+  // 그리고 그 사람 평균보다 높은 항목만 '강점'이라 부른다 (거의 안 쓰는 기능을 강점이라 하지 않게)
+  const mean = all.length ? avg(all.map(x => x.v)) : 0;
+  const above = all.filter(x => x.v > mean);
+  const primary = above.filter(x => x.kind !== "axis"), axes = above.filter(x => x.kind === "axis");
+  const rest = all.filter(x => !above.includes(x));
+  const picked = [];
+  primary.concat(axes, rest).forEach(x => {
+    // 같은 주제(예: 기본기 '색 조화'와 축 '색')는 하나만
+    const topic = x.kind === "axis" ? TIP_FOR[x.key] : x.key;
+    if (picked.length < n && !picked.some(p => (p.kind === "axis" ? TIP_FOR[p.key] : p.key) === topic)) picked.push(x);
+  });
+  return picked;
+}
+/* 강점 설명: 절대 점수가 낮으면 칭찬하지 않고 '상대적으로 앞서 있다'고 말한다 */
+function strengthWhy(x) {
+  const good = x.v >= 3.5; // 7/10, 4/5 이상
+  if (x.kind === "craft") { const d = CRAFT.find(c => c.key === x.key).desc.replace(/\s*\(.*\)$/, ""); return good ? `${d}. 이 부분은 이미 괜찮아요.` : `${d}. 다른 항목보다 앞서 있어요. 여기서 시작하면 가장 빨리 늘어요.`; }
+  if (x.kind === "signal") return good ? SIGNAL_GUIDE[x.key].high.split(". ")[0] + "." : `${x.name}이 다른 신호보다 앞서 있어요. 이 방향으로 한 장 더 그려 보세요.`;
+  return good ? "이 축의 선택은 이미 손에 붙었어요. 바꾸지 말고 무기로 쓰세요." : "이 축부터 하나로 고정하면 그림체가 가장 빨리 생겨요. 지금 점수가 가장 덜 흔들리는 쪽이에요.";
+}
+function digitalTips(s, n) {
+  const out = [];
+  weakest(s, 8).forEach(w => { const k = w.kind === "craft" ? w.key : TIP_FOR[w.key]; const c = CRAFT.find(x => x.key === k); if (c && !out.some(o => o.key === c.key)) out.push({ key: c.key, name: c.name, for: w.name, tip: c.digital }); });
+  return out.slice(0, n);
 }
 function summarize(s) {
   const pick = (k, l, r) => s.axes[k].position >= 55 ? r : s.axes[k].position <= 45 ? l : null;
@@ -359,16 +469,31 @@ function buildResult(base, ai, self) {
     }
   });
   SIGNALS.forEach(x => {
-    const A = ai && ai.signals[x.key], S = self && self.signals[x.key];
-    if (A) s.signals[x.key] = { score: S != null ? clamp(Math.round(MERGE.signal * A.score + (1 - MERGE.signal) * S), 1, 5) : A.score, note: A.note };
-    else s.signals[x.key] = { score: S, note: "본인 응답" };
+    const A = ai && ai.signals[x.key] ? ai.signals[x.key].score : undefined, S = self ? self.signals[x.key] : undefined;
+    const note = ai && ai.signals[x.key] ? ai.signals[x.key].note : "본인 응답";
+    let score;
+    if (A != null && S != null) score = clamp(Math.round(MERGE.signal * A + (1 - MERGE.signal) * S), 1, 5);
+    else if (A != null) score = A;
+    else if (S != null) score = S; // 그림엔 없지만(예: 캐릭터 없는 그림) 본인은 그린다고 답한 경우
+    else score = null;            // 그림에도 답에도 없으면 해당 없음
+    s.signals[x.key] = { score, note: A === null && S == null ? "이 그림들에서는 볼 수 없어서 평가하지 않았어요" : note };
   });
+  s.craft = {};
+  CRAFT.forEach(c => {
+    const A = ai && ai.craft && ai.craft[c.key] ? ai.craft[c.key].score : null, S = self && self.craft ? self.craft[c.key] : null;
+    let score = null;
+    if (Number.isFinite(A) && Number.isFinite(S)) score = Math.round(.7 * A + .3 * S);
+    else if (Number.isFinite(A)) score = A; else if (Number.isFinite(S)) score = S;
+    s.craft[c.key] = { score, note: ai && ai.craft && ai.craft[c.key] ? ai.craft[c.key].note || "" : (Number.isFinite(S) ? "본인 응답" : "") };
+  });
+  if (ai) { s.mixedSubjects = !!ai.mixedSubjects; s.images = ai.images || []; }
   if (!ai) {
     s.summary = summarize(s);
-    s.strengths = AXES.filter(a => s.axes[a.key].consistency >= 4).map(a => `• ${a.name}: ${s.axes[a.key].position >= 50 ? a.right : a.left} 쪽 선택이 안정적이에요`).concat(SIGNALS.filter(x => s.signals[x.key].score >= 4).map(x => `• ${josa(x.name, "이", "가")} 강점이에요`)).slice(0, 3).join("\n") || "• 아직 확실히 굳은 축은 없어요. 고를 수 있는 폭이 넓다는 뜻이기도 해요";
+    s.strengths = strongest(s, 2).map(x => `• ${x.name}: ${fmtScore(x)}`).join("\n");
     const weak = weakest(s, 3);
-    s.blockers = weak.slice(0, 2).map(w => `• ${josa(w.name, "이", "가")} 약해요 (${w.v}/5)`).join("\n");
-    s.rx = weak.map(w => Object.assign({}, RX_LIB[w.key]));
+    s.blockers = weak.slice(0, 2).map(w => `• ${josa(w.name, "이", "가")} 아직 약해요 (${fmtScore(w)})`).join("\n");
+    s.rx = [];
+    weakest(s, 8).forEach(w => { const r = RX_LIB[w.key]; if (r && s.rx.length < 3 && !s.rx.some(x => x.title === r.title)) s.rx.push(Object.assign({}, r)); });
   }
   const g = computeGaps(s);
   const topAxis = g && g.items.find(it => it.kind === "axis");
@@ -592,11 +717,12 @@ function whyPath(s, p) {
   });
   if (close.length) lines.push(`${close.join("·")} 축이 이 길의 기준과 가까워요.`);
   if (far.length) lines.push(`${far.join("·")} 축은 이 길의 기준과 거리가 있어요.`);
-  const sig = SIGNALS.map((x, j) => ({ x, v: sigScore(s, x.key), w: readyW(p)[j] })).filter(o => o.w >= .2);
+  const sig = SIGNALS.map((x, j) => ({ x, v: sigScore(s, x.key), w: readyW(p)[j] })).filter(o => o.w >= .2 && o.v != null);
   const hi = sig.filter(o => o.v >= 4).map(o => o.x.name), lo = sig.filter(o => o.v <= 2).map(o => o.x.name);
   if (hi.length) lines.push(`이 길에서 중요한 ${hi.join("·")} 신호가 이미 좋아요.`);
   if (lo.length) lines.push(`이 길에서 중요한 ${lo.join("·")} 신호가 아직 약해요.`);
   if (p.gate && p.gate.length) lines.push(`이모티콘 문턱(${p.gate.join("·")})을 아직 못 넘어서 점수를 낮췄어요. 귀여운 그림이 곧 이모티콘은 아니에요.`);
+  if (p.capped) lines.push(`점수로는 한 단계 위 등급이지만, 지금 기본기 단계에서는 ${p.grade}등급까지만 줘요. 기본기가 올라가면 등급도 같이 열려요.`);
   if (p.isGoal) lines.push(p.priority ? `하고 싶은 길이라 동기 가산 +${p.bonus}점을 더했어요. 점수로는 ${p.scoreRank}위지만 하고 싶은 길은 2위 안에 두고, 1위 길에서 넘어오는 순서를 함께 제안해요.` : `하고 싶은 길이라 동기 가산 +${p.bonus}점을 더했어요. 하고 싶은 마음은 꾸준함으로 이어져서 실제 결과에 영향을 줘요.`);
   return lines.join(" ");
 }
@@ -608,7 +734,7 @@ const SIG_USE = {
   portfolio: { craft: "납품 즉시 쓰는 마감", character: "브랜드 마스코트 제안", expression: "교육·출판 삽화의 표정 연기", narrative: "장면 삽화의 설득력", production: "인쇄물 납품 품질" },
 };
 function bridge(s, top, goal) {
-  const have = SIGNALS.map((x, j) => ({ x, v: sigScore(s, x.key), w: readyW(goal)[j] })).filter(o => o.v >= 4 && o.w >= .1).sort((a, b) => b.w - a.w).slice(0, 2);
+  const have = SIGNALS.map((x, j) => ({ x, v: sigScore(s, x.key), w: readyW(goal)[j] })).filter(o => o.v != null && o.v >= 4 && o.w >= .1).sort((a, b) => b.w - a.w).slice(0, 2);
   const lines = [];
   if (have.length) lines.push(`${top.name} 쪽에서 강하게 나온 ${have.map(o => o.x.name).join("·")}${hasBatchim(have[have.length - 1].x.name) ? "은" : "는"} ${goal.name}에서도 그대로 쓰여요: ${have.map(o => SIG_USE[goal.key][o.x.key]).join(", ")}.`);
   const gl = gapsFor(s, goal);
@@ -625,7 +751,7 @@ function buildReport(s, opts) {
   const name = s.name || "작가";
   const date = opts.date || new Date().toISOString().slice(0, 10).replaceAll("-", ".");
   const sections = [];
-  const strong = strongest(s, 2), weak = weakest(s, 2);
+  const strong = strongest(s, 2), weak = weakest(s, 2), stage = stageOf(s);
 
   sections.push({ id: "summary", title: "한눈에 보기", blocks: [
     s.ownerNote && String(s.ownerNote).trim() ? { t: "callout", text: `대표 한마디 · ${String(s.ownerNote).trim().slice(0, 600)}` } : null,
@@ -633,8 +759,9 @@ function buildReport(s, opts) {
       ["그림체 유형", `${type.name} · ${type.hook}`],
       ["한 줄 정의", s.summary || summarize(s)],
       ["상업성 1~3위", paths.slice(0, 3).map(p => `${p.isGoal ? "★" : ""}${p.name} ${p.total}점(${p.grade})`).join(" · ") + (paths.some(p => p.priority) ? " (★ 하고 싶은 길은 점수와 관계없이 2위 안에 둬요)" : paths.some(p => p.isGoal) ? " (★ 하고 싶은 길)" : "")],
-      ["가장 강한 곳", strong.map(x => `${x.name} ${x.v}/5`).join(", ")],
-      ["가장 먼저 손볼 곳", weak.map(x => `${x.name} ${x.v}/5`).join(", ")],
+      stage ? ["지금 단계", `${stage.name} · 기본기 ${stage.index}/10 (${stage.basis})`] : null,
+      ["숨은 강점", strong.map(x => `${x.name} ${fmtScore(x)}`).join(", ")],
+      [stage && stage.key === "ready" ? "더 올릴 곳" : "가장 먼저 손볼 곳", weak.map(x => `${x.name} ${fmtScore(x)}`).join(", ")],
       gaps ? ["본인 생각과 그림의 일치도", `${gaps.score}점 (${AGREE_TXT[gaps.level]})`] : null,
       ["추천 다음 단계", `${rec.title}. ${rec.line}`],
     ].filter(Boolean) },
@@ -649,14 +776,24 @@ function buildReport(s, opts) {
     { t: "kv", rows: [["어울리는 도구", type.tools], ["첫 프로젝트", type.firstProject], ["잘 맞는 협업 유형", type.pairName], ["가장 다른 유형", `${type.oppositeName} (이 유형의 그림을 따라 하면 오히려 흔들려요)`]] },
   ]});
 
-  sections.push({ id: "axes", title: "그림체 6축 상세", lead: "축은 우열이 아니라 위치예요. 어느 쪽에 있든 그 위치가 유리한 시장이 따로 있습니다.", blocks:
+  const craftRows = CRAFT.map(c => { const v = craftVal(s, c.key); const note = s.craft && s.craft[c.key] && s.craft[c.key].note; return [c.name, v == null ? "해당 없음" : `${v}/10`, v == null ? "이 그림들에서는 볼 수 없어서 점수에서 뺐어요" : (note && note !== "본인 응답" ? note : c.desc)]; });
+  if (craftRows.some(r => r[1] !== "해당 없음")) sections.push({ id: "craft", title: "기본기 8항목", lead: stage ? `지금 단계: ${stage.name}. ${stage.line}` : "", blocks: [
+    { t: "table", head: ["항목", "점수", "근거"], rows: craftRows },
+    { t: "p", text: "10점 기준: 3 = 막 시작한 손, 5 = 취미로 꾸준히 그린 손, 7 = SNS에서 반응을 받는 수준, 9 = 출판·상업 수준. 형태 점수는 '사실적인가'가 아니라 '고른 그림체 안에서 흔들리지 않는가'를 봐요. 미완성 그림은 마감도에만 반영했어요.", cls: "drill" },
+    { t: "h", text: "숨은 강점" }, { t: "list", items: strongest(s, 3).map(x => `${x.name} ${fmtScore(x)}: ${strengthWhy(x)}`) },
+    { t: "h", text: "디지털이 대신 해 주는 것" }, { t: "list", items: digitalTips(s, 4).map(t => `${t.name} (${t.for} 보강): ${t.tip}`) },
+    stage ? { t: "callout", text: `다음 단계로 가는 가장 빠른 과제: ${stage.next}` } : null,
+  ].filter(Boolean) });
+
+  sections.push({ id: "axes", title: "그림체 6축 상세", lead: "축은 우열이 아니라 위치예요. 어느 쪽에 있든 그 위치가 유리한 시장이 따로 있습니다." + (s.mixedSubjects ? " 보내 주신 그림들의 주제가 서로 달라서, 일관성은 주제가 아니라 손의 습관(선 굵기·색 운용·마감 방식)으로만 봤어요." : ""), blocks:
     AXES.flatMap(a => [{ t: "h", text: `${a.name} · ${a.left} ↔ ${a.right}` }, { t: "p", text: axisParagraph(s, a) }, { t: "p", text: `지금 위치가 특히 유리한 길: ${axisFavors(s, a).join(", ")}` }, { t: "p", text: "연습: " + AXIS_GUIDE[a.key].drill, cls: "drill" }]) });
 
   if (Array.isArray(s.imageNotes) && s.imageNotes.length) sections.push({ id: "images", title: "그림별 한 줄 코멘트", lead: "보내 주신 그림을 한 장씩 따로 봤어요.", blocks: [
-    { t: "weeks", items: s.imageNotes.slice(0, 3).map((n, i) => [`그림 ${i + 1}`, String(n)]) } ] });
+    { t: "weeks", items: s.imageNotes.slice(0, 3).map((n, i) => { const im = (s.images || [])[i]; const tag = im && (im.subject || im.stage) ? ` (${[im.subject, im.stage].filter(Boolean).join(" · ")})` : ""; return [`그림 ${i + 1}`, String(n) + tag]; }) } ] });
 
-  sections.push({ id: "signals", title: "상업 신호 5가지", lead: "그림체가 아니라 '팔 수 있는 형태인가'를 봅니다. 그림체가 비슷한 굿즈와 이모티콘이 여기서 갈려요.", blocks:
-    SIGNALS.flatMap(x => { const v = sigScore(s, x.key); const note = s.signals && s.signals[x.key] && s.signals[x.key].note && s.signals[x.key].note !== "본인 응답" ? ` 그림에서 본 근거: ${s.signals[x.key].note}` : "";
+  sections.push({ id: "signals", title: "상업 신호 5가지", lead: "그림체가 아니라 '팔 수 있는 형태인가'를 봅니다. 그림에서 볼 수 없는 신호(예: 캐릭터가 없는 그림의 표정 폭)는 '해당 없음'으로 두고 점수에서 뺐어요.", blocks:
+    SIGNALS.flatMap(x => { const v = sigScore(s, x.key); const nt = s.signals && s.signals[x.key] && s.signals[x.key].note; const note = nt && nt !== "본인 응답" && v != null ? ` 그림에서 본 근거: ${nt}` : "";
+      if (v == null) return [{ t: "h", text: `${x.name} · 해당 없음` }, { t: "p", text: "이 그림들에는 이 신호를 볼 대상이 없어서 평가하지 않았어요. 감점도 없어요. 이 길을 원한다면 해당 대상을 넣은 그림 한 장을 더 보내 주세요." }];
       return [{ t: "h", text: `${x.name} ${v}/5` }, { t: "p", text: (v >= 4 ? SIGNAL_GUIDE[x.key].high : v <= 2 ? SIGNAL_GUIDE[x.key].low : `보통이에요. 취미 그림으로는 충분하지만 상품으로 내려면 한 단계 더 올려야 해요. 다음 단계는 ${josa(x.fix, "이에요", "예요")}.`) + note }]; }) });
 
   if (gaps) {
@@ -744,26 +881,31 @@ function freeInsights(s) {
   });
   const fixed = axes.filter(x => x.consistency >= 4).map(x => x.name), shaky = axes.filter(x => x.consistency <= 2).map(x => x.name);
   const signals = SIGNALS.map(x => ({ key: x.key, name: x.name, v: sigScore(s, x.key), desc: x.desc }));
+  const stage = stageOf(s);
+  const hidden = strongest(s, 2).map(x => ({ name: x.name, score: fmtScore(x), why: strengthWhy(x) }));
+  const tips = digitalTips(s, 3);
   const w = weakest(s, 2), st = strongest(s, 1)[0];
   const rx = (k) => RX_LIB[k] || RX_LIB.line;
   const sevenDay = [
-    ["1일", `최근 그림 10장을 한 화면에 모으고, '${w[0].name}'이 장마다 어떻게 다른지 표시하기`],
+    ["1일", `최근 그림 10장을 한 화면에 모으고, '${w[0].name}' 쪽에서 아쉬운 곳에 표시하기 (미완성 그림도 같이)`],
     ["2일", `${rx(w[0].key).title}: ${rx(w[0].key).how}`],
     ["3일", `어제와 같은 규칙으로 한 장 더. 어제 그림과 나란히 놓고 비교하기`],
     ["4일", `${rx(w[1].key).title}: ${rx(w[1].key).how}`],
     ["5일", `4일 차 규칙을 지키며 좋아하는 소재로 한 장`],
-    ["6일", `강점 '${st.name}'을 일부러 더 밀어붙인 한 장 (내 그림이 가장 나다워 보이는 방향)`],
+    ["6일", `강점 '${st.name}'을 일부러 더 밀어붙인 한 장 (내 그림이 가장 나다워 보이는 방향). 끝까지 완성하는 게 목표예요`],
     ["7일", `1일 차 그림과 오늘 그림 비교 → 이 진단을 다시 해서 축이 움직였는지 확인`],
   ];
   // 내 유료 리포트 미리보기: 가장 흔들리는 축 문단 (순위·길 정보 없는 부분만)
-  const pa = AXES.find(a => a.key === (shaky.length ? axes.find(x => x.consistency <= 2).key : w.find(x => AXES.some(a => a.key === x.key))?.key || "line")) || AXES[0];
+  const wAxis = weakest(s, 20).find(x => x.kind === "axis");
+  const pa = AXES.find(a => a.key === (shaky.length ? axes.find(x => x.consistency <= 2).key : (wAxis ? wAxis.key : "line"))) || AXES[0];
   const preview = { title: `그림체 6축 상세 · ${pa.name}`, text: axisParagraph(s, pa) + " 연습: " + AXIS_GUIDE[pa.key].drill };
-  return { type, axes, fixed, shaky, signals, sevenDay, preview };
+  return { type, axes, fixed, shaky, signals, sevenDay, preview, stage, hidden, tips };
 }
 const FREE_VS_PAID = [
   ["그림체 유형", "유형 프로필 (강점·함정·고민·도구)", "+ 성장 경로 3단계, 자주 하는 고민에 대한 답"],
   ["6축 위치", "답변 기준", "실제 그림 3장 기준 + 그림 속 근거 문장 + 축마다 유리한 길"],
-  ["상업 신호 5가지", "답변 기준", "실제 그림 기준 + 대표 감수"],
+  ["기본기", "작업 습관 4가지로 본 지금 단계", "8항목 10점 척도 + 그림 속 근거 + 항목별 디지털 팁"],
+  ["상업 신호 5가지", "답변 기준 (해당 없으면 빼고 계산)", "실제 그림 기준 + 대표 감수"],
   ["본인 생각 vs 실제 그림", "–", "축마다 차이와 해석, 차이가 큰 축을 처방 1순위로"],
   ["돈이 되는 길", "1위 + 하고 싶은 길 순위", "1~5위 점수·등급, 왜 이 점수인지, 1위에서 하고 싶은 길로 가는 다리"],
   ["시장·수익", "–", "길마다 시장 규모, 진입 경로 3가지, 수익 계산 예시"],
@@ -776,6 +918,7 @@ const METHOD = [
   "6축(선·형태·색·질감·구성·정서)은 17년 차 디자이너가 수강생 그림을 보며 '그림체가 갈리는 지점'을 정리한 기준이에요. 축은 우열이 아니라 위치예요.",
   "상업 신호 5가지(완성도·캐릭터 고정성·표정 폭·장면 서사·상품화 적합)는 '팔 수 있는 형태인가'를 봐요. 그림체가 비슷한 굿즈와 이모티콘도 여기서 갈려요.",
   "길별 점수는 그림체 적합 45% + 상품 준비도 35% + 시장 매력 20%로 계산하고, 하고 싶은 길에는 동기 가산점을 더해요.",
+  "그림에서 볼 수 없는 항목(캐릭터가 없는 그림의 표정 폭, 흑백 그림의 색 조화 등)은 0점이 아니라 '해당 없음'으로 빼고 계산해요. 미완성 그림은 마감도에만 반영해요.",
   "무료 진단은 답변만으로 계산해요. 유료 리포트는 실제 그림 3장을 AI가 관찰하고 대표가 감수해서, 답변과 그림이 어디서 다른지까지 봐요.",
 ];
 
@@ -891,7 +1034,7 @@ function reportToText(r) {
   ).join("\n") + `\n\n${CONFIG.brand} · ${CONFIG.insta}`;
 }
 
-const OTW = { TYPE_PROFILE, freeInsights, FREE_VS_PAID, METHOD, axisFavors, GOAL_RULE, bridge, CONFIG, LINKS, TUTORIAL, TUTORIAL_LINE, isHttps, linkFor, typeImage, openProducts, suggestOpen, AXES, SIGNALS, GENRES, MIX, EMOTICON_GATE, ROUTINE, GRADE_TXT, MARKET, RX_LIB, TYPES, MERGE, AGREE_TXT,
+const OTW = { HABITS, SIGNAL_NA, strengthWhy, CRAFT, CRAFT_W, STAGES, TIP_FOR, craftVal, craftIndex, stageOf, judgeItems, fmtScore, digitalTips, TYPE_PROFILE, freeInsights, FREE_VS_PAID, METHOD, axisFavors, GOAL_RULE, bridge, CONFIG, LINKS, TUTORIAL, TUTORIAL_LINE, isHttps, linkFor, typeImage, openProducts, suggestOpen, AXES, SIGNALS, GENRES, MIX, EMOTICON_GATE, ROUTINE, GRADE_TXT, MARKET, RX_LIB, TYPES, MERGE, AGREE_TXT,
   AXIS_GUIDE, SIGNAL_GUIDE, PATH_GUIDE, CLASSES, CAL,
   clamp, avg, hasBatchim, josa, rng, gauss, scorePaths, recommendation, gapsFor, weakest, strongest, summarize, sideOf, typeOf,
   computeGaps, gapSentence, buildResult, buildReport, freeTeaser, reportBodyHTML, reportToHTMLDoc, reportToText, REPORT_CSS, esc, won };

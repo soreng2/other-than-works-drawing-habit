@@ -31,7 +31,9 @@ sample.json = async (prompt, opts)=>{ window.__calls++; window.__lastPrompt = pr
   const p = PROTOS[size % PROTOS.length]; const jitter = () => Math.round((Math.random()-.5)*8);
   const ax = {}; for (const [k,[pos,c]] of Object.entries(p.axes)) ax[k] = {position: pos + jitter(), consistency: c, evidence: k+" 근거"};
   const sg = {}; for (const [k,v] of Object.entries(p.signals)) sg[k] = {score: v, note: k+" 메모"};
-  return { summary: p.summary, axes: ax, signals: sg, strengths:["강점1","강점2"], blockers:["막힘1","막힘2"], prescriptions:[{title:"선 한 가지로 7일",how:"브러시 하나로 매일 3개"}], images: opts.images.map((_, i) => "그림 " + (i + 1) + ": 실루엣은 또렷하고 배경 질감이 달라요") }; };
+  if (p.signals.character === 1) { sg.character = {score: null, note: "캐릭터가 없어 해당 없음"}; sg.expression = {score: null, note: ""}; }
+  const cv = [6,7,7,4,5,4,6,5], craft = {}; ["drawing","lineq","colorh","value","compo","finish","digital","voice"].forEach((k,i) => craft[k] = {score: cv[i], note: k+" 근거"});
+  return { summary: p.summary, axes: ax, signals: sg, craft, mixed_subjects: false, strengths:["강점1","강점2"], blockers:["막힘1","막힘2"], prescriptions:[{title:"선 한 가지로 7일",how:"브러시 하나로 매일 3개"}], images: opts.images.map((_, i) => ({subject: "인물·캐릭터", stage: "채색 중", note: "그림 " + (i + 1) + ": 실루엣은 또렷하고 배경 질감이 달라요"})) }; };
 window.claude = { use: async (n)=> n==='sample'? sample : n==='downloads'? {save: async(r)=>{window.__saved=r.filename; window.__savedData = typeof r.data === 'string' ? r.data : ''; return {status:'saved'}}} : n==='db'? {collection:()=>coll} : null };
 `;
 let fails = 0;
@@ -112,6 +114,9 @@ const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!o
   check(mk.includes('참고로 지금 점수 1위는'), '목표와 1위가 다르면 1위 길도 언급');
   const prompt = await p.evaluate(() => window.__lastPrompt);
   check(prompt.includes('signals') && prompt.includes('기준점'), '프롬프트에 상업 신호와 기준점 포함');
+  check(prompt.includes('기본기 8항목') && prompt.includes('미완성은 craft.finish') && prompt.includes('null') && prompt.includes('mixed_subjects'), '프롬프트: 기본기 8항목 · 미완성은 마감도에만 · 볼 수 없으면 null · 주제 혼합');
+  const st1 = await p.evaluate(() => ({ craft: window.__otw.state.craft, stage: document.getElementById('res-stage').textContent, sel: document.getElementById('crs-finish').value }));
+  check(st1.craft && st1.craft.finish.score === 4 && st1.sel === '4' && /기본기 \d/.test(st1.stage), 'AI 기본기 8항목 → 결과지 편집칸·단계 칩: ' + st1.stage);
   await p.selectOption('#in-goal', 'unknown');
   await p.click('#btn-analyze'); await p.waitForTimeout(100); await p.waitForSelector('#ai-status.ok', { timeout: 5000 });
   const top = await p.evaluate(() => window.__otw.scorePaths(window.__otw.state)[0].name);
@@ -128,7 +133,7 @@ const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!o
   check(dmFree.includes("이 DM으로 '리포트'") && (openNow.length === 0 || dmFree.includes('[지금 신청할 수 있는 수업]')) && (!openNow.includes('vintageClub') || dmFree.includes('docs.google.com/forms')), `무료 DM: 결제 링크 없으면 DM 신청 + 모집 중 수업 (${openNow.join(', ')})`);
   check(await p.$eval('#market', e => e.hidden) && await p.$eval('#signals', e => e.closest('[data-paid]').hidden), '무료 카드에서 상업 신호·시장분석 숨김');
   await p.click('#tier-paid'); await p.waitForTimeout(400);
-  await p.click('#btn-png2'); await p.waitForTimeout(200);
+  await p.click('#btn-png2'); await p.waitForFunction(() => (window.__saved || '').includes('market'), null, { timeout: 5000 }).catch(() => {});
   check((await p.evaluate(() => window.__saved || '')).includes('market'), '카드 2 저장');
   await p.click('#btn-save'); await p.waitForTimeout(200);
   check((await p.$eval('#save-status', e => e.innerText)).includes('저장했어요'), '기록 저장');
@@ -141,6 +146,7 @@ const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!o
   console.log('report:', rep.meta, '|', rep.h2.join(' / '));
   check(rep.visible && rep.resultHidden && rep.h2.length >= 10 && rep.len > 8000, `유료 리포트 전체 화면: ${rep.h2.length}개 장, ${rep.len}자`);
   check(rep.h2.some(h => h.includes('이 분석으로 배우면')) && rep.h2.filter(h => h.includes('위') || h.includes('하고 싶은 길')).length >= 3, '길별 상세 3개 이상 + 수업 소개 장');
+  check(rep.h2.some(h => h.includes('기본기')) && (await p.$eval('#report-body', e => e.innerText.includes('숨은 강점') && e.innerText.includes('디지털이 대신 해 주는 것'))), '리포트: 기본기 8항목 장 + 숨은 강점 + 디지털 팁');
   const deep = await p.evaluate(() => { const b = document.getElementById('report-body').innerText; return { owner: b.includes('대표 한마디 · 선이 이미 단단해요'), images: b.includes('그림별 한 줄 코멘트') && b.includes('그림 1: 실루엣'), type: /형 깊이 보기/.test(b) && b.includes('성장 경로 3단계'), favors: b.includes('지금 위치가 특히 유리한 길') }; });
   check(deep.owner && deep.images && deep.type && deep.favors, '유료 섬세함: 대표 한마디 · 그림별 코멘트 · 유형 깊이 보기(성장 경로) · 축마다 유리한 길 ' + JSON.stringify(deep));
   await p.screenshot({ path: S + '/report-view.png', fullPage: false });
@@ -179,9 +185,9 @@ const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!o
   await p.click('#btn-self-reset');
   await clearThumbs();
   // 본인 생각: 선 3(50)/일관3, 형태 2/4, 색 2/4, 질감 4(75)/4, 구성 3/3, 정서 2(25)/3 | 신호 3,3,2,4,3
-  const SELF = [3, 3, 2, 4, 2, 4, 4, 4, 3, 3, 2, 3, 3, 3, 2, 4, 3];
-  check(await fillSelf(SELF) === 17, '본인 체크 문항 17개 (진단하기 화면 안)');
-  check((await p.$eval('#self-progress', e => e.textContent)) === '17/17', '진행 표시 17/17');
+  const SELF = [3, 3, 2, 4, 2, 4, 4, 4, 3, 3, 2, 3, 3, 3, 2, 4, 3, 2, 4, 3, 3];
+  check(await fillSelf(SELF) === 21, '본인 체크 문항 21개 (6축 12 + 신호 5 + 작업 습관 4)');
+  check((await p.$eval('#self-progress', e => e.textContent)) === '21/21', '진행 표시 21/21');
   await p.setInputFiles('#in-files', [{ name: 'b.png', mimeType: 'image/png', buffer: Buffer.alloc(1001, 2) }]); // 이모티콘형
   check((await p.$eval('#plan-line', e => e.textContent)).startsWith('본인 체크와 AI 분석을 합쳐'), '안내: 둘 다 합쳐 판정');
   await p.selectOption('#in-goal', 'unknown');
@@ -189,6 +195,7 @@ const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!o
   await p.waitForSelector('#ai-status.ok', { timeout: 5000 });
   const st7 = await p.evaluate(() => window.__otw.state);
   check(st7.mode === 'both' && !!st7.sources.ai && !!st7.sources.self, '결과 모드 = AI + 본인 체크');
+  check(st7.craft.finish.score === Math.round((0.7 * 4 + 0.3 * 4) * 10) / 10 || Math.abs(st7.craft.finish.score - 4) <= 0.5, '마감도: AI 4 + 본인 2×2 합산 = ' + st7.craft.finish.score);
   const A = st7.sources.ai.axes.line.position, Sv = st7.sources.self.axes.line.position;
   check(st7.axes.line.position === Math.round(0.6 * A + 0.4 * Sv), `선 합산 = 0.6×AI(${A}) + 0.4×본인(${Sv}) = ${st7.axes.line.position}`);
   check(st7.axes.line.consistency === Math.round(0.5 * st7.sources.ai.axes.line.consistency + 0.5 * 3), '일관성 합산 50:50');
