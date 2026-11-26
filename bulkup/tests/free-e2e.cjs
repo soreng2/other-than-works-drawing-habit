@@ -39,6 +39,16 @@ function runCollector(payload) {
   await p.goto('file://' + path.join(root, 'public', 'index.html') + '?utm_source=instagram&utm_medium=carousel&utm_campaign=type-quiz&debug=1');
   await p.waitForTimeout(600);
   check(await p.title() === '내 그림체 6축 진단', '빌드된 페이지 제목');
+  // 유형 일러스트 규격: 800×800 투명(RGBA) PNG, 500KB 이하, 8개 모두
+  const typeKeys = ['clean-deform-story', 'clean-deform-observe', 'clean-real-story', 'clean-real-observe', 'rough-deform-story', 'rough-deform-observe', 'rough-real-story', 'rough-real-observe'];
+  const badArt = typeKeys.filter(k => {
+    const f = path.join(root, 'public', 'assets', 'types', k + '.png');
+    if (!fs.existsSync(f)) return true;
+    const buf = fs.readFileSync(f);
+    if (buf.length > 500 * 1024) return true;
+    return !(buf.slice(1, 4).toString() === 'PNG' && buf.readUInt32BE(16) === 800 && buf.readUInt32BE(20) === 800 && buf[25] === 6);
+  });
+  check(badArt.length === 0, '유형 일러스트 8개 규격 (800×800 RGBA PNG, 500KB 이하)' + (badArt.length ? ': ' + badArt.join(',') : ''));
   check(await p.$eval('#setup-notice', e => !e.hidden), '수집 주소가 비어 있으면 운영자 안내 표시');
   check((await p.$$('#type-chips span')).length === 8, '훅 화면에 유형 8가지');
   await p.screenshot({ path: OUT + '/1-intro.png' });
@@ -143,7 +153,16 @@ function runCollector(payload) {
   const clip = await p.evaluate(() => navigator.clipboard.readText()).catch(() => '');
   check(clip.startsWith('[6축 리포트 신청] 소랭 /') && (await p.$eval('#cta-note', e => e.textContent)).includes('복사했어요'), 'DM 신청 문구 자동 복사: ' + clip);
   check(posts.some(x => x.kind === 'cta-click' && x.cta === 'report' && x.via === 'dm' && x.leadId && x.leadId === JSON.parse(posted).leadId), '버튼 클릭 기록 전송 (같은 leadId)');
-  check(await p.evaluate(() => getComputedStyle(document.getElementById('r-art')).display === 'none' && getComputedStyle(document.getElementById('r-svg')).display !== 'none' && window.__free.cardHasArt === false), '일러스트 파일이 없으면 이미지 자리 숨기고 기본 캐릭터 (실제 화면 기준)');
+  // 일러스트가 있으면 그림, 없으면 기본 캐릭터 (지금은 8장이 다 들어가 있어 그림 쪽을 본다)
+  const artKey = await p.evaluate(() => window.OTW.typeOf(window.__free.state).key);
+  const artShipped = fs.existsSync(path.join(root, 'public', 'assets', 'types', artKey + '.png'));
+  check(await p.evaluate(has => {
+    const img = document.getElementById('r-art'), svg = document.getElementById('r-svg');
+    const imgShown = getComputedStyle(img).display !== 'none', svgShown = getComputedStyle(svg).display !== 'none';
+    return has
+      ? imgShown && !svgShown && img.getAttribute('src') === './assets/types/' + window.OTW.typeOf(window.__free.state).key + '.png' && window.__free.cardHasArt === true
+      : !imgShown && svgShown && window.__free.cardHasArt === false;
+  }, artShipped), artShipped ? '일러스트가 있으면 결과 화면·결과 카드에 그림 표시 (실제 화면 기준)' : '일러스트 파일이 없으면 이미지 자리 숨기고 기본 캐릭터 (실제 화면 기준)');
   const before = posts.filter(x => x.kind === 'free-diagnosis').length;
   await p.evaluate(() => document.getElementById('lead-form').dispatchEvent(new Event('submit', { cancelable: true })));
   await p.waitForTimeout(200);
@@ -179,8 +198,13 @@ function runCollector(payload) {
   await p.click('#btn-link'); await p.waitForTimeout(150);
   const shareTxt = await p.$eval('#share-status', e => e.textContent);
   check(/복사|ref=share/.test(shareTxt), '공유 링크 (ref=share)');
-  const card = await p.evaluate(() => document.getElementById('share-card').toDataURL('image/png').split(',')[1]);
-  fs.writeFileSync(OUT + '/card.png', Buffer.from(card, 'base64'));
+  // file:// 에서는 일러스트가 캔버스를 오염시켜 toDataURL 이 막힌다 → 앱이 그림 없이 다시 그려 저장하는지 확인
+  const card = await p.evaluate(() => { try { return document.getElementById('share-card').toDataURL('image/png').split(',')[1]; } catch (e) { return null; } });
+  if (card) fs.writeFileSync(OUT + '/card.png', Buffer.from(card, 'base64'));
+  else {
+    const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 4000 }).catch(() => null), p.click('#btn-card')]);
+    check(!!dl && /저장/.test(await p.$eval('#share-status', e => e.textContent)), '일러스트로 캔버스가 막히면 카드 저장은 그림 없이 대체');
+  }
 
   // 4) 스튜디오와 같은 답 → 같은 결과
   const parity = await p.evaluate(() => { const s = window.__free.state; const O = window.OTW; return { top: O.scorePaths(s)[0].key, type: O.typeOf(s).key, axes: O.AXES.map(a => s.axes[a.key].position) }; });
