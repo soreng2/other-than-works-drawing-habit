@@ -405,6 +405,13 @@ header.top p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 72ch
 
       <div class="paid-only market" id="market" data-paid></div>
 
+      <div class="paid-only listbox" data-paid>
+        <h3><label for="res-owner">대표 한마디<span class="paidmark">유료</span></label></h3>
+        <textarea id="res-owner" maxlength="600" placeholder="리포트 첫머리에 그대로 들어가요. 예: 선이 이미 단단해요. 질감 하나만 정하면 그림책 충분히 갑니다."></textarea>
+        <h3><label for="res-images">그림별 한 줄 코멘트<span class="paidmark">유료</span></label></h3>
+        <textarea id="res-images" placeholder="AI가 그림마다 한 줄씩 써 둬요. 줄마다 그림 한 장 (최대 3줄)"></textarea>
+      </div>
+
       <div class="paid-only report-cta" data-paid>
         <div>
           <b>유료 리포트 전체</b>
@@ -544,6 +551,8 @@ function renderAll() {
   SIGNALS.forEach(x => { paintDots($("sg-" + x.key), state.signals[x.key].score); $("sgn-" + x.key).value = state.signals[x.key].note || ""; });
   $("res-strengths").value = state.strengths;
   $("res-blockers").value = state.blockers;
+  $("res-owner").value = state.ownerNote || "";
+  $("res-images").value = (state.imageNotes || []).join("\n");
   renderRx(); refresh();
 }
 function setTier(t) {
@@ -1021,9 +1030,10 @@ ${sigSpec}
   "signals": {"craft": {"score": 1, "note": "..."}, "character": {...}, "expression": {...}, "narrative": {...}, "production": {...}},
   "strengths": ["살릴 것 2개, 각 40자 안팎"],
   "blockers": ["막히는 곳 2개, 각 40자 안팎. 가장 약한 축이나 신호부터"],
-  "prescriptions": [{"title": "12자 안팎 과제명", "how": "2주 동안 할 구체적 방법 한 문장, 도구·횟수 포함"}]
+  "prescriptions": [{"title": "12자 안팎 과제명", "how": "2주 동안 할 구체적 방법 한 문장, 도구·횟수 포함"}],
+  "images": ["그림마다 한 줄 코멘트 (첨부 순서대로, 그림 수만큼). 그 그림에서만 보이는 장점 하나와 고칠 점 하나를 구체적으로, 50자 안팎"]
 }
-prescriptions는 정확히 3개, blockers의 순서를 따릅니다.`;
+prescriptions는 정확히 3개, blockers의 순서를 따릅니다. images는 첨부한 그림 수와 같은 개수로 씁니다.`;
 }
 function coerceAI(raw, base) {
   if (!raw || typeof raw !== "object") throw { code: "invalid_json" };
@@ -1043,6 +1053,7 @@ function coerceAI(raw, base) {
   const rx = Array.isArray(raw.prescriptions) ? raw.prescriptions.slice(0, 3).map(r => ({ title: String(r?.title || "").slice(0, 30), how: String(r?.how || "").slice(0, 160) })).filter(r => r.title) : [];
   weakest(out, 11).forEach(w => { if (rx.length < 3 && !rx.some(r => r.title === RX_LIB[w.key].title)) rx.push({ ...RX_LIB[w.key] }); });
   out.rx = rx;
+  out.imageNotes = Array.isArray(raw.images) ? raw.images.slice(0, 3).map(x => String(x || "").slice(0, 140)).filter(Boolean) : [];
   return out;
 }
 const ERR_COPY = {
@@ -1214,6 +1225,8 @@ function renderSim() {
 /* ═════════ 11. 결과지 수정 · 복사 · 저장 ═════════ */
 $("res-summary").addEventListener("input", e => { state.summary = e.target.value; refresh(); });
 $("res-strengths").addEventListener("input", e => { state.strengths = e.target.value; });
+$("res-owner").addEventListener("input", e => { state.ownerNote = e.target.value; });
+$("res-images").addEventListener("input", e => { state.imageNotes = e.target.value.split("\n").map(x => x.trim()).filter(Boolean).slice(0, 3); });
 $("res-blockers").addEventListener("input", e => { state.blockers = e.target.value; });
 $("btn-copy").addEventListener("click", () => {
   const ta = $("dm"), st = $("save-status");
@@ -1251,6 +1264,7 @@ function snapshotForSave() {
     axes: AXES.map(a => ({ key: a.key, position: state.axes[a.key].position, consistency: state.axes[a.key].consistency, evidence: state.axes[a.key].evidence || "" })),
     signals: SIGNALS.map(x => ({ key: x.key, score: state.signals[x.key].score, note: state.signals[x.key].note || "" })),
     strengths: state.strengths, blockers: state.blockers, rx: state.rx, sources: state.sources || null,
+    ownerNote: String(state.ownerNote || "").slice(0, 600), imageNotes: (state.imageNotes || []).slice(0, 3),
     agreement: (computeGaps(state) || {}).score ?? null,
     topGenre: paths[0].key, topScore: paths[0].total, topGrade: paths[0].grade, createdAt: Date.now(),
   };
@@ -1307,6 +1321,8 @@ function fromSaved(v) {
   SIGNALS.forEach(k => { const x = (Array.isArray(v.signals) ? v.signals : []).find(y => y && y.key === k.key) || {};
     s.signals[k.key] = { score: clamp(Number(x.score) || 3, 1, 5), note: String(x.note || "") }; });
   s.sources = sanitizeSources(v.sources);
+  s.ownerNote = String(v.ownerNote || "").slice(0, 600);
+  s.imageNotes = (Array.isArray(v.imageNotes) ? v.imageNotes : []).slice(0, 3).map(x => String(x).slice(0, 140));
   s.rx = (Array.isArray(v.rx) ? v.rx : []).slice(0, 3).map(r => ({ title: String(r?.title || ""), how: String(r?.how || "") }));
   weakest(s, 11).forEach(w => { if (s.rx.length < 3 && !s.rx.some(r => r.title === RX_LIB[w.key].title)) s.rx.push({ ...RX_LIB[w.key] }); });
   return s;

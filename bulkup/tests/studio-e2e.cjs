@@ -31,7 +31,7 @@ sample.json = async (prompt, opts)=>{ window.__calls++; window.__lastPrompt = pr
   const p = PROTOS[size % PROTOS.length]; const jitter = () => Math.round((Math.random()-.5)*8);
   const ax = {}; for (const [k,[pos,c]] of Object.entries(p.axes)) ax[k] = {position: pos + jitter(), consistency: c, evidence: k+" 근거"};
   const sg = {}; for (const [k,v] of Object.entries(p.signals)) sg[k] = {score: v, note: k+" 메모"};
-  return { summary: p.summary, axes: ax, signals: sg, strengths:["강점1","강점2"], blockers:["막힘1","막힘2"], prescriptions:[{title:"선 한 가지로 7일",how:"브러시 하나"}] }; };
+  return { summary: p.summary, axes: ax, signals: sg, strengths:["강점1","강점2"], blockers:["막힘1","막힘2"], prescriptions:[{title:"선 한 가지로 7일",how:"브러시 하나로 매일 3개"}], images: opts.images.map((_, i) => "그림 " + (i + 1) + ": 실루엣은 또렷하고 배경 질감이 달라요") }; };
 window.claude = { use: async (n)=> n==='sample'? sample : n==='downloads'? {save: async(r)=>{window.__saved=r.filename; window.__savedData = typeof r.data === 'string' ? r.data : ''; return {status:'saved'}}} : n==='db'? {collection:()=>coll} : null };
 `;
 let fails = 0;
@@ -132,12 +132,17 @@ const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!o
   check((await p.evaluate(() => window.__saved || '')).includes('market'), '카드 2 저장');
   await p.click('#btn-save'); await p.waitForTimeout(200);
   check((await p.$eval('#save-status', e => e.innerText)).includes('저장했어요'), '기록 저장');
+  // 유료 전용: 그림별 코멘트(AI) + 대표 한마디
+  check((await p.$eval('#res-images', e => e.value)).startsWith('그림 1:'), '그림별 한 줄 코멘트를 AI가 채움');
+  await p.fill('#res-owner', '선이 이미 단단해요. 질감 하나만 정하면 충분히 갑니다.');
   // 장문 리포트
   await p.click('#btn-report'); await p.waitForTimeout(300);
   const rep = await p.evaluate(() => ({ visible: !document.getElementById('report-view').hidden, resultHidden: document.getElementById('result').hidden, h2: [...document.querySelectorAll('#report-body h2')].map(h => h.textContent), len: document.getElementById('report-body').innerText.length, meta: document.getElementById('report-meta').textContent }));
   console.log('report:', rep.meta, '|', rep.h2.join(' / '));
   check(rep.visible && rep.resultHidden && rep.h2.length >= 10 && rep.len > 8000, `유료 리포트 전체 화면: ${rep.h2.length}개 장, ${rep.len}자`);
   check(rep.h2.some(h => h.includes('이 분석으로 배우면')) && rep.h2.filter(h => h.includes('위') || h.includes('하고 싶은 길')).length >= 3, '길별 상세 3개 이상 + 수업 소개 장');
+  const deep = await p.evaluate(() => { const b = document.getElementById('report-body').innerText; return { owner: b.includes('대표 한마디 · 선이 이미 단단해요'), images: b.includes('그림별 한 줄 코멘트') && b.includes('그림 1: 실루엣'), type: /형 깊이 보기/.test(b) && b.includes('성장 경로 3단계'), favors: b.includes('지금 위치가 특히 유리한 길') }; });
+  check(deep.owner && deep.images && deep.type && deep.favors, '유료 섬세함: 대표 한마디 · 그림별 코멘트 · 유형 깊이 보기(성장 경로) · 축마다 유리한 길 ' + JSON.stringify(deep));
   await p.screenshot({ path: S + '/report-view.png', fullPage: false });
   await p.click('#btn-report-html'); await p.waitForTimeout(200);
   check((await p.evaluate(() => window.__saved || '')).endsWith('.html') && (await p.evaluate(() => (window.__savedData || '').startsWith('<!doctype html>'))), 'HTML 파일 저장 (완결된 문서)');

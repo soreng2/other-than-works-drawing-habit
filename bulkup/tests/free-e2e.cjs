@@ -97,6 +97,22 @@ function runCollector(payload) {
   check(['이모티콘', '캐릭터 굿즈'].includes(res.top), '1위 공개 (하고 싶은 이모티콘은 동기 +6으로 근소한 굿즈를 넘을 수 있음): ' + res.top);
   check(res.surprise.startsWith('의외였던 점 · ') && res.surprise.length > 20, '의외의 한 가지 공개: ' + res.surprise);
   check(res.locked.every(v => v === '●●●●●') && res.locked.length === 3, '나머지 순위·등급은 잠김 (값 노출 없음)');
+  // 무료 고급화: 유형 프로필 · 축 해석 · 굳은/흔들리는 축 · 상업 신호 · 7일 루틴 · 미리보기 · 비교표 · 방법
+  const rich = await p.evaluate(() => ({
+    strengths: document.querySelectorAll('#r-strengths li').length, pitfalls: document.querySelectorAll('#r-pitfalls li').length, worries: document.querySelectorAll('#r-worries span').length, kv: document.querySelectorAll('#r-kv div').length,
+    means: [...document.querySelectorAll('#r-axes .mean')].filter(e => e.textContent.length > 5).length, badges: document.querySelectorAll('#r-axes .cbadge').length,
+    fixed: document.querySelectorAll('#r-fixed span').length, shaky: document.querySelectorAll('#r-shaky span').length, sigs: document.querySelectorAll('#r-sigs .sigrow').length,
+    seven: document.querySelectorAll('#r-rx li').length, pvOpen: document.getElementById('pv-open').textContent.length, pvBlur: getComputedStyle(document.getElementById('pv-blur')).filter,
+    cmp: document.querySelectorAll('#r-compare tr').length, method: document.querySelectorAll('#r-method li').length }));
+  console.log('rich:', JSON.stringify(rich));
+  check(rich.strengths === 3 && rich.pitfalls === 2 && rich.worries === 2 && rich.kv === 4, '유형 프로필: 강점 3 · 함정 2 · 흔한 고민 2 · 도구/첫 프로젝트/협업/반대 유형');
+  check(rich.means === 6 && rich.badges === 6 && rich.fixed >= 1 && rich.shaky >= 1, '6축 한 줄 해석 + 굳음/흔들림 표시 + 축 지도');
+  check(rich.sigs === 5 && rich.seven === 7, '상업 신호 5개(답변 기준) + 7일 미니 루틴');
+  check(rich.pvOpen <= 96 && /blur/.test(rich.pvBlur), '내 리포트 미리보기: 앞부분만 공개, 나머지 흐림');
+  check(rich.cmp === 10 && rich.method === 4, '무료 vs 유료 비교표 10줄 + 진단 방법 4줄');
+  check(await p.evaluate(() => { try { return JSON.parse(localStorage.getItem('otw-free-history')).length >= 1; } catch (e) { return false; } }), '이 기기에 진단 기록 저장 (재진단 비교용)');
+  const freeTxt = await p.evaluate(() => document.getElementById('s-result').innerText.replace(document.getElementById('r-goal').innerText, ''));
+  check(!/(그림책|이모티콘|캐릭터 굿즈|인스타툰|포트폴리오·외주)\s*·?\s*[2-5]위/.test(freeTxt) && !/\d+점\s*\([A-D]\)/.test(freeTxt) && !/[A-D]등급/.test(freeTxt), '무료 화면 전체: 2~5위 길 이름·점수·등급 문구 없음');
   // 새는 곳 점검: 무료 화면 어디에도 1위·하고 싶은 길 말고 다른 길 이름이 나오면 안 된다
   const leakTxt = await p.evaluate(() => ['r-locked', 'r-toc', 'r-size', 'r-top', 'r-goalrow', 'r-locknote', 'r-surprise', 'r-rx', 'r-type', 'r-hook', 'r-desc'].map(id => document.getElementById(id).innerText).join(' | '));
   const others = ['그림책', '이모티콘', '캐릭터 굿즈', '인스타툰', '포트폴리오·외주'].filter(n => n !== res.top && n !== '이모티콘' && leakTxt.includes(n));
@@ -195,6 +211,7 @@ function runCollector(payload) {
   console.log('art:', JSON.stringify(artState));
   check(artState.img && artState.svg && artState.src === './assets/types/clean-deform-observe.png' && artState.card, '일러스트가 있으면 결과 화면과 결과 카드에 표시 (./assets/types/{key}.png)');
   await q.screenshot({ path: OUT + '/6-result-art.png' });
+  check(await q.evaluate(() => !document.getElementById('r-history').hidden && document.querySelectorAll('#r-history-rows .hist-row').length === 6), '두 번째 진단: 지난 진단과 6축 비교 표시');
   const [dl] = await Promise.all([q.waitForEvent('download', { timeout: 3000 }).catch(() => null), q.click('#btn-card')]);
   await q.waitForFunction(() => document.getElementById('share-status').textContent.trim().length > 0, null, { timeout: 8000 }).catch(() => {});
   const shareSt = await q.$eval('#share-status', e => e.textContent);

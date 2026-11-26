@@ -122,6 +122,43 @@ fieldset { border: 0; padding: 0; margin: 0; }
 .toc li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; font-size: 14.5px; }
 .toc li::before { content: "🔒"; font-size: 13px; }
 .toc li.open::before { content: "✓"; color: var(--green); font-weight: 700; }
+.prof { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 420px) { .prof { grid-template-columns: minmax(0, 1fr); } }
+.prof div { display: grid; gap: 4px; align-content: start; }
+.prof h3, .card h3 { margin: 0; font-size: 14px; color: var(--muted); letter-spacing: .02em; }
+.prof ul, .card ul.plain { margin: 0; padding-left: 1.1em; font-size: 14.5px; display: grid; gap: 3px; }
+.kv2 { display: grid; gap: 0; border: 1px solid var(--line); font-size: 14px; }
+.kv2 div { display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: 10px; padding: 8px 10px; border-top: 1px solid var(--line); }
+.kv2 div:first-child { border-top: 0; }
+.kv2 b { color: var(--muted); font-size: 13px; }
+.worry { font-size: 14px; display: grid; gap: 4px; }
+.worry span { display: block; padding: 8px 10px; background: var(--bg); border-left: 3px solid var(--line); }
+.axis .mean { font-size: 13.5px; color: var(--muted); }
+.cbadge { font-size: 11.5px; font-weight: 700; padding: 1px 7px; margin-left: 6px; border: 1.5px solid currentColor; }
+.cbadge.fix { color: var(--green); } .cbadge.shake { color: var(--warn); } .cbadge.mid { color: var(--muted); }
+.chips2 { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips2 span { font-size: 13.5px; padding: 4px 10px; border: 1.5px solid var(--line); }
+.chips2.fix span { border-color: var(--green); } .chips2.shake span { border-color: var(--warn); }
+.sigrow { display: grid; grid-template-columns: 7.2em minmax(0, 1fr) 2.6em; gap: 10px; align-items: center; font-size: 14px; }
+.sigbar { height: 10px; background: var(--line); position: relative; }
+.sigbar i { position: absolute; inset: 0 auto 0 0; background: var(--accent); }
+.seven { list-style: none; padding: 0; margin: 0; display: grid; gap: 0; border-left: 3px solid var(--line); }
+.seven li { display: grid; grid-template-columns: 3em minmax(0, 1fr); gap: 8px; padding: 6px 0 6px 12px; font-size: 14.5px; }
+.seven b { color: var(--accent); }
+.preview { position: relative; border: 1.5px solid var(--line); padding: 14px; background: var(--surface); overflow: hidden; }
+.preview .pv-title { font-size: 13px; font-weight: 700; color: var(--muted); }
+.preview .pv-open { margin: 6px 0 0; font-size: 14.5px; }
+.preview .pv-blur { margin: 0; font-size: 14.5px; filter: blur(5px); user-select: none; -webkit-mask-image: linear-gradient(#000, transparent); mask-image: linear-gradient(#000, transparent); max-height: 6.5em; overflow: hidden; }
+.preview .pv-lock { position: absolute; right: 12px; bottom: 12px; background: var(--accent); color: var(--accent-ink); font-size: 12.5px; font-weight: 700; padding: 5px 10px; }
+.cmp { overflow-x: auto; }
+.cmp table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+.cmp th, .cmp td { text-align: left; vertical-align: top; padding: 8px; border-bottom: 1px solid var(--line); }
+.cmp th { font-size: 12.5px; color: var(--muted); }
+.cmp td:last-child { font-weight: 500; }
+.method summary { cursor: pointer; font-weight: 700; }
+.method ol { margin: 10px 0 0; padding-left: 1.2em; display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
+.hist-row { display: grid; grid-template-columns: 4em minmax(0, 1fr) 4.5em; gap: 8px; font-size: 14px; align-items: center; }
+.hist-row .d { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
 .type-art { width: 132px; height: 132px; object-fit: contain; }
 .open { display: grid; gap: 12px; }
 .open-item { border: 1.5px solid var(--line); background: var(--surface); padding: 16px; display: grid; gap: 8px; }
@@ -216,10 +253,33 @@ fieldset { border: 0; padding: 0; margin: 0; }
 
     <div class="surprise" id="r-surprise"></div>
 
+    <div class="card" id="r-profile">
+      <h2 id="r-profile-title">유형 프로필</h2>
+      <div class="prof">
+        <div><h3>이 유형의 강점</h3><ul id="r-strengths"></ul></div>
+        <div><h3>빠지기 쉬운 함정</h3><ul id="r-pitfalls"></ul></div>
+      </div>
+      <div class="worry"><h3>이 유형이 자주 하는 고민</h3><div id="r-worries"></div><p class="muted small">고민마다의 답은 유료 리포트 '유형 깊이 보기'에 있어요.</p></div>
+      <div class="kv2" id="r-kv"></div>
+    </div>
+
     <div class="card">
       <h2>내 그림체 6축</h2>
       <p class="muted small">축은 우열이 아니라 위치예요. 어느 쪽이든 그 위치가 유리한 시장이 따로 있어요.</p>
-      <div id="r-axes" style="display:grid;gap:12px"></div>
+      <div id="r-axes" style="display:grid;gap:14px"></div>
+    </div>
+
+    <div class="card" id="r-map">
+      <h2>이미 굳은 축 · 흔들리는 축</h2>
+      <p class="muted small">그림체는 '어느 쪽이냐'보다 '매번 같으냐'에서 생겨요. 굳은 축은 무기로 쓰고, 흔들리는 축부터 고정하면 돼요.</p>
+      <h3>이미 내 것</h3><div class="chips2 fix" id="r-fixed"></div>
+      <h3>먼저 고정할 것</h3><div class="chips2 shake" id="r-shaky"></div>
+    </div>
+
+    <div class="card" id="r-sig">
+      <h2>팔 수 있는 형태인가 · 상업 신호 5가지</h2>
+      <p class="muted small">답변 기준이에요. 실제 그림에서는 다르게 나오는 경우가 많아서, 유료 리포트에서는 그림 3장으로 다시 재고 대표가 감수해요.</p>
+      <div id="r-sigs" style="display:grid;gap:8px"></div>
     </div>
 
     <div class="card">
@@ -231,14 +291,29 @@ fieldset { border: 0; padding: 0; margin: 0; }
     </div>
 
     <div class="card">
-      <h2>이번 주에 바로 해 볼 것</h2>
-      <p id="r-rx"></p>
+      <h2>7일 미니 루틴</h2>
+      <p class="muted small">가장 흔들리는 곳부터 하루 20분. 7일째에 이 진단을 다시 하면 축이 움직였는지 볼 수 있어요.</p>
+      <ol class="seven" id="r-rx"></ol>
+    </div>
+
+    <div class="card" id="r-history" hidden>
+      <h2>지난 진단과 비교</h2>
+      <p class="muted small" id="r-history-when"></p>
+      <div id="r-history-rows" style="display:grid;gap:6px"></div>
+    </div>
+
+    <div class="card">
+      <h2>내 유료 리포트 미리보기</h2>
+      <p class="muted small">지금 답변으로 만든 실제 리포트의 한 부분이에요.</p>
+      <div class="preview"><div class="pv-title" id="pv-title"></div><p class="pv-open" id="pv-open"></p><p class="pv-blur" id="pv-blur" aria-hidden="true"></p><span class="pv-lock">🔒 나머지는 유료 리포트</span></div>
     </div>
 
     <div class="offer" id="offer">
       <h2>대표가 직접 보는 유료 리포트</h2>
       <p class="small">무료 결과는 답변만으로 만든 '내가 생각하는 내 그림'이에요. 유료 리포트는 실제 그림 3장을 AI로 분석하고 17년 차 디자이너가 감수해서, <b>내 생각과 실제 그림이 어디서 다른지</b>까지 짚어 드려요.</p>
       <ol class="toc" id="r-toc"></ol>
+      <h3 style="margin:0;font-size:15px">무료 결과와 무엇이 다른가요</h3>
+      <div class="cmp"><table><thead><tr><th></th><th>무료</th><th>유료 리포트</th></tr></thead><tbody id="r-compare"></tbody></table></div>
       <p class="muted small" id="r-size"></p>
       <div class="price"><s id="r-price"></s><b id="r-launch"></b><span class="muted small">런칭 기념가</span></div>
       <ol class="steps"><li>신청 후 최근 그림 3장을 보내 주세요</li><li>AI 분석 + 대표 감수 (영업일 2일 안)</li><li>리포트 파일과 결과 카드 2장 전달</li></ol>
@@ -261,6 +336,7 @@ fieldset { border: 0; padding: 0; margin: 0; }
       <p class="status" id="share-status" role="status"></p>
     </div>
     <p class="status" id="send-status" role="status"></p>
+    <details class="card method"><summary>이 진단은 어떻게 만들었나요</summary><ol id="r-method"></ol></details>
     <button class="btn ghost" id="btn-restart">처음부터 다시 하기</button>
   </section>
 
@@ -389,14 +465,37 @@ function renderResult() {
   $("r-hook").textContent = `“${ty.hook}”`;
   $("r-desc").textContent = ty.desc;
   $("r-surprise").textContent = "의외였던 점 · " + tz.surprise;
+  const fi = O.freeInsights(state);
+  const fill = (id, items, tag) => { const el = $(id); el.textContent = ""; items.forEach(t => { const x = document.createElement(tag || "li"); x.textContent = t; el.appendChild(x); }); };
+  $("r-profile-title").textContent = `${ty.name}형 프로필`;
+  fill("r-strengths", ty.strengths); fill("r-pitfalls", ty.pitfalls); fill("r-worries", ty.worries.map(w => "“" + w + "”"), "span");
+  const kv = $("r-kv"); kv.textContent = "";
+  [["어울리는 도구", ty.tools], ["첫 프로젝트", ty.firstProject], ["잘 맞는 협업", ty.pairName + "형"], ["가장 다른 유형", ty.oppositeName + "형 (따라 하면 오히려 흔들려요)"]].forEach(([k, v]) => { const d = document.createElement("div"); const b = document.createElement("b"); b.textContent = k; const sp = document.createElement("span"); sp.textContent = v; d.append(b, sp); kv.appendChild(d); });
+  fill("r-fixed", fi.fixed.length ? fi.fixed : ["아직 없어요. 하나만 정해도 그림체가 생겨요"], "span");
+  fill("r-shaky", fi.shaky.length ? fi.shaky : ["크게 흔들리는 축은 없어요"], "span");
+  const sg = $("r-sigs"); sg.textContent = "";
+  fi.signals.forEach(x => { const row = document.createElement("div"); row.className = "sigrow"; const n = document.createElement("span"); n.textContent = x.name; const bar = document.createElement("div"); bar.className = "sigbar"; bar.setAttribute("role", "img"); bar.setAttribute("aria-label", `${x.name} ${x.v}/5`); const i = document.createElement("i"); i.style.width = (x.v / 5 * 100) + "%"; bar.appendChild(i); const v = document.createElement("span"); v.textContent = x.v + "/5"; row.append(n, bar, v); sg.appendChild(row); });
+  const rxl = $("r-rx"); rxl.textContent = "";
+  fi.sevenDay.forEach(([d, t]) => { const li = document.createElement("li"); const b = document.createElement("b"); b.textContent = d; const sp = document.createElement("span"); sp.textContent = t; li.append(b, sp); rxl.appendChild(li); });
+  const pvCut = Math.min(fi.preview.text.length, 95);
+  $("pv-title").textContent = fi.preview.title; $("pv-open").textContent = fi.preview.text.slice(0, pvCut) + "…";
+  $("pv-blur").textContent = fi.preview.text.slice(pvCut).replace(/[^\s.,·]/g, "가").slice(0, 260) || "가나다라 마바사 아자차카 타파하 가나다라";
+  const cmp = $("r-compare"); cmp.textContent = "";
+  O.FREE_VS_PAID.forEach(r => { const tr = document.createElement("tr"); r.forEach((c, i) => { const td = document.createElement(i === 0 ? "th" : "td"); td.textContent = c; tr.appendChild(td); }); cmp.appendChild(tr); });
+  fill("r-method", O.METHOD);
+  renderHistory(fi);
   const ax = $("r-axes"); ax.textContent = "";
   O.AXES.forEach(a => {
     const v = state.axes[a.key].position;
     const d = document.createElement("div"); d.className = "axis";
-    const top = document.createElement("div"); top.className = "axis-top"; const n = document.createElement("span"); n.textContent = a.name; const s2 = document.createElement("span"); s2.textContent = O.sideOf(a, v); top.append(n, s2);
+    const fa = fi.axes.find(x => x.key === a.key);
+    const top = document.createElement("div"); top.className = "axis-top"; const n = document.createElement("span"); n.textContent = a.name;
+    const cb = document.createElement("span"); cb.className = "cbadge " + (fa.consistency >= 4 ? "fix" : fa.consistency <= 2 ? "shake" : "mid"); cb.textContent = fa.consistency >= 4 ? "굳음" : fa.consistency <= 2 ? "흔들림" : "반쯤"; n.appendChild(cb);
+    const s2 = document.createElement("span"); s2.textContent = O.sideOf(a, v); top.append(n, s2);
     const tr = document.createElement("div"); tr.className = "track"; tr.setAttribute("role", "img"); tr.setAttribute("aria-label", `${a.name} ${O.sideOf(a, v)}`); const dot = document.createElement("i"); dot.style.left = Math.min(97, Math.max(3, v)) + "%"; tr.appendChild(dot);
     const pl = document.createElement("div"); pl.className = "poles2"; const l = document.createElement("span"); l.textContent = a.left; const r = document.createElement("span"); r.textContent = a.right; pl.append(l, r);
-    d.append(top, tr, pl); ax.appendChild(d);
+    const mean = document.createElement("div"); mean.className = "mean"; mean.textContent = fa.line;
+    d.append(top, tr, pl, mean); ax.appendChild(d);
   });
   $("r-top").textContent = tz.top.name;
   const goalP = O.scorePaths(state).find(p => p.isGoal);
@@ -407,7 +506,6 @@ function renderResult() {
     : "2·3위와 등급, 길마다의 시장·수익 계산·12주 로드맵은 유료 리포트에서 열려요.";
   const lk = $("r-locked"); lk.textContent = "";
   tz.locked.forEach(label => { const row = document.createElement("div"); row.className = "lock"; const k = document.createElement("span"); k.className = "k"; k.textContent = "🔒 " + label; const v = document.createElement("span"); v.className = "v"; v.setAttribute("aria-hidden", "true"); v.textContent = "●●●●●"; row.append(k, v); lk.appendChild(row); });
-  const rx = state.rx[0]; $("r-rx").textContent = rx ? `${rx.title}: ${rx.how}` : "";
   const toc = $("r-toc"); toc.textContent = "";
   tz.toc.forEach((t, i) => { const li = document.createElement("li"); li.textContent = t; if (i === 0) li.className = "open"; toc.appendChild(li); });
   $("r-size").textContent = `약 ${tz.approxChars.toLocaleString("ko-KR")}자 분량 · 길마다 시장 규모, 수익 계산, 12주 로드맵, 포트폴리오 체크리스트, 흔한 실수, 수업 안내`;
@@ -468,11 +566,35 @@ document.addEventListener("click", (e) => {
   sendEvent(kind, a.dataset.via || "");
 });
 
+/* ───── 지난 진단과 비교 (이 기기에만 저장) ───── */
+function renderHistory(fi) {
+  let hist = [];
+  try { hist = JSON.parse(localStorage.getItem("otw-free-history") || "[]"); if (!Array.isArray(hist)) hist = []; } catch (e) { hist = []; }
+  const prev = hist[hist.length - 1];
+  const box = $("r-history"), rows = $("r-history-rows"); rows.textContent = "";
+  if (prev && prev.axes) {
+    box.hidden = false;
+    $("r-history-when").textContent = `${String(prev.at || "").slice(0, 10).replaceAll("-", ".")} 진단 (${prev.type || ""}형) 대비`;
+    O.AXES.forEach(a => {
+      const was = Number(prev.axes[a.key]), now = state.axes[a.key].position;
+      if (!Number.isFinite(was)) return;
+      const row = document.createElement("div"); row.className = "hist-row";
+      const n = document.createElement("span"); n.textContent = a.name;
+      const t = document.createElement("span"); t.className = "muted small"; t.textContent = `${O.sideOf(a, was)} → ${O.sideOf(a, now)}`;
+      const d = document.createElement("span"); d.className = "d"; const diff = now - was; d.textContent = diff === 0 ? "그대로" : (diff > 0 ? "+" : "") + diff;
+      row.append(n, t, d); rows.appendChild(row);
+    });
+  } else box.hidden = true;
+  hist.push({ at: new Date().toISOString(), type: fi.type.name, axes: Object.fromEntries(O.AXES.map(a => [a.key, state.axes[a.key].position])) });
+  try { localStorage.setItem("otw-free-history", JSON.stringify(hist.slice(-5))); } catch (e) {}
+}
+
 /* ───── 수집 ───── */
 function resultText() {
   const ty = O.typeOf(state), tz = O.freeTeaser(state);
   return [`${state.name}님의 그림체 유형은 '${ty.name}'이에요.`, `“${ty.hook}”`, ty.desc, ``, `의외였던 점: ${tz.surprise}`, `지금 그림으로 돈이 되는 길 1위: ${tz.top.name}`, ...(tz.goalLine ? [tz.goalLine + "."] : []),
-    `이번 주에 해 볼 것: ${state.rx[0] ? state.rx[0].title + " — " + state.rx[0].how : ""}`, ``,
+    `이 유형의 강점: ${ty.strengths.join(" / ")}`, `빠지기 쉬운 함정: ${ty.pitfalls.join(" / ")}`, ``,
+    `7일 미니 루틴`, ...O.freeInsights(state).sevenDay.map(([d, t]) => `${d}  ${t}`), ``,
     `나머지 순위와 등급, 길마다 시장·수익 계산·12주 로드맵은 유료 리포트에서 볼 수 있어요.`, `아더댄웍스 ${C.insta}`].join("\n");
 }
 function sendEvent(cta, via) {

@@ -161,9 +161,53 @@ const TYPES = {
   "rough-real-story": { name: "손맛 짙은 그림책 화가", hook: "종이 냄새가 나는 장면", desc: "재료감 있는 선과 사실적 형태로 감정을 깊게 그려요. 그림책·원화 전시처럼 '한 장의 무게'가 중요한 곳에서 빛나요." },
   "rough-real-observe": { name: "크로키하는 관찰자", hook: "빠르게, 정확하게, 살아 있게", desc: "관찰력과 손의 속도가 강점인 그림이에요. 기초가 탄탄해서 어떤 길로든 방향을 틀기 쉬운 타입이에요." },
 };
+const TYPE_PROFILE = {
+  "clean-deform-story": { strengths: ["감정을 한 컷에 압축하는 힘", "캐릭터 하나로 여러 상황을 끌고 가는 힘", "작은 화면에서도 읽히는 선"],
+    pitfalls: ["귀여움에 기대다 장면 설계가 약해지기 쉬워요", "표정은 많은데 이야기가 매번 처음으로 돌아갈 수 있어요"],
+    worries: ["캐릭터는 좋다는데 그다음이 없어요", "이모티콘·굿즈·연재 중 뭘 먼저 할지 모르겠어요"],
+    tools: "굵기가 고정된 모노라인 브러시, 단색 면 채우기", firstProject: "같은 캐릭터 12표정 시트 → 4컷 1편", pair: "clean-real-story",
+    growth: ["캐릭터 설정표로 얼굴·비율 고정", "감정을 상황으로 바꾸는 연재 습관", "한 캐릭터를 굿즈·이모티콘·그림책으로 확장"] },
+  "clean-deform-observe": { strengths: ["어디에 놓아도 깨지지 않는 형태", "브랜드가 좋아하는 정돈된 톤", "인쇄·커팅에 강한 윤곽"],
+    pitfalls: ["무난함이 개성 부족으로 읽힐 수 있어요", "감정 표현이 얌전해서 팬이 늦게 생겨요"],
+    worries: ["예쁘다는데 기억에 안 남는대요", "브랜드 외주와 내 작업 사이에서 고민돼요"],
+    tools: "벡터 느낌의 매끈한 브러시, 색 면 분리, 4~5색 팔레트", firstProject: "마스코트 1종 + 포즈 6종 스티커 시트", pair: "rough-deform-story",
+    growth: ["마스코트 규칙(비율·색·표정 범위) 정하기", "포즈 6종 굿즈 라인업", "브랜드 협업 포트폴리오"] },
+  "clean-real-story": { strengths: ["구도로 감정을 만드는 힘", "정확한 형태 위에 얹는 이야기", "펼침면·포스터처럼 큰 화면에 강함"],
+    pitfalls: ["한 장에 공을 너무 들여 속도가 느려요", "캐릭터가 장면마다 조금씩 달라지기 쉬워요"],
+    worries: ["완성까지 너무 오래 걸려요", "내 그림이 상업적인지 모르겠어요"],
+    tools: "작은 썸네일 구도 스케치, 원근 가이드, 제한 팔레트", firstProject: "16장면 썸네일 스토리보드", pair: "clean-deform-story",
+    growth: ["썸네일로 구도 속도 올리기", "주인공 설정표 고정", "그림책·출판 일러스트로 연결"] },
+  "clean-real-observe": { strengths: ["믿음직한 비율과 구조", "어떤 스타일로도 바꿀 수 있는 기초", "정보·교육 그림에 바로 쓰이는 정확함"],
+    pitfalls: ["정확하지만 '내 그림'이라는 인상이 약할 수 있어요", "감정이 덜 보여 SNS 반응이 느려요"],
+    worries: ["잘 그리는데 개성이 없대요", "외주 단가를 못 올리겠어요"],
+    tools: "펜 선 + 플랫 채색, 사진 없이 기억으로 다시 그리기", firstProject: "한 분야(교육·출판) 포트폴리오 6장", pair: "rough-deform-story",
+    growth: ["분야 하나 정하기", "같은 그림체 6장 묶음", "단가 3단계 가격표"] },
+  "rough-deform-story": { strengths: ["힘을 뺀 선의 친근함", "아이디어가 빨리 그림이 되는 속도", "말투처럼 들리는 그림"],
+    pitfalls: ["작게 줄이면 선이 지저분해 보여요", "매번 그림체가 달라지기 쉬워요"],
+    worries: ["대충 그린 것 같다는 말을 들어요", "굿즈로 만들면 느낌이 안 살아요"],
+    tools: "연필·크레용 브러시, 지우개 없이 그리기", firstProject: "주 3회 4컷 연재 12편", pair: "clean-deform-observe",
+    growth: ["말투 같은 선을 지키면서 굵기만 고정", "연재 포맷 하나로 고정", "에세이·그림책으로 묶기"] },
+  "rough-deform-observe": { strengths: ["일상을 빠르게 그림으로 옮기는 손", "꾸준히 쌓이면 브랜드가 되는 기록", "부담 없는 따뜻함"],
+    pitfalls: ["한 장 한 장이 작품보다 메모처럼 보일 수 있어요", "주제가 흩어지기 쉬워요"],
+    worries: ["그림은 많은데 팔 게 없어요", "어디서부터 상품이 되는지 모르겠어요"],
+    tools: "작은 스케치북 또는 연필 브러시, 하루 1장 기록", firstProject: "주제 하나로 30일 드로잉 묶음", pair: "clean-real-story",
+    growth: ["주제 하나로 묶기", "30장 아카이브", "엽서·진·에세이북"] },
+  "rough-real-story": { strengths: ["재료감 있는 원화의 무게", "감정의 깊이", "따라 하기 어려운 손맛"],
+    pitfalls: ["한 장 완성에 시간이 오래 걸려요", "스캔·인쇄하면 느낌이 줄어들 수 있어요"],
+    worries: ["원화는 좋은데 디지털로 옮기면 달라져요", "작업 속도가 안 나요"],
+    tools: "수채·과슈·색연필, 스캔 세팅 고정", firstProject: "더미북 12~16장면 러프", pair: "clean-deform-observe",
+    growth: ["재료 규칙 고정", "더미북 1권", "원화 전시·그림책 투고"] },
+  "rough-real-observe": { strengths: ["빠르고 정확한 관찰", "살아 있는 선", "방향을 바꾸기 쉬운 기초 체력"],
+    pitfalls: ["기초가 좋아서 오히려 방향을 못 정해요", "완성작보다 연습장이 많아요"],
+    worries: ["뭘 그려야 할지 모르겠어요", "연습만 하다 끝나요"],
+    tools: "크로키 연필·목탄 브러시, 타이머 드로잉", firstProject: "같은 인물 크로키 10장 → 완성작 1장", pair: "clean-deform-story",
+    growth: ["완성작 비율 늘리기", "주제 정하기", "그림체 굳히기"] },
+};
+const oppositeKey = (k) => k.split("-").map(x => ({ clean: "rough", rough: "clean", deform: "real", real: "deform", story: "observe", observe: "story" }[x])).join("-");
 function typeOf(s) {
   const k = [s.axes.line.position >= 50 ? "clean" : "rough", s.axes.form.position < 50 ? "deform" : "real", s.axes.mood.position > 50 ? "story" : "observe"].join("-");
-  return { key: k, ...TYPES[k] };
+  const P = TYPE_PROFILE[k];
+  return { key: k, ...TYPES[k], ...P, pairName: TYPES[P.pair].name, opposite: oppositeKey(k), oppositeName: TYPES[oppositeKey(k)].name };
 }
 
 /* ═════════ 3. 계산 ═════════ */
@@ -525,6 +569,10 @@ function suggestOpen(s, now) {
 
 /* ═════════ 6. 리포트 빌더 ═════════ */
 const won = (n) => n.toLocaleString("ko-KR") + "원";
+function axisFavors(s, a) {
+  const i = AXES.indexOf(a), v = s.axes[a.key].position;
+  return GENRES.filter(g => g.w[i] >= .5).map(g => ({ g, d: Math.abs(v - g.target[i]) })).sort((x, y) => x.d - y.d).slice(0, 2).map(o => o.g.name);
+}
 function axisParagraph(s, a) {
   const ax = s.axes[a.key], G = AXIS_GUIDE[a.key];
   const side = ax.position <= 40 ? "left" : ax.position >= 60 ? "right" : "mid";
@@ -580,20 +628,32 @@ function buildReport(s, opts) {
   const strong = strongest(s, 2), weak = weakest(s, 2);
 
   sections.push({ id: "summary", title: "한눈에 보기", blocks: [
+    s.ownerNote && String(s.ownerNote).trim() ? { t: "callout", text: `대표 한마디 · ${String(s.ownerNote).trim().slice(0, 600)}` } : null,
     { t: "kv", rows: [
       ["그림체 유형", `${type.name} · ${type.hook}`],
       ["한 줄 정의", s.summary || summarize(s)],
-      ["상업성 1~3위", paths.slice(0, 3).map(p => `${p.isGoal ? "★" : ""}${p.name} ${p.total}점(${p.grade})`).join(" · ") + (paths.some(p => p.isGoal) ? " · ★ 하고 싶은 길" : "")],
+      ["상업성 1~3위", paths.slice(0, 3).map(p => `${p.isGoal ? "★" : ""}${p.name} ${p.total}점(${p.grade})`).join(" · ") + (paths.some(p => p.priority) ? " (★ 하고 싶은 길은 점수와 관계없이 2위 안에 둬요)" : paths.some(p => p.isGoal) ? " (★ 하고 싶은 길)" : "")],
       ["가장 강한 곳", strong.map(x => `${x.name} ${x.v}/5`).join(", ")],
       ["가장 먼저 손볼 곳", weak.map(x => `${x.name} ${x.v}/5`).join(", ")],
       gaps ? ["본인 생각과 그림의 일치도", `${gaps.score}점 (${AGREE_TXT[gaps.level]})`] : null,
       ["추천 다음 단계", `${rec.title}. ${rec.line}`],
     ].filter(Boolean) },
     { t: "p", text: type.desc },
+  ].filter(Boolean)});
+
+  sections.push({ id: "type", title: `${type.name}형 깊이 보기`, lead: type.hook, blocks: [
+    { t: "h", text: "이 유형의 강점" }, { t: "list", items: type.strengths },
+    { t: "h", text: "빠지기 쉬운 함정" }, { t: "list", items: type.pitfalls },
+    { t: "h", text: "이 유형이 자주 하는 고민과 답" }, { t: "kv", rows: type.worries.map((w, i) => [w, i === 0 ? `대개 이 함정에서 시작돼요. "${type.pitfalls[0]}" 아래 성장 경로 1단계부터 잡으면 풀려요.` : `지금 점수로는 ${josa(paths[0].name, "이", "가")} 가장 빨라요. 이 리포트의 길별 분석을 순서대로 따라가 보세요.`]) },
+    { t: "h", text: "성장 경로 3단계" }, { t: "weeks", items: type.growth.map((g, i) => [`${i + 1}단계`, g]) },
+    { t: "kv", rows: [["어울리는 도구", type.tools], ["첫 프로젝트", type.firstProject], ["잘 맞는 협업 유형", type.pairName], ["가장 다른 유형", `${type.oppositeName} (이 유형의 그림을 따라 하면 오히려 흔들려요)`]] },
   ]});
 
   sections.push({ id: "axes", title: "그림체 6축 상세", lead: "축은 우열이 아니라 위치예요. 어느 쪽에 있든 그 위치가 유리한 시장이 따로 있습니다.", blocks:
-    AXES.flatMap(a => [{ t: "h", text: `${a.name} · ${a.left} ↔ ${a.right}` }, { t: "p", text: axisParagraph(s, a) }, { t: "p", text: "연습: " + AXIS_GUIDE[a.key].drill, cls: "drill" }]) });
+    AXES.flatMap(a => [{ t: "h", text: `${a.name} · ${a.left} ↔ ${a.right}` }, { t: "p", text: axisParagraph(s, a) }, { t: "p", text: `지금 위치가 특히 유리한 길: ${axisFavors(s, a).join(", ")}` }, { t: "p", text: "연습: " + AXIS_GUIDE[a.key].drill, cls: "drill" }]) });
+
+  if (Array.isArray(s.imageNotes) && s.imageNotes.length) sections.push({ id: "images", title: "그림별 한 줄 코멘트", lead: "보내 주신 그림을 한 장씩 따로 봤어요.", blocks: [
+    { t: "weeks", items: s.imageNotes.slice(0, 3).map((n, i) => [`그림 ${i + 1}`, String(n)]) } ] });
 
   sections.push({ id: "signals", title: "상업 신호 5가지", lead: "그림체가 아니라 '팔 수 있는 형태인가'를 봅니다. 그림체가 비슷한 굿즈와 이모티콘이 여기서 갈려요.", blocks:
     SIGNALS.flatMap(x => { const v = sigScore(s, x.key); const note = s.signals && s.signals[x.key] && s.signals[x.key].note && s.signals[x.key].note !== "본인 응답" ? ` 그림에서 본 근거: ${s.signals[x.key].note}` : "";
@@ -674,6 +734,50 @@ function buildReport(s, opts) {
 
   return { title: `${name}님의 6축 그림체 리포트`, name, date, type, paths, rec, gaps, sections, open, cta: { classKey: ck, className: C.name, url: isHttps(C.link) ? C.link : LINKS.notion } };
 }
+
+/* 무료로 주는 정보 (답변 기준). 순위·점수·시장 정보는 넣지 않는다 */
+function freeInsights(s) {
+  const type = typeOf(s);
+  const axes = AXES.map(a => {
+    const v = s.axes[a.key].position, side = v <= 40 ? "left" : v >= 60 ? "right" : "mid";
+    return { key: a.key, name: a.name, side: sideOf(a, v), pos: v, consistency: s.axes[a.key].consistency, line: AXIS_GUIDE[a.key][side].split(". ")[0].replace(/\.?$/, ".") };
+  });
+  const fixed = axes.filter(x => x.consistency >= 4).map(x => x.name), shaky = axes.filter(x => x.consistency <= 2).map(x => x.name);
+  const signals = SIGNALS.map(x => ({ key: x.key, name: x.name, v: sigScore(s, x.key), desc: x.desc }));
+  const w = weakest(s, 2), st = strongest(s, 1)[0];
+  const rx = (k) => RX_LIB[k] || RX_LIB.line;
+  const sevenDay = [
+    ["1일", `최근 그림 10장을 한 화면에 모으고, '${w[0].name}'이 장마다 어떻게 다른지 표시하기`],
+    ["2일", `${rx(w[0].key).title}: ${rx(w[0].key).how}`],
+    ["3일", `어제와 같은 규칙으로 한 장 더. 어제 그림과 나란히 놓고 비교하기`],
+    ["4일", `${rx(w[1].key).title}: ${rx(w[1].key).how}`],
+    ["5일", `4일 차 규칙을 지키며 좋아하는 소재로 한 장`],
+    ["6일", `강점 '${st.name}'을 일부러 더 밀어붙인 한 장 (내 그림이 가장 나다워 보이는 방향)`],
+    ["7일", `1일 차 그림과 오늘 그림 비교 → 이 진단을 다시 해서 축이 움직였는지 확인`],
+  ];
+  // 내 유료 리포트 미리보기: 가장 흔들리는 축 문단 (순위·길 정보 없는 부분만)
+  const pa = AXES.find(a => a.key === (shaky.length ? axes.find(x => x.consistency <= 2).key : w.find(x => AXES.some(a => a.key === x.key))?.key || "line")) || AXES[0];
+  const preview = { title: `그림체 6축 상세 · ${pa.name}`, text: axisParagraph(s, pa) + " 연습: " + AXIS_GUIDE[pa.key].drill };
+  return { type, axes, fixed, shaky, signals, sevenDay, preview };
+}
+const FREE_VS_PAID = [
+  ["그림체 유형", "유형 프로필 (강점·함정·고민·도구)", "+ 성장 경로 3단계, 자주 하는 고민에 대한 답"],
+  ["6축 위치", "답변 기준", "실제 그림 3장 기준 + 그림 속 근거 문장 + 축마다 유리한 길"],
+  ["상업 신호 5가지", "답변 기준", "실제 그림 기준 + 대표 감수"],
+  ["본인 생각 vs 실제 그림", "–", "축마다 차이와 해석, 차이가 큰 축을 처방 1순위로"],
+  ["돈이 되는 길", "1위 + 하고 싶은 길 순위", "1~5위 점수·등급, 왜 이 점수인지, 1위에서 하고 싶은 길로 가는 다리"],
+  ["시장·수익", "–", "길마다 시장 규모, 진입 경로 3가지, 수익 계산 예시"],
+  ["연습", "7일 미니 루틴", "2주 처방 3개 + 4주 연습표 + 길마다 12주 로드맵"],
+  ["그림별 코멘트", "–", "보낸 그림 3장 각각 한 줄"],
+  ["대표 한마디", "–", "17년 차 디자이너가 직접 쓴 코멘트"],
+  ["받는 것", "결과 화면 + 카드 1장", "리포트 파일(약 1만 자) + 카드 2장"],
+];
+const METHOD = [
+  "6축(선·형태·색·질감·구성·정서)은 17년 차 디자이너가 수강생 그림을 보며 '그림체가 갈리는 지점'을 정리한 기준이에요. 축은 우열이 아니라 위치예요.",
+  "상업 신호 5가지(완성도·캐릭터 고정성·표정 폭·장면 서사·상품화 적합)는 '팔 수 있는 형태인가'를 봐요. 그림체가 비슷한 굿즈와 이모티콘도 여기서 갈려요.",
+  "길별 점수는 그림체 적합 45% + 상품 준비도 35% + 시장 매력 20%로 계산하고, 하고 싶은 길에는 동기 가산점을 더해요.",
+  "무료 진단은 답변만으로 계산해요. 유료 리포트는 실제 그림 3장을 AI가 관찰하고 대표가 감수해서, 답변과 그림이 어디서 다른지까지 봐요.",
+];
 
 /* 무료 결과용 티저: 궁금하게 만드는 한 가지 + 잠긴 목차 */
 function freeTeaser(s) {
@@ -787,7 +891,7 @@ function reportToText(r) {
   ).join("\n") + `\n\n${CONFIG.brand} · ${CONFIG.insta}`;
 }
 
-const OTW = { GOAL_RULE, bridge, CONFIG, LINKS, TUTORIAL, TUTORIAL_LINE, isHttps, linkFor, typeImage, openProducts, suggestOpen, AXES, SIGNALS, GENRES, MIX, EMOTICON_GATE, ROUTINE, GRADE_TXT, MARKET, RX_LIB, TYPES, MERGE, AGREE_TXT,
+const OTW = { TYPE_PROFILE, freeInsights, FREE_VS_PAID, METHOD, axisFavors, GOAL_RULE, bridge, CONFIG, LINKS, TUTORIAL, TUTORIAL_LINE, isHttps, linkFor, typeImage, openProducts, suggestOpen, AXES, SIGNALS, GENRES, MIX, EMOTICON_GATE, ROUTINE, GRADE_TXT, MARKET, RX_LIB, TYPES, MERGE, AGREE_TXT,
   AXIS_GUIDE, SIGNAL_GUIDE, PATH_GUIDE, CLASSES, CAL,
   clamp, avg, hasBatchim, josa, rng, gauss, scorePaths, recommendation, gapsFor, weakest, strongest, summarize, sideOf, typeOf,
   computeGaps, gapSentence, buildResult, buildReport, freeTeaser, reportBodyHTML, reportToHTMLDoc, reportToText, REPORT_CSS, esc, won };
