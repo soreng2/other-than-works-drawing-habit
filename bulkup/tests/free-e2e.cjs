@@ -108,7 +108,7 @@ function runCollector(payload) {
   console.log('open:', JSON.stringify(openUI));
   check(openUI.items.length === expectOpen.length && openUI.items.every(it => expectOpen.includes(it.cta)), `지금 신청 가능한 수업 ${openUI.items.length}개 (오늘 날짜 기준)`);
   const club = openUI.items.find(i => i.cta === 'vintageClub');
-  if (expectOpen.includes('vintageClub')) check(!!club && club.href.startsWith('https://docs.google.com/forms/d/e/1FAIpQLSdMA5IyvWvyUHV39iuQckXqlgUk3viVKqgXHVQG7DjlfEi5BQ/viewform') && /모집 중/.test(club.b), '12월 빈티지 클럽: 구글폼 신청 + 개강 D-day');
+  if (expectOpen.includes('vintageClub')) check(!!club && club.href.startsWith('https://docs.google.com/forms/d/e/1FAIpQLSdMA5IyvWvyUHV39iuQckXqlgUk3viVKqgXHVQG7DjlfEi5BQ/viewform') && /모집 중/.test(club.b), '빈티지 클럽: 구글폼 신청 + 개강 D-day');
   const ws = openUI.items.find(i => i.cta === 'workshop');
   check(!!ws && ws.href === 'https://www.instagram.com/other.than.works/' && ws.b === '상시 상담', '1:1 맞춤 워크숍: 인스타 DM 상담');
   check(O2.openProducts(Date.parse('2026-12-02T20:30:00+09:00')).every(o => o.key !== 'vintageClub') && O2.openProducts(Date.parse('2026-12-01T10:00:00+09:00'))[0].badge === '모집 중 · 내일 개강', '개강 시각이 지나면 클럽 자동 마감, 전날은 "내일 개강"');
@@ -188,7 +188,7 @@ function runCollector(payload) {
   check(artState.img && artState.svg && artState.src === './assets/types/clean-deform-observe.png' && artState.card, '일러스트가 있으면 결과 화면과 결과 카드에 표시 (./assets/types/{key}.png)');
   await q.screenshot({ path: OUT + '/6-result-art.png' });
   const [dl] = await Promise.all([q.waitForEvent('download', { timeout: 3000 }).catch(() => null), q.click('#btn-card')]);
-  await q.waitForTimeout(300);
+  await q.waitForFunction(() => document.getElementById('share-status').textContent.trim().length > 0, null, { timeout: 8000 }).catch(() => {});
   const shareSt = await q.$eval('#share-status', e => e.textContent);
   check(!!dl || !(await q.$eval('#share-img', e => e.hidden)), '일러스트 카드 저장 (파일 출처 제한이 걸려도 이미지 없이 저장) · ' + shareSt);
   fs.writeFileSync(OUT + '/card-art.png', Buffer.from(await q.evaluate(() => { try { return document.getElementById('share-card').toDataURL('image/png').split(',')[1]; } catch (e) { return ''; } }), 'base64'));

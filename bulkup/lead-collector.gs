@@ -55,7 +55,7 @@ function doPost(e) {
     lock.releaseLock();
   }
 }
-const CTA_NAME = { report: "유료 리포트", vintageClub: "12월 빈티지 클럽", workshop: "1:1 워크숍", classes: "수업 둘러보기(노션)", ask: "문의" };
+const CTA_NAME = { report: "유료 리포트", vintageClub: "빈티지 클럽", workshop: "1:1 워크숍", classes: "수업 둘러보기(노션)", ask: "문의" };
 function logClick(d) {
   if (!d.leadId || !d.cta) return json({ ok: false, reason: "invalid" });
   const ss = SpreadsheetApp.getActiveSpreadsheet();

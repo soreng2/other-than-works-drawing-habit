@@ -240,7 +240,7 @@ const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!o
   if (k2 !== tkey) fs.writeFileSync(`${S}/assets/types/${k2}.png`, Buffer.from(png2, 'base64'));
   await a2.reload(); await a2.waitForTimeout(1200);
   check(await a2.evaluate(() => getComputedStyle(document.getElementById('res-art')).display !== 'none' && getComputedStyle(document.getElementById('res-svg')).display === 'none' && /^\.\/assets\/types\/[a-z-]+\.png$/.test(document.getElementById('res-art').getAttribute('src'))), '스튜디오: 일러스트 있으면 결과지 머리에 표시, 기본 캐릭터는 실제로 숨김');
-  await a2.click('#btn-png'); await a2.waitForTimeout(400);
+  await a2.click('#btn-png'); await a2.waitForFunction(() => document.getElementById('png-status').textContent.trim().length > 0, null, { timeout: 8000 }).catch(() => {});
   const pngSt = await a2.$eval('#png-status', e => e.textContent);
   check((await a2.evaluate(() => window.__saved || '')).includes('style'), '스튜디오: 일러스트 카드 저장 (출처 제한 시 이미지 없이 대체) · ' + pngSt);
   await a2.click('#btn-report'); await a2.waitForTimeout(500);
