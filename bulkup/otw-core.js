@@ -93,6 +93,8 @@ const TUTORIAL = [
   { no: 4, title: "공모전/투고", does: "더미북과 기획서로 투고 패키지를 만들고 공모전·출판사 일정에 맞춰 보내요" },
 ];
 const TUTORIAL_LINE = TUTORIAL.map(t => `${t.no}.${t.title}`).join(" → ");
+/* 하고 싶은 길 우선: 동기 가산점을 공개적으로 더하고, 그래도 2위 밖이면 순위만 2위로 올린다 (점수는 그대로 보여 준다) */
+const GOAL_RULE = { bonus: 6, maxRank: 2 };
 const ROUTINE = { key: "routine", name: "드로잉 루틴반", why: "위치보다 반복이 먼저예요. 같은 선택을 4주 반복하면 그림체가 생깁니다." };
 const GRADE_TXT = { A: "바로 상품화 가능", B: "3개월 준비하면 상품화", C: "기초를 다진 뒤 도전", D: "지금은 다른 길이 유리" };
 
@@ -180,14 +182,17 @@ const styleDist = (g, pos) => { let n = 0, d = 0; pos.forEach((p, i) => { n += g
 const CAL = (() => { const r = rng(7); return GENRES.map(g => { let s = 0, s2 = 0; const N = 4000;
   for (let i = 0; i < N; i++) { const p = AXES.map(() => clamp(50 + 22 * gauss(r), 0, 100)); const d = styleDist(g, p); s += d; s2 += d * d; }
   const m = s / N; return { m, sd: Math.sqrt(s2 / N - m * m) }; }); })();
+/* 길의 준비도 가중치 (scorePaths 결과의 ready는 점수라서 원본 규칙에서 읽는다) */
+const readyW = (p) => GENRES.find(g => g.key === p.key).ready;
 const sigScore = (s, k) => (s.signals && s.signals[k] && s.signals[k].score != null ? s.signals[k].score : 3);
 
 function scorePaths(s) {
   const pos = AXES.map(a => s.axes[a.key].position);
+  let list;
   const consAvg = avg(AXES.map(a => s.axes[a.key].consistency));
   const sig = SIGNALS.map(x => sigScore(s, x.key));
   const readyVals = [...sig, consAvg].map(v => (v - 1) / 4 * 100);
-  return GENRES.map((g, i) => {
+  list = GENRES.map((g, i) => {
     const style = Math.round(clamp(50 + 18 * (CAL[i].m - styleDist(g, pos)) / CAL[i].sd, 0, 100));
     const ready = Math.round(readyVals.reduce((t, v, j) => t + v * g.ready[j], 0));
     const market = MARKET[g.key].attract;
@@ -199,21 +204,32 @@ function scorePaths(s) {
       if (sigScore(s, "character") < G.character) { total -= G.penalty.character; gate.push("캐릭터 고정성"); }
       if (s.axes.line.position < G.line) { total -= G.penalty.line; gate.push("선 정돈"); }
     }
-    total = Math.round(clamp(total, 0, 100));
+    const isGoal = s.goal === g.key;
+    const bonus = isGoal ? GOAL_RULE.bonus : 0;
+    const base = Math.round(clamp(total, 0, 100));
+    total = Math.round(clamp(total + bonus, 0, 100));
     const grade = total >= 75 ? "A" : total >= 62 ? "B" : total >= 50 ? "C" : "D";
-    return { ...g, style, ready, market, total, grade, gate };
+    return { ...g, style, ready, market, base, bonus, total, grade, gate, isGoal, priority: false, scoreRank: 0 };
   }).sort((a, b) => b.total - a.total || b.style - a.style);
+  list.forEach((p, i) => { p.scoreRank = i + 1; });
+  const gi = list.findIndex(p => p.isGoal);
+  if (gi > GOAL_RULE.maxRank - 1) { const [g] = list.splice(gi, 1); g.priority = true; list.splice(GOAL_RULE.maxRank - 1, 0, g); }
+  return list;
 }
 
 function recommendation(s, paths) {
   const cons = avg(AXES.map(a => s.axes[a.key].consistency));
   const top = paths[0];
   const goal = paths.find(p => p.key === s.goal);
-  if (cons < 2.6) return { title: ROUTINE.name, classKey: "routine", line: ROUTINE.why, then: `루틴 4주 뒤 ${top.name} 쪽으로 다시 진단`, target: goal || top };
+  if (cons < 2.6) {
+    if (goal) return { title: goal.product, classKey: goal.key, line: `${josa(goal.name, "으로", "로")} 가는 길은 열려 있어요. 다만 지금은 그림이 장마다 달라서, 수업 첫 4주는 그림체를 고정하는 루틴 과제로 시작해요.`, then: `루틴 4주 뒤 ${goal.name} 기준으로 재진단`, target: goal };
+    return { title: ROUTINE.name, classKey: "routine", line: ROUTINE.why, then: `루틴 4주 뒤 ${top.name} 쪽으로 다시 진단`, target: top };
+  }
   if (goal && goal.key !== top.key) {
     if (goal.total >= top.total - 8) return { title: goal.product, classKey: goal.key, line: `하고 싶은 ${josa(goal.name, "과", "와")} 지금 그림이 충분히 가까워요 (${goal.total}점, ${goal.grade}등급).`, then: goal.extra, target: goal };
-    return { title: goal.product, classKey: goal.key, line: `${josa(goal.name, "은", "는")} ${goal.total}점, 지금 그림으로 가장 빨리 돈이 되는 길은 ${top.name}(${top.total}점)이에요. ${josa(goal.name, "을", "를")} 목표로 두고 ${josa(top.name, "으로", "로")} 먼저 매출을 만드는 순서도 가능해요.`, then: `아래 시장분석의 '이 길로 가려면 바꿀 것'부터`, target: goal };
+    return { title: goal.product, classKey: goal.key, line: `하고 싶은 ${josa(goal.name, "은", "는")} 2위예요. 1위 ${top.name}에서 이미 가진 강점을 ${josa(goal.name, "으로", "로")} 옮기면 거리가 빨리 줄어요.`, then: `리포트의 '${top.name}에서 ${goal.name}으로 가는 다리'부터`, target: goal };
   }
+  if (goal && goal.key === top.key) return { title: goal.product, classKey: goal.key, line: `하고 싶은 ${josa(goal.name, "이", "가")} 지금 그림에도 가장 잘 맞아요 (${goal.total}점, ${goal.grade}등급 · ${GRADE_TXT[goal.grade]}).`, then: goal.extra, target: goal };
   return { title: top.product, classKey: top.key, line: `지금 그림에 가장 맞는 길은 ${josa(top.name, "이에요", "예요")} (${top.total}점, ${top.grade}등급 · ${GRADE_TXT[top.grade]}).`, then: top.extra, target: top };
 }
 function gapsFor(s, g) {
@@ -224,7 +240,7 @@ function gapsFor(s, g) {
   });
   SIGNALS.forEach((x, j) => {
     const v = sigScore(s, x.key);
-    if (v <= 2 && g.ready[j] >= .2) out.push(`${x.name} ${v}/5 → ${x.fix}`);
+    if (v <= 2 && readyW(g)[j] >= .2) out.push(`${x.name} ${v}/5 → ${x.fix}`);
   });
   return out.slice(0, 4);
 }
@@ -528,12 +544,29 @@ function whyPath(s, p) {
   });
   if (close.length) lines.push(`${close.join("·")} 축이 이 길의 기준과 가까워요.`);
   if (far.length) lines.push(`${far.join("·")} 축은 이 길의 기준과 거리가 있어요.`);
-  const sig = SIGNALS.map((x, j) => ({ x, v: sigScore(s, x.key), w: p.ready[j] })).filter(o => o.w >= .2);
+  const sig = SIGNALS.map((x, j) => ({ x, v: sigScore(s, x.key), w: readyW(p)[j] })).filter(o => o.w >= .2);
   const hi = sig.filter(o => o.v >= 4).map(o => o.x.name), lo = sig.filter(o => o.v <= 2).map(o => o.x.name);
   if (hi.length) lines.push(`이 길에서 중요한 ${hi.join("·")} 신호가 이미 좋아요.`);
   if (lo.length) lines.push(`이 길에서 중요한 ${lo.join("·")} 신호가 아직 약해요.`);
   if (p.gate && p.gate.length) lines.push(`이모티콘 문턱(${p.gate.join("·")})을 아직 못 넘어서 점수를 낮췄어요. 귀여운 그림이 곧 이모티콘은 아니에요.`);
+  if (p.isGoal) lines.push(p.priority ? `하고 싶은 길이라 동기 가산 +${p.bonus}점을 더했어요. 점수로는 ${p.scoreRank}위지만 하고 싶은 길은 2위 안에 두고, 1위 길에서 넘어오는 순서를 함께 제안해요.` : `하고 싶은 길이라 동기 가산 +${p.bonus}점을 더했어요. 하고 싶은 마음은 꾸준함으로 이어져서 실제 결과에 영향을 줘요.`);
   return lines.join(" ");
+}
+const SIG_USE = {
+  picturebook: { craft: "원화 3장의 완성도", character: "16장면 내내 같은 주인공", expression: "장면마다 달라지는 감정", narrative: "넘김마다 이어지는 이야기", production: "표지와 굿즈 확장" },
+  emoticon: { craft: "작은 화면에서도 깔끔한 마감", character: "24컷 내내 같은 캐릭터", expression: "대화에 쓰일 표정 24개", narrative: "상황 이모티콘의 짧은 이야기", production: "작게 줄여도 읽히는 윤곽" },
+  goods: { craft: "인쇄·커팅 사고 없는 마감", character: "사람들이 사는 '그 캐릭터'", expression: "포즈별 굿즈 라인업", narrative: "제품 상세페이지의 짧은 이야기", production: "스티커·키링으로 바로 옮기기" },
+  instatoon: { craft: "연재를 버티는 빠른 마감", character: "매회 돌아오는 주인공", expression: "4컷 안의 감정 변화", narrative: "4컷의 시작과 반전", production: "썸네일 한 장의 가독성" },
+  portfolio: { craft: "납품 즉시 쓰는 마감", character: "브랜드 마스코트 제안", expression: "교육·출판 삽화의 표정 연기", narrative: "장면 삽화의 설득력", production: "인쇄물 납품 품질" },
+};
+function bridge(s, top, goal) {
+  const have = SIGNALS.map((x, j) => ({ x, v: sigScore(s, x.key), w: readyW(goal)[j] })).filter(o => o.v >= 4 && o.w >= .1).sort((a, b) => b.w - a.w).slice(0, 2);
+  const lines = [];
+  if (have.length) lines.push(`${top.name} 쪽에서 강하게 나온 ${have.map(o => o.x.name).join("·")}${hasBatchim(have[have.length - 1].x.name) ? "은" : "는"} ${goal.name}에서도 그대로 쓰여요: ${have.map(o => SIG_USE[goal.key][o.x.key]).join(", ")}.`);
+  const gl = gapsFor(s, goal);
+  if (gl.length) lines.push(`대신 ${goal.name}에는 이것이 더 필요해요: ${gl.slice(0, 2).join(" / ")}.`);
+  lines.push(`순서는 이렇게 권해요. ${josa(top.name, "으로", "로")} 빠르게 작은 결과물을 만들어 손을 굳히고, 그 캐릭터와 그림체를 그대로 ${goal.name}에 가져가요. 두 길을 따로 연습하는 것보다 훨씬 빨라요.`);
+  return lines;
 }
 function buildReport(s, opts) {
   opts = opts || {};
@@ -550,7 +583,7 @@ function buildReport(s, opts) {
     { t: "kv", rows: [
       ["그림체 유형", `${type.name} · ${type.hook}`],
       ["한 줄 정의", s.summary || summarize(s)],
-      ["상업성 1~3위", paths.slice(0, 3).map(p => `${p.name} ${p.total}점(${p.grade})`).join(" · ")],
+      ["상업성 1~3위", paths.slice(0, 3).map(p => `${p.isGoal ? "★" : ""}${p.name} ${p.total}점(${p.grade})`).join(" · ") + (paths.some(p => p.isGoal) ? " · ★ 하고 싶은 길" : "")],
       ["가장 강한 곳", strong.map(x => `${x.name} ${x.v}/5`).join(", ")],
       ["가장 먼저 손볼 곳", weak.map(x => `${x.name} ${x.v}/5`).join(", ")],
       gaps ? ["본인 생각과 그림의 일치도", `${gaps.score}점 (${AGREE_TXT[gaps.level]})`] : null,
@@ -572,15 +605,15 @@ function buildReport(s, opts) {
       : [{ t: "p", text: "큰 차이가 없어요. 자기 그림을 정확하게 보고 있다는 뜻이고, 혼자 연습해도 방향을 잃지 않을 가능성이 커요." }] });
   }
 
-  const focus = [];
-  if (!paths.slice(0, 3).some(p => p.key === rec.target.key)) focus.push(rec.target);
-  paths.slice(0, 3).forEach(p => focus.push(p));
+  const focus = paths.slice(0, 3);
   focus.forEach((p, idx) => {
     const G = PATH_GUIDE[p.key], M = MARKET[p.key];
-    const label = p.key === s.goal ? "하고 싶은 길" : `상업성 ${paths.indexOf(p) + 1}위`;
+    const label = p.isGoal ? `하고 싶은 길 · ${paths.indexOf(p) + 1}위` : `상업성 ${paths.indexOf(p) + 1}위`;
     sections.push({ id: "path-" + p.key, title: `${p.name} · ${label}`, lead: `${G.tagline}. 종합 ${p.total}점 ${p.grade}등급 (${GRADE_TXT[p.grade]}).`, blocks: [
       { t: "table", head: ["그림체 적합", "상품 준비도", "시장 매력", "종합"], rows: [[p.style, p.ready, p.market, `${p.total} (${p.grade})`]] },
       { t: "h", text: "왜 이 점수인가" }, { t: "p", text: whyPath(s, p) || "모든 축과 신호가 이 길의 기준과 비슷한 거리에 있어요." },
+      p.isGoal && paths[0].key !== p.key ? { t: "h", text: `${paths[0].name}에서 ${p.name}으로 가는 다리` } : null,
+      p.isGoal && paths[0].key !== p.key ? { t: "list", items: bridge(s, paths[0], p) } : null,
       { t: "table", head: ["축", "지금", "이 길의 기준", "판정"], rows: AXES.map((a, i) => { const v = s.axes[a.key].position, d = Math.abs(v - p.target[i]); return [a.name + (p.w[i] >= .8 ? " ★" : ""), v, p.target[i] + " 근처", d <= 15 ? "맞음" : d <= 27 ? "조금 다름" : "많이 다름"]; }) },
       { t: "p", text: "★ 표시는 이 길에서 특히 중요한 축이에요.", cls: "drill" },
       { t: "h", text: "이 길에 필요한 것" }, { t: "list", items: G.needs },
@@ -645,23 +678,25 @@ function buildReport(s, opts) {
 /* 무료 결과용 티저: 궁금하게 만드는 한 가지 + 잠긴 목차 */
 function freeTeaser(s) {
   const paths = scorePaths(s), type = typeOf(s), weak = weakest(s, 1)[0], strong = strongest(s, 1)[0];
-  const goal = GENRES.find(g => g.key === s.goal);
+  const goal = paths.find(p => p.isGoal);
+  const top = paths[0];
   let surprise;
-  if (goal && paths[0].key !== goal.key) surprise = `하고 싶은 길은 ${josa(goal.name, "인데", "인데")}, 지금 그림은 ${paths[0].name} 쪽이 더 가까워요. 두 길을 잇는 순서가 따로 있어요.`;
-  else if (paths[0].key === "goods" && paths.find(p => p.key === "emoticon").total >= paths[0].total - 10) surprise = "귀여운 그림이라 이모티콘 쪽일 것 같지만, 지금 그림은 이모티콘보다 굿즈에 더 가까워요.";
+  if (goal && top.key !== goal.key) surprise = `하고 싶은 길은 ${goal.name}인데, 지금 그림은 ${top.name} 쪽이 더 가까워요. ${josa(top.name, "에서", "에서")} ${josa(goal.name, "으로", "로")} 넘어가는 순서가 따로 있어요.`;
+  else if (top.key === "goods" && paths.find(p => p.key === "emoticon").base >= top.base - 10) surprise = "귀여운 그림이라 이모티콘 쪽일 것 같지만, 지금 그림은 이모티콘보다 굿즈에 더 가까워요.";
   else if (strong.v >= 5) surprise = `${josa(strong.name, "은", "는")} 이미 완전히 '내 것'이에요. 이걸 무기로 쓰는 길이 따로 있어요.`;
   else surprise = `가장 먼저 손볼 곳은 ${josa(weak.name, "이에요", "예요")}. 여기만 잡아도 상업성 등급이 한 칸 올라가는 경우가 많아요.`;
+  // 공개: 유형, 1위, 하고 싶은 길이 몇 위인지. 잠금: 나머지 순위·점수·등급 (값은 아예 넣지 않는다)
+  const goalLine = goal ? (top.key === goal.key ? `하고 싶은 ${josa(goal.name, "이", "가")} 1위예요` : `하고 싶은 ${josa(goal.name, "은", "는")} 2위예요`) : null;
+  const locked = goal ? ["나머지 길의 순위", "길별 점수와 상업성 등급", "1위 길과 하고 싶은 길을 잇는 순서"] : ["2위 길", "3위 길", "길별 점수와 상업성 등급"];
   const report = buildReport(s);
+  let pathNo = 0;
+  const toc = report.sections.map(x => {
+    if (x.id.startsWith("path-")) { pathNo++; return `길별 상세 분석 ${pathNo} (시장·수익 계산·12주 로드맵)`; }
+    if (x.id === "class") return "이 분석으로 배우면: 맞춤 수업 안내";
+    return x.title;
+  });
   const chars = report.sections.reduce((n, sec) => n + JSON.stringify(sec).length, 0);
-  return {
-    type, surprise, top: { name: paths[0].name, key: paths[0].key },
-    locked: [
-      { label: "2위 길", value: paths[1].name }, { label: "3위 길", value: paths[2].name },
-      { label: "상업성 등급", value: paths[0].grade },
-    ],
-    toc: report.sections.map(x => x.title),
-    approxChars: Math.round(chars / 2 / 100) * 100,
-  };
+  return { type, surprise, top: { name: top.name, key: top.key }, goalLine, locked, toc, approxChars: Math.round(chars / 2 / 100) * 100 };
 }
 
 /* ═════════ 7. 렌더러 ═════════ */
@@ -752,7 +787,7 @@ function reportToText(r) {
   ).join("\n") + `\n\n${CONFIG.brand} · ${CONFIG.insta}`;
 }
 
-const OTW = { CONFIG, LINKS, TUTORIAL, TUTORIAL_LINE, isHttps, linkFor, typeImage, openProducts, suggestOpen, AXES, SIGNALS, GENRES, MIX, EMOTICON_GATE, ROUTINE, GRADE_TXT, MARKET, RX_LIB, TYPES, MERGE, AGREE_TXT,
+const OTW = { GOAL_RULE, bridge, CONFIG, LINKS, TUTORIAL, TUTORIAL_LINE, isHttps, linkFor, typeImage, openProducts, suggestOpen, AXES, SIGNALS, GENRES, MIX, EMOTICON_GATE, ROUTINE, GRADE_TXT, MARKET, RX_LIB, TYPES, MERGE, AGREE_TXT,
   AXIS_GUIDE, SIGNAL_GUIDE, PATH_GUIDE, CLASSES, CAL,
   clamp, avg, hasBatchim, josa, rng, gauss, scorePaths, recommendation, gapsFor, weakest, strongest, summarize, sideOf, typeOf,
   computeGaps, gapSentence, buildResult, buildReport, freeTeaser, reportBodyHTML, reportToHTMLDoc, reportToText, REPORT_CSS, esc, won };

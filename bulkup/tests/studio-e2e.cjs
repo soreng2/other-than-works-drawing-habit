@@ -85,6 +85,17 @@ const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!o
   check(gateRes.looksEmoticon === 'goods' && gateRes.realEmoticon === 'emoticon' && gateRes.storyCute === 'picturebook', `이모티콘처럼 보이는 그림 → ${gateRes.looksEmoticon}, 진짜 이모티콘 → ${gateRes.realEmoticon}, 이야기 있는 귀여운 그림 → ${gateRes.storyCute}`);
   check(sim.emoticon / 50 < 10, `무작위 입력에서 이모티콘 1위 비율 ${(sim.emoticon / 50).toFixed(1)}% (10% 미만)`);
 
+  // 3-3) 하고 싶은 길 우선 + 그림체가 덜 굳어도 하고 싶은 길 수업 추천
+  const goalRes = await p.evaluate(() => {
+    const keys = ['line', 'form', 'color', 'texture', 'comp', 'mood'], sk = ['craft', 'character', 'expression', 'narrative', 'production'];
+    const mk = (pos, sg, c, goal) => { const s = { goal, axes: {}, signals: {} }; keys.forEach((k, i) => s.axes[k] = { position: pos[i], consistency: c }); sk.forEach((k, i) => s.signals[k] = { score: sg[i] }); return s; };
+    const a = mk([80, 15, 70, 20, 30, 70], [4, 5, 5, 2, 4], 4, 'picturebook'); const pa = window.__otw.scorePaths(a);
+    const b = mk([80, 15, 70, 20, 30, 70], [4, 5, 5, 2, 4], 2, 'picturebook'); const rb = window.__otw.recommendation(b, window.__otw.scorePaths(b));
+    return { rank: pa.findIndex(p => p.key === 'picturebook') + 1, priority: pa.find(p => p.key === 'picturebook').priority, bonus: pa.find(p => p.key === 'picturebook').bonus, lowConsTitle: rb.title };
+  });
+  check(goalRes.rank <= 2 && goalRes.bonus === 6, `그림책 원하는 이모티콘형 그림 → 그림책 ${goalRes.rank}위 (동기 +${goalRes.bonus}${goalRes.priority ? ', 순위 보정' : ''})`);
+  check(goalRes.lowConsTitle === '픽처포지(그림책반)', '그림체가 덜 굳어도 하고 싶은 길 수업 추천: ' + goalRes.lowConsTitle);
+
   // 4) 조사
   const josa = await p.evaluate(() => ['정서', '선', '완성도', '이야기꾼', '포근한 이야기꾼', '픽처포지(그림책반)', '굿즈반 + 캐릭터 키트'].map(w => w + ':' + window.__otw.hasBatchim(w)));
   console.log('batchim:', josa.join(' '));

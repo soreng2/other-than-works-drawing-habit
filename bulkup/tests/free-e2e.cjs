@@ -36,7 +36,7 @@ function runCollector(payload) {
   p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|ERR_/.test(m.text())) errors.push('console: ' + m.text()); });
   let posted = null; const posts = [];
   await p.route('https://script.google.com/**', async route => { const d = route.request().postData(); posts.push(JSON.parse(d)); if (JSON.parse(d).kind === 'free-diagnosis') posted = d; await route.fulfill({ status: 200, body: '{"ok":true}', headers: { 'content-type': 'application/json' } }); });
-  await p.goto('file://' + path.join(root, 'public', 'index.html') + '?utm_source=instagram&utm_medium=carousel&utm_campaign=type-quiz');
+  await p.goto('file://' + path.join(root, 'public', 'index.html') + '?utm_source=instagram&utm_medium=carousel&utm_campaign=type-quiz&debug=1');
   await p.waitForTimeout(600);
   check(await p.title() === '내 그림체 6축 진단', '빌드된 페이지 제목');
   check(await p.$eval('#setup-notice', e => !e.hidden), '수집 주소가 비어 있으면 운영자 안내 표시');
@@ -94,9 +94,17 @@ function runCollector(payload) {
     send: document.getElementById('send-status').textContent, ctaDisabled: document.getElementById('cta-report').getAttribute('aria-disabled'), note: document.getElementById('cta-note').textContent }));
   console.log('result:', JSON.stringify(res));
   check(res.type === '단정한 마스코트 메이커', '유형 공개: ' + res.type);
-  check(res.top === '캐릭터 굿즈', '1위 공개 (이모티콘처럼 보여도 굿즈): ' + res.top);
-  check(res.surprise.includes('의외였던 점') && res.surprise.includes('이모티콘'), '의외의 한 가지: 하고 싶은 길(이모티콘)과 1위가 다름');
-  check(res.locked.every(v => v === '●●●●●') && res.locked.length === 3, '2·3위·등급은 잠김 (값 노출 없음)');
+  check(['이모티콘', '캐릭터 굿즈'].includes(res.top), '1위 공개 (하고 싶은 이모티콘은 동기 +6으로 근소한 굿즈를 넘을 수 있음): ' + res.top);
+  check(res.surprise.startsWith('의외였던 점 · ') && res.surprise.length > 20, '의외의 한 가지 공개: ' + res.surprise);
+  check(res.locked.every(v => v === '●●●●●') && res.locked.length === 3, '나머지 순위·등급은 잠김 (값 노출 없음)');
+  // 새는 곳 점검: 무료 화면 어디에도 1위·하고 싶은 길 말고 다른 길 이름이 나오면 안 된다
+  const leakTxt = await p.evaluate(() => ['r-locked', 'r-toc', 'r-size', 'r-top', 'r-goalrow', 'r-locknote', 'r-surprise', 'r-rx', 'r-type', 'r-hook', 'r-desc'].map(id => document.getElementById(id).innerText).join(' | '));
+  const others = ['그림책', '이모티콘', '캐릭터 굿즈', '인스타툰', '포트폴리오·외주'].filter(n => n !== res.top && n !== '이모티콘' && leakTxt.includes(n));
+  console.log('free text:', leakTxt.slice(0, 600));
+  check(others.length === 0, '무료 결과·잠긴 목차에 1위와 하고 싶은 길 말고 다른 길 이름 없음' + (others.length ? ' → 샘: ' + others.join(',') : ''));
+  check(await p.evaluate(() => !document.getElementById('r-goalrow').hidden && document.getElementById('r-goal').textContent.startsWith('이모티콘 · ') && /[12]위 ✓/.test(document.getElementById('r-goal').textContent)), '하고 싶은 길(이모티콘)이 몇 위인지만 공개 (1~2위)');
+  const html = await p.content();
+  check(!/상업성 [123]위/.test(html) && !html.includes('2위 길</span><span class="v">' ) , '잠긴 목차에 길 이름+순위 문구 없음');
   check(res.toc >= 9 && res.launch === '19,000원', `유료 리포트 목차 ${res.toc}개 + 런칭가`);
   const cta = await p.evaluate(() => ['cta-report', 'cta-classes', 'cta-kakao'].map(id => { const a = document.getElementById(id); return { href: a.href, text: a.textContent, dis: a.getAttribute('aria-disabled'), via: a.dataset.via }; }));
   console.log('cta:', JSON.stringify(cta));
@@ -176,7 +184,7 @@ function runCollector(payload) {
   fs.writeFileSync(site + '/assets/types/clean-deform-observe.png', Buffer.from(artPng, 'base64'));
   const q = await bctx.newPage();
   q.on('pageerror', e => errors.push('art page: ' + e.message));
-  await q.goto('file://' + site + '/index.html'); await q.waitForTimeout(300);
+  await q.goto('file://' + site + '/index.html?debug=1'); await q.waitForTimeout(300);
   await q.click('#btn-start');
   for (const [pv, cv] of AX) { const segs = await q.$$('#quiz-body .seg'); await (await segs[0].$$('button'))[pv - 1].click(); await (await segs[1].$$('button'))[cv - 1].click(); await q.click('#btn-next'); }
   const sg2 = await q.$$('#quiz-body .seg'); for (const [i, v] of [4, 4, 3, 2, 5].entries()) await (await sg2[i].$$('button'))[v - 1].click();
@@ -193,6 +201,21 @@ function runCollector(payload) {
   check(!!dl || !(await q.$eval('#share-img', e => e.hidden)), '일러스트 카드 저장 (파일 출처 제한이 걸려도 이미지 없이 저장) · ' + shareSt);
   fs.writeFileSync(OUT + '/card-art.png', Buffer.from(await q.evaluate(() => { try { return document.getElementById('share-card').toDataURL('image/png').split(',')[1]; } catch (e) { return ''; } }), 'base64'));
   await q.close();
+
+  // 4-3) 하고 싶은 길은 항상 2위 안 + 내부 상태는 debug 없이는 숨김
+  const O3 = require(path.join(root, 'otw-core.js'));
+  const rr = O3.rng(5); let worst = 0;
+  for (const goal of O3.GENRES.map(g => g.key)) for (let i = 0; i < 3000; i++) {
+    const s = { goal, axes: {}, signals: {} };
+    O3.AXES.forEach(a => { s.axes[a.key] = { position: O3.clamp(50 + 22 * O3.gauss(rr), 0, 100), consistency: 1 + Math.floor(rr() * 5) }; });
+    ['craft', 'character', 'expression', 'narrative', 'production'].forEach(k => { s.signals[k] = { score: 1 + Math.floor(rr() * 5) }; });
+    worst = Math.max(worst, O3.scorePaths(s).findIndex(p => p.key === goal) + 1);
+  }
+  check(worst <= 2, `하고 싶은 길 5종 × 무작위 3,000명: 가장 낮은 순위 ${worst}위 (2위 안 보장)`);
+  const plain = await bctx.newPage();
+  await plain.goto('file://' + path.join(root, 'public', 'index.html')); await plain.waitForTimeout(300);
+  check(await plain.evaluate(() => typeof window.__free === 'undefined' && typeof window.__lastLead === 'undefined'), '일반 방문 시 결과를 담은 전역 변수 없음');
+  await plain.close();
 
   // 5) 다크·좁은 화면·처음부터
   const m = await b.newPage({ viewport: { width: 360, height: 740 }, colorScheme: 'dark' });

@@ -232,8 +232,9 @@ fieldset { border: 0; padding: 0; margin: 0; }
     <div class="card">
       <h2>지금 그림으로 돈이 되는 길</h2>
       <div class="toprow"><span>1위</span><b id="r-top"></b></div>
+      <div class="toprow" id="r-goalrow" hidden><span>하고 싶은 길</span><b id="r-goal"></b></div>
       <div class="locked" id="r-locked"></div>
-      <p class="muted small">2·3위와 등급, 길마다의 시장·수익 계산·12주 로드맵은 유료 리포트에서 열려요.</p>
+      <p class="muted small" id="r-locknote"></p>
     </div>
 
     <div class="card">
@@ -405,8 +406,14 @@ function renderResult() {
     d.append(top, tr, pl); ax.appendChild(d);
   });
   $("r-top").textContent = tz.top.name;
+  const goalP = O.scorePaths(state).find(p => p.isGoal);
+  $("r-goalrow").hidden = !goalP;
+  if (goalP) $("r-goal").textContent = `${goalP.name} · ${goalP.key === tz.top.key ? "1위" : "2위"} ✓`;
+  $("r-locknote").textContent = goalP
+    ? (goalP.key === tz.top.key ? "하고 싶은 길이 지금 그림에도 가장 잘 맞아요. 나머지 순위와 등급, 이 길의 시장·수익 계산·12주 로드맵은 유료 리포트에서 열려요." : `1위 ${tz.top.name}에서 ${goalP.name}으로 넘어가는 순서, 나머지 순위와 등급, 길마다의 시장·수익 계산·12주 로드맵은 유료 리포트에서 열려요.`)
+    : "2·3위와 등급, 길마다의 시장·수익 계산·12주 로드맵은 유료 리포트에서 열려요.";
   const lk = $("r-locked"); lk.textContent = "";
-  tz.locked.forEach(x => { const row = document.createElement("div"); row.className = "lock"; const k = document.createElement("span"); k.className = "k"; k.textContent = "🔒 " + x.label; const v = document.createElement("span"); v.className = "v"; v.setAttribute("aria-hidden", "true"); v.textContent = "●●●●●"; row.append(k, v); lk.appendChild(row); });
+  tz.locked.forEach(label => { const row = document.createElement("div"); row.className = "lock"; const k = document.createElement("span"); k.className = "k"; k.textContent = "🔒 " + label; const v = document.createElement("span"); v.className = "v"; v.setAttribute("aria-hidden", "true"); v.textContent = "●●●●●"; row.append(k, v); lk.appendChild(row); });
   const rx = state.rx[0]; $("r-rx").textContent = rx ? `${rx.title}: ${rx.how}` : "";
   const toc = $("r-toc"); toc.textContent = "";
   tz.toc.forEach((t, i) => { const li = document.createElement("li"); li.textContent = t; if (i === 0) li.className = "open"; toc.appendChild(li); });
@@ -471,9 +478,9 @@ document.addEventListener("click", (e) => {
 /* ───── 수집 ───── */
 function resultText() {
   const ty = O.typeOf(state), tz = O.freeTeaser(state);
-  return [`${state.name}님의 그림체 유형은 '${ty.name}'이에요.`, `“${ty.hook}”`, ty.desc, ``, `의외였던 점: ${tz.surprise}`, `지금 그림으로 돈이 되는 길 1위: ${tz.top.name}`,
+  return [`${state.name}님의 그림체 유형은 '${ty.name}'이에요.`, `“${ty.hook}”`, ty.desc, ``, `의외였던 점: ${tz.surprise}`, `지금 그림으로 돈이 되는 길 1위: ${tz.top.name}`, ...(tz.goalLine ? [tz.goalLine + "."] : []),
     `이번 주에 해 볼 것: ${state.rx[0] ? state.rx[0].title + " — " + state.rx[0].how : ""}`, ``,
-    `2·3위 길과 등급, 길마다 시장·수익 계산·12주 로드맵은 유료 리포트에서 볼 수 있어요.`, `아더댄웍스 ${C.insta}`].join("\n");
+    `나머지 순위와 등급, 길마다 시장·수익 계산·12주 로드맵은 유료 리포트에서 볼 수 있어요.`, `아더댄웍스 ${C.insta}`].join("\n");
 }
 function sendEvent(cta, via) {
   if (!C.leadEndpoint || !lead) return;
@@ -492,7 +499,6 @@ async function sendLead() {
     signals: Object.fromEntries(O.SIGNALS.map(x => [x.key, state.signals[x.key].score])),
     utm, referrer: document.referrer || "", page: location.href.split("#")[0], resultText: resultText(),
   };
-  window.__lastLead = payload;
   try { localStorage.setItem("otw-free-last", JSON.stringify({ at: payload.at, type: ty.name })); } catch (e) {}
   if (!C.leadEndpoint) { st.textContent = ""; return; }
   try {
@@ -576,7 +582,7 @@ $("btn-card").addEventListener("click", async () => {
   st.className = "status"; st.textContent = "저장이 안 되면 이미지를 길게 눌러 저장하세요.";
 });
 $("btn-link").addEventListener("click", () => {
-  const u = new URL(location.href); u.hash = ""; ["utm_source", "utm_medium", "utm_campaign"].forEach(k => u.searchParams.delete(k));
+  const u = new URL(location.href); u.hash = ""; ["utm_source", "utm_medium", "utm_campaign", "debug"].forEach(k => u.searchParams.delete(k));
   u.searchParams.set("ref", "share"); u.searchParams.set("utm_source", "share"); u.searchParams.set("utm_campaign", O.typeOf(state).key);
   const text = `나는 '${O.typeOf(state).name}'형이래. 너는? ${u.toString()}`;
   const st = $("share-status");
@@ -588,7 +594,8 @@ $("btn-restart").addEventListener("click", () => {
   state = null; lead = null; show("s-intro");
 });
 if (window.claude && typeof window.claude.use === "function") window.claude.use("downloads").then(d => { downloadsApi = d; }).catch(() => {});
-window.__free = { get state() { return state; }, get lead() { return lead; }, get cardHasArt() { return cardHasArt; }, ans, CHIPS };
+// 결과 전체를 담은 내부 상태는 점검용(?debug=1)에서만 꺼내 둔다. 평소엔 개발자 도구로도 바로 보이지 않게.
+if (params.get("debug") === "1") window.__free = { get state() { return state; }, get lead() { return lead; }, get cardHasArt() { return cardHasArt; }, ans, CHIPS };
 })();
 </script>
 

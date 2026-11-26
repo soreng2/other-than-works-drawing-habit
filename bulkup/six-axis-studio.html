@@ -572,13 +572,14 @@ function refresh() {
   tbl.innerHTML = `<thead>${head}</thead><tbody></tbody>`;
   rows.forEach((p, i) => {
     const tr = document.createElement("tr"); if (i === 0) tr.className = "top";
-    const cells = paid ? [p.name + (p.key === state.goal ? " ★" : ""), p.style, p.ready, p.market, p.total] : [p.name + (p.key === state.goal ? " ★" : ""), p.style];
+    const nm = p.name + (p.isGoal ? (p.priority ? " ★ 우선" : " ★") : "");
+    const cells = paid ? [nm, p.style, p.ready, p.market, p.bonus ? `${p.total} (+${p.bonus})` : p.total] : [nm, p.style];
     cells.forEach(c => { const td = document.createElement("td"); td.textContent = c; tr.appendChild(td); });
     if (paid) { const td = document.createElement("td"); const g = document.createElement("span"); g.className = "grade " + p.grade; g.textContent = p.grade; g.title = GRADE_TXT[p.grade]; td.appendChild(g); tr.appendChild(td); }
     tbl.tBodies[0].appendChild(tr);
   });
   $("scores").textContent = ""; $("scores").appendChild(tbl);
-  $("score-note").textContent = paid ? "종합 = 그림체 적합 45% + 상품 준비도 35% + 시장 매력 20%. 등급 A 75+ · B 62+ · C 50+ · D 그 아래. ★ = 하고 싶은 길" : "그림체만 본 점수예요. 상업성과 시장분석은 유료 리포트에 들어갑니다.";
+  $("score-note").textContent = paid ? "종합 = 그림체 적합 45% + 상품 준비도 35% + 시장 매력 20%. 등급 A 75+ · B 62+ · C 50+ · D 그 아래. ★ 하고 싶은 길은 동기 +6점, 점수가 낮아도 2위 안에 둡니다 (★ 우선 = 순위 보정)" : "그림체만 본 점수예요. 상업성과 시장분석은 유료 리포트에 들어갑니다.";
   // 추천
   const reco = $("reco"); reco.textContent = "";
   [["span", "추천 다음 단계"], ["b", rec.title], ["span", rec.line], ["span", "→ " + rec.then]].forEach(([tag, txt]) => { const el = document.createElement(tag); el.textContent = txt; reco.appendChild(el); });
@@ -679,7 +680,7 @@ function dmText(paths, rec) {
     if (gp && gp.items.length) { const g = gapSentence(gp.items[0]); lines.push(``, `그리고 본인 생각과 실제 그림이 가장 다른 곳은 ${g.head.split(":")[0]}예요. 왜 그런지는 리포트에서 풀어 드려요.`); }
     lines.push(``, `이번 주에 바로 해 볼 것`, `• ${state.rx[0]?.title || ""}: ${state.rx[0]?.how || ""}`, ``,
       `여기까지가 무료 결과예요. 유료 리포트(약 ${tz.approxChars.toLocaleString("ko-KR")}자)에는 이런 내용이 들어가요.`,
-      `• 지금 그림으로 돈이 되는 길 1~3위와 등급 (1위: ${tz.top.name}, 2·3위는 리포트에서)`,
+      `• 지금 그림으로 돈이 되는 길 1~3위와 등급 (1위: ${tz.top.name}${tz.goalLine ? ", " + tz.goalLine : ""}, 나머지는 리포트에서)`,
       `• 길마다 시장 규모, 수익 계산, 12주 로드맵, 포트폴리오 체크리스트`,
       `• 6축 하나하나의 의미와 연습법, 본인 생각과 그림의 차이 해석`,
       `• 2주 처방 3개와 4주 연습표`, ``,
@@ -866,7 +867,7 @@ async function drawCard2(paths, rec) {
   paths.slice(0, 3).forEach((p, i) => {
     const top = p.key === g.key;
     ctx.fillStyle = top ? "#1F3D8F" : "#16181D"; ctx.font = (top ? '56px' : '44px') + ' "Jua", sans-serif';
-    ctx.fillText(`${i + 1}  ${p.name}`, PX, y + (top ? 10 : 0));
+    ctx.fillText(`${i + 1}  ${p.isGoal ? "★ " : ""}${p.name}`, PX, y + (top ? 10 : 0));
     const sc = `${p.total}  ${p.grade}`; ctx.fillText(sc, W - PX - ctx.measureText(sc).width, y + (top ? 10 : 0));
     ctx.fillStyle = "#8A94A6"; ctx.font = '400 22px "Gothic A1", sans-serif';
     ctx.fillText(`그림체 ${p.style} · 준비도 ${p.ready} · 시장 ${p.market}`, PX + 50, y + (top ? 50 : 38));
