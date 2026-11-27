@@ -141,8 +141,7 @@ const TUTORIAL = [
   { no: 4, title: "공모전/투고", does: "더미북과 기획서로 투고 패키지를 만들고 공모전·출판사 일정에 맞춰 보내요" },
 ];
 const TUTORIAL_LINE = TUTORIAL.map(t => `${t.no}.${t.title}`).join(" → ");
-/* 하고 싶은 길 우선: 동기 가산점을 공개적으로 더하고, 그래도 2위 밖이면 순위만 2위로 올린다 (점수는 그대로 보여 준다) */
-const GOAL_RULE = { bonus: 6, maxRank: 2 };
+// 희망 분야는 다음 프로젝트 선택에만 사용한다.
 const ROUTINE = { key: "routine", name: "드로잉 루틴반", why: "위치보다 반복이 먼저예요. 같은 선택을 4주 반복하면 그림체가 생깁니다." };
 const GRADE_TXT = { A: "바로 시작할 수 있는 길", B: "3개월 준비하면 열리는 길", C: "기초를 다지면 열리는 길", D: "기초부터 차근차근 쌓을 길" };
 
@@ -322,10 +321,10 @@ function scorePaths(s) {
       const ex = sigScore(s, "expression"), ch = sigScore(s, "character"); // 캐릭터가 없으면(null) 이모티콘 문턱은 넘지 못한다
       if (ex == null || ex < G.expression) { total -= G.penalty.expression; gate.push(ex == null ? "캐릭터 없음" : "표정 폭"); }
       if (ch == null || ch < G.character) { total -= G.penalty.character; if (ch != null) gate.push("캐릭터 고정성"); }
-      if (s.axes.line.position < G.line) { total -= G.penalty.line; gate.push("선 정돈"); }
+      // 선의 표현 방식은 완성도나 작은 화면에서의 가독성을 뜻하지 않는다.
     }
     const isGoal = s.goal === g.key;
-    const bonus = isGoal ? GOAL_RULE.bonus : 0;
+    const bonus = 0;
     const base = Math.round(clamp(total, 0, 100));
     total = Math.round(clamp(total + bonus, 0, 100));
     let grade = total >= 75 ? "A" : total >= 62 ? "B" : total >= 50 ? "C" : "D";
@@ -334,8 +333,6 @@ function scorePaths(s) {
     return { ...g, style, ready, market, base, bonus, total, grade, capped, gate, isGoal, priority: false, scoreRank: 0 };
   }).sort((a, b) => b.total - a.total || b.style - a.style);
   list.forEach((p, i) => { p.scoreRank = i + 1; });
-  const gi = list.findIndex(p => p.isGoal);
-  if (gi > GOAL_RULE.maxRank - 1) { const [g] = list.splice(gi, 1); g.priority = true; list.splice(GOAL_RULE.maxRank - 1, 0, g); }
   return list;
 }
 
@@ -349,7 +346,7 @@ function recommendation(s, paths) {
   }
   if (goal && goal.key !== top.key) {
     if (goal.total >= top.total - 8) return { title: goal.product, classKey: goal.key, line: `하고 싶은 ${josa(goal.name, "과", "와")} 지금 그림이 충분히 가까워요 (${goal.total}점, ${goal.grade}등급).`, then: goal.extra, target: goal };
-    return { title: goal.product, classKey: goal.key, line: `하고 싶은 ${josa(goal.name, "은", "는")} 2위예요. 1위 ${top.name}에서 이미 가진 강점을 ${josa(goal.name, "으로", "로")} 옮기면 거리가 빨리 줄어요.`, then: `리포트의 '${top.name}에서 ${goal.name}으로 가는 다리'부터`, target: goal };
+    return { title: goal.product, classKey: goal.key, line: `하고 싶은 ${josa(goal.name, "은", "는")} 프로젝트로 골랐어요. 추천 분야 ${top.name}에서 이미 가진 강점을 ${josa(goal.name, "으로", "로")} 옮기면 거리가 빨리 줄어요.`, then: `리포트의 '${top.name}에서 ${goal.name}으로 가는 다리'부터`, target: goal };
   }
   if (goal && goal.key === top.key) return { title: goal.product, classKey: goal.key, line: `하고 싶은 ${josa(goal.name, "이", "가")} 지금 그림에도 가장 잘 맞아요 (${goal.total}점, ${goal.grade}등급 · ${GRADE_TXT[goal.grade]}).`, then: goal.extra, target: goal };
   return { title: top.product, classKey: top.key, line: `지금 그림에 가장 맞는 길은 ${josa(top.name, "이에요", "예요")} (${top.total}점, ${top.grade}등급 · ${GRADE_TXT[top.grade]}).`, then: top.extra, target: top };
@@ -443,11 +440,11 @@ function gapSentence(it) {
     const a = AXES.find(x => x.key === it.key);
     const sS = sideOf(a, it.self), sA = sideOf(a, it.ai);
     const head = `${a.name}: 본인은 ${sS}(${it.self}), 그림은 ${sA}(${it.ai})`;
-    const tail = sS !== sA && sS !== "중간" && sA !== "중간" ? "의도한 방향이 그림에 아직 안 나와요." : "방향은 비슷한데 정도 차이가 커요.";
+    const tail = sS !== sA && sS !== "중간" && sA !== "중간" ? "선택한 방향과 제출 그림이 달라요. 제작 단계와 표현 의도를 확인해 보세요." : "방향은 비슷한데 정도 차이가 커요.";
     return { head, tail };
   }
   const head = `${it.name}: 본인 ${it.self}/5 · 그림 ${it.ai}/5`;
-  const tail = it.self > it.ai ? "스스로 더 높게 보고 있어요. 상품으로 낼 때 먼저 걸리는 곳이에요." : "그림이 본인 생각보다 나아요. 강점으로 써도 됩니다.";
+  const tail = it.self > it.ai ? "스스로 더 높게 답했어요. 제출한 작업이 평소 작업을 대표하는지 함께 확인해 보세요." : "그림이 본인 생각보다 나아요. 강점으로 써도 됩니다.";
   return { head, tail };
 }
 function buildResult(base, ai, self) {
@@ -723,7 +720,7 @@ function whyPath(s, p) {
   if (lo.length) lines.push(`이 길에서 중요한 ${lo.join("·")} 신호가 아직 약해요.`);
   if (p.gate && p.gate.length) lines.push(`이모티콘 문턱(${p.gate.join("·")})을 아직 못 넘어서 점수를 낮췄어요. 귀여운 그림이 곧 이모티콘은 아니에요.`);
   if (p.capped) lines.push(`점수로는 한 단계 위 등급이지만, 지금 기본기 단계에서는 ${p.grade}등급까지만 줘요. 기본기가 올라가면 등급도 같이 열려요.`);
-  if (p.isGoal) lines.push(p.priority ? `하고 싶은 길이라 동기 가산 +${p.bonus}점을 더했어요. 점수로는 ${p.scoreRank}위지만 하고 싶은 길은 2위 안에 두고, 1위 길에서 넘어오는 순서를 함께 제안해요.` : `하고 싶은 길이라 동기 가산 +${p.bonus}점을 더했어요. 하고 싶은 마음은 꾸준함으로 이어져서 실제 결과에 영향을 줘요.`);
+  if (p.isGoal) lines.push("직접 선택한 프로젝트 분야예요.");
   return lines.join(" ");
 }
 const SIG_USE = {
@@ -758,7 +755,7 @@ function buildReport(s, opts) {
     { t: "kv", rows: [
       ["그림체 유형", `${type.name} · ${type.hook}`],
       ["한 줄 정의", s.summary || summarize(s)],
-      ["상업성 1~3위", paths.slice(0, 3).map(p => `${p.isGoal ? "★" : ""}${p.name} ${p.total}점(${p.grade})`).join(" · ") + (paths.some(p => p.priority) ? " (★ 하고 싶은 길은 점수와 관계없이 2위 안에 둬요)" : paths.some(p => p.isGoal) ? " (★ 하고 싶은 길)" : "")],
+      ["상업성 1~3위", paths.slice(0, 3).map(p => `${p.isGoal ? "★" : ""}${p.name} ${p.total}점(${p.grade})`).join(" · ") + (paths.some(p => p.isGoal) ? " (★ 희망 분야)" : "")],
       stage ? ["지금 단계", `${stage.name} · 기본기 ${stage.index}/10 (${stage.basis})`] : null,
       ["숨은 강점", strong.map(x => `${x.name} ${fmtScore(x)}`).join(", ")],
       [stage && stage.key === "ready" ? "더 올릴 곳" : "가장 먼저 손볼 곳", weak.map(x => `${x.name} ${fmtScore(x)}`).join(", ")],
@@ -803,6 +800,8 @@ function buildReport(s, opts) {
   }
 
   const focus = paths.slice(0, 3);
+  const chosen = paths.find(p => p.isGoal);
+  if (chosen && !focus.includes(chosen)) focus.push(chosen);
   focus.forEach((p, idx) => {
     const G = PATH_GUIDE[p.key], M = MARKET[p.key];
     const label = p.isGoal ? `하고 싶은 길 · ${paths.indexOf(p) + 1}위` : `상업성 ${paths.indexOf(p) + 1}위`;
@@ -917,7 +916,7 @@ const FREE_VS_PAID = [
 const METHOD = [
   "6축(선·형태·색·질감·구성·정서)은 17년 차 디자이너가 수강생 그림을 보며 '그림체가 갈리는 지점'을 정리한 기준이에요. 축은 우열이 아니라 위치예요.",
   "상업 신호 5가지(완성도·캐릭터 고정성·표정 폭·장면 서사·상품화 적합)는 '팔 수 있는 형태인가'를 봐요. 그림체가 비슷한 굿즈와 이모티콘도 여기서 갈려요.",
-  "길별 점수는 그림체 적합 45% + 상품 준비도 35% + 시장 매력 20%로 계산하고, 하고 싶은 길에는 동기 가산점을 더해요.",
+  "길별 점수는 그림체 적합 45% + 상품 준비도 35% + 시장 매력 20%로 계산하고, 희망 분야는 다음 과제를 고르는 데 사용해요.",
   "그림에서 볼 수 없는 항목(캐릭터가 없는 그림의 표정 폭, 흑백 그림의 색 조화 등)은 0점이 아니라 '해당 없음'으로 빼고 계산해요. 미완성 그림은 마감도에만 반영해요.",
   "무료 진단은 답변만으로 계산해요. 유료 리포트는 실제 그림 3장을 AI가 관찰하고 대표가 감수해서, 답변과 그림이 어디서 다른지까지 봐요.",
 ];
@@ -933,7 +932,7 @@ function freeTeaser(s) {
   else if (strong.v >= 5) surprise = `${josa(strong.name, "은", "는")} 이미 완전히 '내 것'이에요. 이걸 무기로 쓰는 길이 따로 있어요.`;
   else surprise = `가장 먼저 손볼 곳은 ${josa(weak.name, "이에요", "예요")}. 여기만 잡아도 상업성 등급이 한 칸 올라가는 경우가 많아요.`;
   // 공개: 유형, 1위, 하고 싶은 길이 몇 위인지. 잠금: 나머지 순위·점수·등급 (값은 아예 넣지 않는다)
-  const goalLine = goal ? (top.key === goal.key ? `하고 싶은 ${josa(goal.name, "이", "가")} 1위예요` : `하고 싶은 ${josa(goal.name, "은", "는")} 2위예요`) : null;
+  const goalLine = goal ? `희망 프로젝트 · ${goal.name}` : null;
   const locked = goal ? ["나머지 길의 순위", "길별 점수와 상업성 등급", "1위 길과 하고 싶은 길을 잇는 순서"] : ["2위 길", "3위 길", "길별 점수와 상업성 등급"];
   const report = buildReport(s);
   let pathNo = 0;
@@ -1034,7 +1033,14 @@ function reportToText(r) {
   ).join("\n") + `\n\n${CONFIG.brand} · ${CONFIG.insta}`;
 }
 
-const OTW = { HABITS, SIGNAL_NA, strengthWhy, CRAFT, CRAFT_W, STAGES, TIP_FOR, craftVal, craftIndex, stageOf, judgeItems, fmtScore, digitalTips, TYPE_PROFILE, freeInsights, FREE_VS_PAID, METHOD, axisFavors, GOAL_RULE, bridge, CONFIG, LINKS, TUTORIAL, TUTORIAL_LINE, isHttps, linkFor, typeImage, openProducts, suggestOpen, AXES, SIGNALS, GENRES, MIX, EMOTICON_GATE, ROUTINE, GRADE_TXT, MARKET, RX_LIB, TYPES, MERGE, AGREE_TXT,
+const PROJECTS = {
+  picturebook: "같은 주인공으로 사건 직전과 직후를 손바닥 크기의 두 장면으로 그려 보세요. 글을 가리고도 무엇이 달라졌는지 확인해요.",
+  goods: "그림 하나를 메모지의 왼쪽 아래에 실제 인쇄 크기로 배치해 보세요. 필기 공간을 남기고, 작아졌을 때 사라지는 디테일 하나를 골라요.",
+  emoticon: "같은 캐릭터로 ‘알겠어’와 ‘잠깐만’을 그려 보세요. 글을 가리고 작게 줄여도 두 반응이 구분되는지 살펴봐요.",
+  instatoon: "오늘 있었던 한 사건을 세 컷으로 그려 보세요. 마지막 컷의 대사를 가린 뒤 앞선 두 컷만으로 상황이 전해지는지 확인해요.",
+  portfolio: "그림 한 장을 잡지의 본문 삽화와 표지에 각각 배치해 보세요. 제목 자리를 남긴 뒤 어느 구도에서 그림의 특징이 더 잘 읽히는지 비교해요."
+};
+const OTW = { PROJECTS, HABITS, SIGNAL_NA, strengthWhy, CRAFT, CRAFT_W, STAGES, TIP_FOR, craftVal, craftIndex, stageOf, judgeItems, fmtScore, digitalTips, TYPE_PROFILE, freeInsights, FREE_VS_PAID, METHOD, axisFavors, bridge, CONFIG, LINKS, TUTORIAL, TUTORIAL_LINE, isHttps, linkFor, typeImage, openProducts, suggestOpen, AXES, SIGNALS, GENRES, MIX, EMOTICON_GATE, ROUTINE, GRADE_TXT, MARKET, RX_LIB, TYPES, MERGE, AGREE_TXT,
   AXIS_GUIDE, SIGNAL_GUIDE, PATH_GUIDE, CLASSES, CAL,
   clamp, avg, hasBatchim, josa, rng, gauss, scorePaths, recommendation, gapsFor, weakest, strongest, summarize, sideOf, typeOf,
   computeGaps, gapSentence, buildResult, buildReport, freeTeaser, reportBodyHTML, reportToHTMLDoc, reportToText, REPORT_CSS, esc, won };

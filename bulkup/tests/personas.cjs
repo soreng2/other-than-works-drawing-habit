@@ -22,7 +22,7 @@ const PERSONAS = [
     expect: { stageIn: ['탐색기', '기초 다지기'], weakHas: '마감도', tipHas: 'finish', strongAny: ['자기 색', '표정·감정 폭'] } },
   { id: '주제가 섞인 그림 (풍경·정물·캐릭터)', mode: 'ai', goal: 'picturebook', mixed: true,
     axes: [[50, 3], [45, 3], [50, 3], [55, 3], [50, 3], [55, 3]], sig: [3, 2, 2, 3, 3], craft: [5, 5, 5, 5, 5, 4, 5, 4],
-    expect: { stageIn: ['기초 다지기'], goalTop2: true, mixedNote: true } },
+    expect: { stageIn: ['기초 다지기'], goalSelected: true, mixedNote: true } },
   { id: '숙련 일러스트레이터', mode: 'ai', goal: 'unknown',
     axes: [[75, 5], [30, 5], [65, 4], [25, 5], [40, 4], [70, 4]], sig: [5, 5, 4, 4, 5], craft: [9, 9, 8, 8, 8, 9, 9, 8],
     expect: { stageIn: ['상업 준비 단계'], topGradeIn: ['A', 'B'] } },
@@ -31,7 +31,7 @@ const PERSONAS = [
     expect: { stageIn: ['기초 다지기'], notTop2: ['emoticon'], weakNot: ['색 조화', '디지털 활용'], strongNot: ['색'] } },
   { id: '패턴 작가 (상업 신호 대부분 해당 없음)', mode: 'ai', goal: 'goods',
     axes: [[80, 4], [20, 4], [70, 4], [15, 4], [30, 4], [30, 3]], sig: [4, null, null, null, 5], craft: [7, 7, 7, null, 6, 7, 7, 6],
-    expect: { stageIn: ['그림체 형성기'], goalTop2: true } },
+    expect: { stageIn: ['그림체 형성기'], goalSelected: true } },
 ];
 const SELF = [
   { id: '무료 · 막 시작한 사람 (마무리 거의 못 함)', goal: 'unknown',
@@ -42,7 +42,7 @@ const SELF = [
     expect: { stageIn: ['탐색기'], weakHas: '마감도', notTop2: ['emoticon'], strongNot: ['디지털 활용'] } },
   { id: '무료 · 캐릭터를 안 그리는 사람 (해당 없음 선택)', goal: 'picturebook',
     axes: [[2, 3], [4, 3], [2, 4], [4, 3], [4, 3], [2, 3]], sig: [3, null, null, 3, 2], habits: { finish: 3, colorh: 4, compo: 3, digital: null },
-    expect: { stageIn: ['기초 다지기', '그림체 형성기'], weakNot: ['캐릭터 고정성', '표정·감정 폭', '디지털 활용'], goalTop2: true } },
+    expect: { stageIn: ['기초 다지기', '그림체 형성기'], weakNot: ['캐릭터 고정성', '표정·감정 폭', '디지털 활용'], goalSelected: true } },
   { id: '무료 · 자기 평가를 후하게 하는 사람 (전부 5)', goal: 'unknown',
     axes: [[5, 5], [5, 5], [5, 5], [5, 5], [5, 5], [5, 5]], sig: [5, 5, 5, 5, 5], habits: { finish: 5, colorh: 5, compo: 5, digital: 5 },
     expect: { stageIn: ['그림체 형성기'] } },
@@ -79,7 +79,7 @@ function audit(label, s, ex) {
   if (ex.strongAny) check(O.strongest(s, 3).some(x => ex.strongAny.some(n => x.name.startsWith(n))), `${label}: 강점에 ${ex.strongAny.join('/')} 중 하나`);
   if (ex.strongNot) check(!O.strongest(s, 2).some(x => ex.strongNot.includes(x.name)), `${label}: 흑백 그림의 '색 일관성'을 강점으로 내밀지 않음`);
   if (ex.tipHas) check(tips.some(t => t.key === ex.tipHas), `${label}: ${ex.tipHas} 디지털 팁`);
-  if (ex.goalTop2) check(paths.slice(0, 2).some(p => p.isGoal), `${label}: 하고 싶은 길 2위 안`);
+  if (ex.goalSelected) check(paths.some(p => p.isGoal) && paths.map(p => p.total).join() === O.scorePaths({...s, goal:'unknown'}).map(p => p.total).join(), `${label}: 목표 선택과 점수 독립`);
   if (ex.topGradeIn) check(ex.topGradeIn.includes(paths[0].grade), `${label}: 1위 등급 ${paths[0].grade}`);
   if (ex.mixedNote) check(txt.includes('손의 습관') && O.weakest(s, 3).every(w => w.kind !== 'axis' || w.name.endsWith('습관')), `${label}: 주제 혼합 안내 + 일관성은 '습관'으로 표기`);
   // 캐릭터가 없는데 캐릭터 관련 약점/처방이 나오면 의아하다
@@ -98,7 +98,7 @@ for (let i = 0; i < 400; i++) {
   if (p.sig[1] == null) p.sig[2] = null;
   const goal = ['unknown', 'picturebook', 'emoticon', 'goods', 'instatoon', 'portfolio'][Math.floor(rnd() * 6)];
   const s = O.buildResult({ name: '퍼즈', goal }, aiState(p), null); s.rx = O.weakest(s, 8).map(w => O.RX_LIB[w.key]).filter(Boolean).slice(0, 3);
-  const before = fails; console.log = () => {}; try { audit('퍼즈 ' + i, s, goal === 'unknown' ? {} : { goalTop2: true }); } catch (e) { fails++; quiet('FAIL 퍼즈 ' + i + ' 예외: ' + e.message); } console.log = quiet;
+  const before = fails; console.log = () => {}; try { audit('퍼즈 ' + i, s, goal === 'unknown' ? {} : { goalSelected: true }); } catch (e) { fails++; quiet('FAIL 퍼즈 ' + i + ' 예외: ' + e.message); } console.log = quiet;
   if (fails > before) { fuzzFails++; if (fuzzFails <= 5) quiet('FAIL 퍼즈 ' + i + ' ' + JSON.stringify({ goal, ...p })); }
 }
 console.log(`\n무작위 400건 중 실패 ${fuzzFails}건`);

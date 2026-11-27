@@ -40,12 +40,13 @@ let fails = 0;
 const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!ok) fails++; };
 
 (async () => {
-  const b = await chromium.launch();
+  const b = await chromium.launch({executablePath:process.env.CHROMIUM_PATH});
   const errors = [];
   const p = await b.newPage({ viewport: { width: 1280, height: 900 } });
   p.on('pageerror', e => errors.push('pageerror: ' + e.message));
   p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push('console: ' + m.text()); }); // 일러스트가 없을 때의 404는 정상
   await p.addInitScript(MOCK);
+  await p.route('https://fonts.**/*', route => route.abort());
   await p.goto('file://' + S + '/studio.html');
   await p.waitForTimeout(800);
 
@@ -95,7 +96,7 @@ const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!o
     const b = mk([80, 15, 70, 20, 30, 70], [4, 5, 5, 2, 4], 2, 'picturebook'); const rb = window.__otw.recommendation(b, window.__otw.scorePaths(b));
     return { rank: pa.findIndex(p => p.key === 'picturebook') + 1, priority: pa.find(p => p.key === 'picturebook').priority, bonus: pa.find(p => p.key === 'picturebook').bonus, lowConsTitle: rb.title };
   });
-  check(goalRes.rank <= 2 && goalRes.bonus === 6, `그림책 원하는 이모티콘형 그림 → 그림책 ${goalRes.rank}위 (동기 +${goalRes.bonus}${goalRes.priority ? ', 순위 보정' : ''})`);
+  check(goalRes.rank > 2 && goalRes.bonus === 0, `그림책 원하는 이모티콘형 그림 → 그림책 ${goalRes.rank}위 (동기 +${goalRes.bonus}${goalRes.priority ? ', 순위 보정' : ''})`);
   check(goalRes.lowConsTitle === '픽처포지(그림책반)', '그림체가 덜 굳어도 하고 싶은 길 수업 추천: ' + goalRes.lowConsTitle);
 
   // 4) 조사
