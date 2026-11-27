@@ -1,0 +1,15 @@
+{
+  "id": "P020",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "habit",
+  "reason": "무료 진단은 3분이면 하니까 해볼 것 같아요. 근데 19,000원 내고 리포트 받아도 어차피 저는 그 처방대로 연습 안 할 거 같아요. 브러시만 사 모으고 그림은 끝까지 못 그리는 사람이라서요.",
+  "objection": "리포트를 받아도 실천을 안 할 것 같고, 그림 3~5장 보내는 것도 귀찮아서 결제까지 안 갈 것 같아요. 연 900만 원 소득에 2만 원 가까이는 부담이기도 하고요.",
+  "would_change_my_mind": "무료 진단 결과만으로도 내 유형이랑 길이 확 와닿아서 '이거 진짜 나네' 싶고, 샘플 리포트 한두 장을 미리 볼 수 있으면 생각해볼 수도 있어요.",
+  "price_too_cheap": 3000,
+  "price_cheap": 7000,
+  "price_expensive": 15000,
+  "price_too_expensive": 29000
+}

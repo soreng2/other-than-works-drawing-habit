@@ -1,0 +1,15 @@
+{
+  "id": "P095",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "trust",
+  "reason": "무료 진단은 3분이면 하니까 해 볼 것 같아요. 근데 내 그림 보내고 돈 내는 건 누가 감수하는지, 이 사람이 실력 있는 작가인지 아직 모르겠어서 안 살 것 같아요.",
+  "objection": "AI가 분석하고 대표 작가가 직접 감수한다는데, 그 작가가 누군지 어떤 작품을 했는지 이 게시물만으로는 알 수 없어요. 1만 9천 원이면 싸긴 한데 14장짜리 리포트가 진짜 내 그림을 보고 쓴 건지 템플릿인지 모르겠고, 무료 진단 결과로도 충분할 것 같아요.",
+  "would_change_my_mind": "샘플 리포트 1~2장을 미리 볼 수 있거나, 감수하는 작가의 포트폴리오와 실제 후기가 확인되면 생각해 볼게요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 19000,
+  "price_too_expensive": 35000
+}

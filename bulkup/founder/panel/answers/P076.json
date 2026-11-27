@@ -1,0 +1,15 @@
+{
+  "id": "P076",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "habit",
+  "reason": "무료 테스트는 일단 다 해 보는 편이라 21문항은 해 볼 거예요. 근데 결제는 거의 안 해요. 브러시도 사 모으기만 하고 그림은 못 끝내는데, 리포트 받아도 14장 읽고 끝일 것 같아요.",
+  "objection": "AI가 내 그림을 제대로 볼 수 있을까? 3~5장 보내고 19,000원 냈는데 어디서나 할 법한 칭찬만 오면 어떡하죠. 무료 결과 보고 그걸로 충분하다고 느낄 것 같기도 해요.",
+  "would_change_my_mind": "무료 진단 결과가 진짜 내 그림 얘기처럼 정확하고, 샘플 리포트 한 장을 미리 보여 주면 생각해 볼 수도 있어요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 19000,
+  "price_too_expensive": 35000
+}

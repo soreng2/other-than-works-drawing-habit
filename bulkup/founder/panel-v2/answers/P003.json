@@ -1,0 +1,15 @@
+{
+  "id": "P003",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "price",
+  "reason": "무료 진단은 3분이면 하니까 해 보겠는데, 12,900원이면 솔직히 클래스 하나 듣는 게 낫지 않나 싶어요. 그림 보내고 3일 기다려서 PDF 받는 건 와닿지 않아요.",
+  "objection": "이 돈이면 이모티콘이나 굿즈 클래스를 듣는 게 나은데, 리포트 한 장이 내 그림을 실제로 끝내게 해 줄지 모르겠어요. 앞 3장 샘플이 남 얘기 같으면 그냥 안 살 것 같아요.",
+  "would_change_my_mind": "내가 팔로우하는 작가가 직접 이걸 해 보고 후기를 올리는 거요. 그리고 샘플 앞 3장이 내 그림 얘기처럼 읽히면 살 수도 있어요.",
+  "price_too_cheap": 3000,
+  "price_cheap": 5900,
+  "price_expensive": 11900,
+  "price_too_expensive": 19900
+}

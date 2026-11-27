@@ -1,0 +1,15 @@
+{
+  "id": "P012",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "habit",
+  "reason": "무료 진단은 3분이면 하니까 해 볼 거예요. 근데 19,000원짜리 리포트는 받아도 14장 읽고 실천 안 할 것 같고, 퇴근하고 30분 끄적이는 게 전부인 제가 2주 처방이랑 12주 로드맵을 따라갈 것 같지 않아요.",
+  "objection": "AI가 분석하고 작가가 감수한다는데 실제로 내 그림을 얼마나 봐 주는지 모르겠고, 결국 받아도 안 할 것 같아요. 무료 결과로 어느 길인지는 대충 알 수 있을 것 같기도 하고요.",
+  "would_change_my_mind": "무료 결과에 샘플 리포트 한두 장이 먼저 나와서 '아 이 정도로 구체적이구나' 싶고, 가격이 1만 원 아래면 한 번 사 볼 수도 있어요.",
+  "price_too_cheap": 3000,
+  "price_cheap": 5000,
+  "price_expensive": 12000,
+  "price_too_expensive": 20000
+}

@@ -1,0 +1,15 @@
+{
+  "id": "P057",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "habit",
+  "reason": "무료 진단은 3분이면 하니까 아마 해 볼 거예요. 근데 만 구천 원 내고 그림 3~5장 보내서 14장짜리 리포트 받아도, 저는 읽고 저장해 두고 끝일 것 같아요. 브러시는 사 모으는데 그림은 끝까지 못 그리는 사람이라서요.",
+  "objection": "리포트를 받아도 2주 처방이랑 12주 로드맵을 내가 실천 안 할 게 뻔해요. 그림 3~5장 골라서 DM으로 보내는 것도 귀찮고, AI 분석에 작가 감수라는 게 얼마나 정성인지도 모르겠고요.",
+  "would_change_my_mind": "무료 진단 결과가 진짜 소름 돋게 정확해서, 그 다음 단계가 궁금해지는 경우 정도요. 아니면 1만 원 아래로 한 장만 보내도 되는 가벼운 버전이면 생각해 볼 수도 있어요.",
+  "price_too_cheap": 3000,
+  "price_cheap": 7000,
+  "price_expensive": 15000,
+  "price_too_expensive": 25000
+}

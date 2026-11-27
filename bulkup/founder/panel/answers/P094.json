@@ -1,0 +1,15 @@
+{
+  "id": "P094",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "trust",
+  "reason": "무료 진단은 3분이면 하니까 해 볼 거예요. 근데 29,000원 내고 내 그림을 맡기려면 누가 어떻게 봐 주는지, 그 작가 실력이 어떤지 알아야 하는데 지금 글만으론 모르겠어요. AI 분석에 작가 감수라는 게 얼마나 진짜 사람이 보는 건지도 애매하고요.",
+  "objection": "감수한다는 대표 작가가 누구고 어떤 실력인지 안 보여요. 이모티콘 승인이나 그림책 투고 같은 실적이 없으면 14장짜리 리포트가 그냥 AI 요약 같을 것 같아요.",
+  "would_change_my_mind": "감수하는 작가의 이모티콘 출시나 그림책 출간 같은 실제 작업물과 이력, 그리고 내 그림과 비슷한 사람의 리포트 샘플 몇 장을 미리 볼 수 있으면 사 볼 수 있어요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 12000,
+  "price_expensive": 25000,
+  "price_too_expensive": 45000
+}

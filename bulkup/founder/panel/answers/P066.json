@@ -1,0 +1,15 @@
+{
+  "id": "P066",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "need",
+  "reason": "무료 진단 3분이면 길 하나 추천해 주는 거까지 나오니까 그건 해 보겠는데, 그림 보내고 만 구천 원 내서 14장 받는 건 아직 아니에요. 지금은 이모티콘 제안 목표가 이미 있어서 그림부터 끝내는 게 먼저라고 생각해요.",
+  "objection": "무료 결과로도 충분할 것 같은데, 유료는 결국 AI 분석에 작가 감수라는 게 얼마나 깊은지 샘플 없이는 모르겠어요. 14장이 내 그림 얘기인지 템플릿인지 의심돼요.",
+  "would_change_my_mind": "내 그림이 아닌 다른 사람 그림으로 만든 실제 리포트 샘플 몇 장을 미리 보여 주고, 이모티콘 쪽 시장분석이 구체적이면 고민해 볼 것 같아요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 19000,
+  "price_too_expensive": 39000
+}

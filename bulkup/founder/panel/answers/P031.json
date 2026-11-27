@@ -1,0 +1,15 @@
+{
+  "id": "P031",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "habit",
+  "reason": "무료 진단은 3분이면 하니까 해 볼 것 같아요. 근데 유료 리포트 받아도 14장 읽고 끝일 것 같고, 클래스 결제해 놓고 절반도 못 들은 게 저예요. 또 하나 쌓는 느낌이에요.",
+  "objection": "리포트를 받아도 실천을 안 할 것 같고, AI가 분석하고 작가가 감수했다는데 내 그림 3~5장 보고 얼마나 진짜 내 얘기를 해 줄지 모르겠어요. 결국 수업 팔려고 이어지는 입구 같기도 하고요.",
+  "would_change_my_mind": "무료 진단 결과가 내 그림에 딱 맞게 정확해서 놀라고, 샘플 리포트 한두 장을 미리 볼 수 있으면 1만 원 안쪽일 때는 생각해 볼 것 같아요.",
+  "price_too_cheap": 3000,
+  "price_cheap": 7000,
+  "price_expensive": 15000,
+  "price_too_expensive": 29000
+}

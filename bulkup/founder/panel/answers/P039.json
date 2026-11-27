@@ -1,0 +1,15 @@
+{
+  "id": "P039",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "trust",
+  "reason": "무료 3분이면 해 볼 만한데, 2만 원 가까이 내고 내 그림을 AI가 제대로 보는지는 못 믿겠어요. 소득이 월 17만 원 수준이라 확인 안 된 데 쓰기엔 부담이에요.",
+  "objection": "AI가 내 그림을 제대로 볼 수 있을까요? 이모티콘도 한 번 떨어졌는데, 점수랑 등급이 뻔한 말이면 돈만 날리는 거잖아요. 감수를 대표 작가가 직접 한다는 것도 어느 정도인지 모르겠고요.",
+  "would_change_my_mind": "무료 진단 결과가 내 그림을 정확히 짚었다고 느끼거나, 샘플 리포트 한 장을 먼저 볼 수 있다면 다시 생각해 볼게요. 작가님 감수 코멘트 샘플이 있으면 더 좋고요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 19000,
+  "price_too_expensive": 35000
+}

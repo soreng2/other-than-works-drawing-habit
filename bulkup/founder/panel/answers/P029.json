@@ -1,0 +1,15 @@
+{
+  "id": "P029",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "낮음",
+  "reason_code": "trust",
+  "reason": "무료 진단은 3분이면 하니까 일단 해 볼 거예요. 근데 결과 보고 유료 리포트로, 또 수업으로 이어지는 깔때기 같아서 19,000원은 안 낼 것 같아요. 브러시 사는 데 쓰는 돈이랑은 느낌이 달라요.",
+  "objection": "결국 수업 팔려고 하는 거 아닌가. AI가 분석하고 작가가 감수한다는데 내 그림 3~5장을 진짜 얼마나 봐 주는지 모르겠고, 무료 결과랑 뭐가 다른지도 모르겠어요.",
+  "would_change_my_mind": "이 작가가 내가 이미 팔로우하는 작가이거나, 다른 사람이 받은 리포트 샘플 몇 장을 미리 볼 수 있으면 사 볼 수도 있어요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 19000,
+  "price_too_expensive": 35000
+}

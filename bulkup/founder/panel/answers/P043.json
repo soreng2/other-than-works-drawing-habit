@@ -1,0 +1,15 @@
+{
+  "id": "P043",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "habit",
+  "reason": "무료 진단은 3분이면 하니까 해 볼 것 같아요. 근데 1만 9천 원 내고 그림 보내서 리포트까지 받는 건 저한테는 좀 과해요. 저는 무료만 해 보는 편이라서요.",
+  "objection": "결국 AI가 분석하는 건데 14장짜리 리포트가 나한테 진짜 맞춤인지, 무료 결과랑 뭐가 다른지 모르겠어요. 이메일 남기면 수업 홍보 오는 것도 걸리고요.",
+  "would_change_my_mind": "무료 결과에서 내 그림에 대한 구체적인 피드백을 충분히 보여 주고, 유료 리포트 샘플 몇 장을 미리 보여 주면 고민은 해 볼 것 같아요.",
+  "price_too_cheap": 3000,
+  "price_cheap": 5000,
+  "price_expensive": 12000,
+  "price_too_expensive": 25000
+}

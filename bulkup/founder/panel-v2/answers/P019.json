@@ -1,0 +1,15 @@
+{
+  "id": "P019",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "trust",
+  "reason": "무료 진단은 3분이니까 해 볼 수는 있는데, 후기도 없는 곳에 내 그림 보내고 만 이천구백 원 내는 건 아직 못 하겠어요. 샘플 앞 3장 보고 나서도 MBTI 같은 재미용 결과랑 크게 다르지 않으면 거기서 끝이에요.",
+  "objection": "실제로 이걸 받고 그림을 끝낸 사람의 후기가 없고, 대표가 정말 내 그림을 보고 쓰는 건지 자동으로 찍어내는 건지 알 수가 없어요.",
+  "would_change_my_mind": "실제 구매자가 리포트를 받고 2주 안에 한 장 끝낸 후기와 그 사람의 그림 전후 결과물을 인스타에서 여러 개 볼 수 있으면요.",
+  "price_too_cheap": 3000,
+  "price_cheap": 6000,
+  "price_expensive": 15000,
+  "price_too_expensive": 25000
+}

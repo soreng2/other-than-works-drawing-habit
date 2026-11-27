@@ -1,0 +1,15 @@
+{
+  "id": "P077",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "need",
+  "reason": "무료 진단 3분이면 해 볼 만한데, 내 그림을 남한테 보내서 점수까지 받는 건 아직 부끄러워요. 이모티콘은 한 번 떨어졌고 지금은 그림을 더 쌓는 게 먼저라, 29,000원 리포트까지는 안 갈 것 같아요.",
+  "objection": "AI가 분석하고 대표 작가가 감수한다는데 실제로 내 그림에 뭘 말해 줄지 모르겠고, 이메일이나 번호 남기고 나면 수업 권유만 올까 걱정돼요.",
+  "would_change_my_mind": "무료 결과에서 이모티콘 제안이 왜 떨어졌는지 짚어 주는 구체적인 한 줄이 나오면, 그걸 보고 리포트 샘플 한 장을 먼저 볼 수 있으면 생각해 볼게요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9900,
+  "price_expensive": 19000,
+  "price_too_expensive": 39000
+}

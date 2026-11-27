@@ -1,0 +1,15 @@
+{
+  "id": "P064",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "trust",
+  "reason": "무료 진단은 3분이면 하니까 해 볼 수는 있어요. 근데 내 그림 3~5장을 보내고 2만~3만 원 내는 건 누가 감수하는지, 실력 있는 사람인지 모르겠어서 안 살 것 같아요. 어차피 유튜브랑 무료 자료로 혼자 하는 편이라서요.",
+  "objection": "AI 분석에 대표 작가가 직접 감수한다는데, 그 작가가 누군지, 실제로 얼마나 잘 그리는 사람인지 이 게시물만으로는 모르겠어요. 무료 진단도 결국 연락처 받으려는 거 아닌가 싶고요.",
+  "would_change_my_mind": "대표 작가의 실제 작품과 이력, 그리고 나랑 비슷한 초보가 받은 리포트 실물 샘플 몇 페이지를 공개로 볼 수 있으면 다시 생각해 볼게요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 19000,
+  "price_too_expensive": 39000
+}

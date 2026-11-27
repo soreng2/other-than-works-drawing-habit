@@ -1,0 +1,15 @@
+{
+  "id": "P011",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "낮음",
+  "reason_code": "habit",
+  "reason": "3분짜리 무료 진단은 심심하면 해 볼 것 같은데, 유료는 안 살 것 같아요. 결제해 둔 클래스도 다 못 듣는 사람이라 '2주 안에 한 장 끝내기'도 결국 숙제가 하나 더 느는 느낌이에요.",
+  "objection": "이메일이랑 번호까지 남기고 나면 MBTI 같은 결과 하나 받고 끝날 것 같고, 대표가 정말 내 그림을 봐 주는 건지, 2주 뒤에 내가 진짜 그림을 보내기나 할지도 모르겠어요.",
+  "would_change_my_mind": "무료 결과의 '몰랐던 강점 2개'가 내 그림을 정말 본 것처럼 구체적이어서 놀라거나, 유료 리포트 샘플 앞 3장에서 대표가 실제 그림에 코멘트한 걸 보면 마음이 바뀔 수도 있어요.",
+  "price_too_cheap": 3000,
+  "price_cheap": 7000,
+  "price_expensive": 15000,
+  "price_too_expensive": 30000
+}

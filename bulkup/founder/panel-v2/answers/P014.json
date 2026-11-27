@@ -1,0 +1,15 @@
+{
+  "id": "P014",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "낮음",
+  "reason_code": "other",
+  "reason": "무료 진단은 3분이면 하니까 해 볼 것 같아요. 근데 내 그림을 대표님이 직접 본다고 생각하면 부끄러워서 못 보내겠어요. 12,900원은 부담 없는데 그림을 보내는 게 문제예요.",
+  "objection": "아직 끝낸 그림도 없고 러프를 남한테 보여 주는 게 너무 부끄러워요. 보내 놓고 막상 피드백 받으면 상처받을까 봐 무섭기도 하고요. 결국 프로크리에이트 브러시 사듯 사 놓고 안 보낼 것 같아요.",
+  "would_change_my_mind": "그림을 보내지 않고도 받을 수 있거나, 내 팔로우 작가가 직접 이걸 해 보고 후기를 올려서 나 같은 초보도 부끄럽지 않았다는 걸 보여 주면요.",
+  "price_too_cheap": 3000,
+  "price_cheap": 7000,
+  "price_expensive": 15000,
+  "price_too_expensive": 30000
+}

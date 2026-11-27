@@ -1,0 +1,15 @@
+{
+  "id": "P010",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "habit",
+  "reason": "무료 진단은 3분이면 하니까 해 보겠지만, 만 구천 원짜리 리포트는 받아도 14장 읽고 끝일 것 같아요. 이모티콘 떨어졌을 때도 피드백만 늘어놓고 다시 안 그렸거든요.",
+  "objection": "리포트를 받아도 실천을 안 할 것 같고, 결제 전에 실제 리포트 예시나 후기를 못 봤어요. 무료 진단 결과 보려면 이메일이나 번호까지 줘야 하는 것도 찜찜하고요. 취준생이라 월 만 원도 아쉬워요.",
+  "would_change_my_mind": "나랑 비슷한 초보가 받은 실제 리포트 샘플(가려진 것이라도)과 후기를 먼저 보고, 그걸로 실제로 그림 하나를 끝냈다는 사례가 있으면요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 19000,
+  "price_too_expensive": 35000
+}

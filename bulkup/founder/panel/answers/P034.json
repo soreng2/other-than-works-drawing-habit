@@ -1,0 +1,15 @@
+{
+  "id": "P034",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "habit",
+  "reason": "무료 진단은 3분이면 하니까 해 보겠지만, 유료 리포트는 안 살 것 같아요. 그림을 보내는 것부터 부끄럽고, 저는 원래 무료만 해 보고 결제는 거의 안 하는 사람이에요.",
+  "objection": "내 그림 3~5장을 남한테, 그것도 작가님한테 직접 보여 줘야 한다는 게 제일 부끄럽고, 19,000원이 AI 분석 14장 값어치인지 모르겠어요. 무료 진단 결과로 충분할 것 같기도 하고요.",
+  "would_change_my_mind": "그림을 보내기 전에 샘플 리포트를 먼저 보고, 내 그림이 평가받거나 공개되지 않는다는 확신이 들면 고민해 볼 수 있어요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 19000,
+  "price_too_expensive": 35000
+}

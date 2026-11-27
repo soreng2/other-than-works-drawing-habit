@@ -1,0 +1,15 @@
+{
+  "id": "P062",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "habit",
+  "reason": "무료 진단은 3분이면 하니까 재미로 해볼 것 같아요. 근데 만 구천 원 내고 14장짜리 리포트 받아도 솔직히 읽고 실천 안 할 것 같아요. 저는 그림 끝까지 마무리하는 것도 잘 못하는데 12주 로드맵이 지켜질 리가요.",
+  "objection": "리포트를 받아도 어차피 실천을 안 할 것 같고, 무료 결과에 이미 1위 길이랑 7일 루틴까지 나온다면 유료가 굳이 필요한지 모르겠어요.",
+  "would_change_my_mind": "내가 팔로우하는 작가가 직접 내 그림을 봐주고 짧게라도 코멘트를 준다는 게 확실하면 한 번쯤은 살 수도 있어요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 19000,
+  "price_too_expensive": 35000
+}

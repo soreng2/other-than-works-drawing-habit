@@ -1,0 +1,15 @@
+{
+  "id": "P001",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "trust",
+  "reason": "무료 진단은 3분이면 되니까 해 보겠지만, 유료는 안 살 것 같아요. 저는 유튜브 보면서 혼자 하는 편이라 돈 주고 평가받는 게 어색하고, 그림 3~5장을 AI가 제대로 보는 건지 못 믿겠어요.",
+  "objection": "AI가 내 그림을 제대로 볼 수 있을까요? 결국 틀에 박힌 점수랑 누구한테나 맞는 말만 나올 것 같고, 이메일이나 번호를 남기면 수업 광고만 올까 봐 걱정돼요.",
+  "would_change_my_mind": "내 그림 한 장으로 감수 샘플을 먼저 보여 주고, 실제로 내 그림 얘기를 구체적으로 짚어 주는 걸 확인할 수 있으면 생각해 볼게요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 19000,
+  "price_too_expensive": 39000
+}

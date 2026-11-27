@@ -1,0 +1,15 @@
+{
+  "id": "P026",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "낮음",
+  "reason_code": "trust",
+  "reason": "무료 진단은 3분이면 하니까 해 볼 수는 있는데, 유료는 후기도 예시 리포트도 없이 내 그림 3~5장 보내고 1만 9천 원 내라는 게 좀 불안해요. 그 돈이면 클래스 하나 듣는 게 낫지 않나 싶고요.",
+  "objection": "AI가 분석하고 작가가 감수한다는데, 실제로 다른 사람이 받은 리포트가 어떤 모습인지 한 장도 안 보여서 14장짜리가 진짜 내 그림을 본 건지 아무 그림에나 맞는 말인지 모르겠어요. 무료 진단도 이메일 남기고 나면 계속 DM이나 수업 홍보가 올 것 같고요.",
+  "would_change_my_mind": "실제 구매자 후기와 14장 리포트 샘플(가려진 부분 없이 몇 페이지라도)을 먼저 볼 수 있으면 다시 생각해 볼게요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 25000,
+  "price_too_expensive": 40000
+}

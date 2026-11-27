@@ -1,0 +1,15 @@
+{
+  "id": "P027",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "price",
+  "reason": "무료 진단은 3분이면 하니까 해 볼 것 같은데, 1만 9천 원도 내 한 달 용돈에서는 크고 내 그림 보내는 것 자체가 부끄러워요. 결제는 거의 안 하는 편이라 안 살 것 같아요.",
+  "objection": "내 그림을 AI랑 작가가 직접 본다는 게 부담스럽고, 결과가 결국 수업 팔려는 입구일 것 같아요. 55만 원짜리 워크숍은 생각도 안 해요.",
+  "would_change_my_mind": "내 그림 한 장만 보내도 되고, 마음에 안 들면 환불해 주는 5천 원 미만 샘플 리포트가 있으면 고민해 볼래요.",
+  "price_too_cheap": 3000,
+  "price_cheap": 5000,
+  "price_expensive": 10000,
+  "price_too_expensive": 19000
+}

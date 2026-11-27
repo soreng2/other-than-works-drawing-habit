@@ -1,0 +1,15 @@
+{
+  "id": "P015",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "trust",
+  "reason": "무료 진단 3분이면 해 볼 만한데, 유료는 AI가 내 그림을 제대로 볼 수 있을지 모르겠어요. 이모티콘도 한 번 떨어져 봤는데 만 구천 원 내고 14장 받아도 결국 유튜브에서 본 얘기일 것 같아요.",
+  "objection": "AI가 내 그림을 진짜 보고 쓰는 건지, 누구한테나 똑같이 쓰는 리포트인지 알 수가 없어요. 이메일이나 번호까지 남겨야 하는 것도 좀 걸리고요.",
+  "would_change_my_mind": "무료 진단 결과가 내 그림을 콕 집어서 맞게 말해 주면 한 번쯤 생각해 볼 수 있어요. 아니면 실제 리포트 샘플 한두 장을 미리 볼 수 있다면요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 19000,
+  "price_too_expensive": 35000
+}

@@ -1,0 +1,15 @@
+{
+  "id": "P097",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "price",
+  "reason": "무료면 3분이니까 일단 해 보겠지만, 그림 몇 장 보내고 1만 9천 원 내는 건 안 할 것 같아요. 한 달 용돈 쓰는 데 그 돈이면 부담이고, 결과가 MBTI처럼 재미용일 수도 있고요.",
+  "objection": "AI가 분석하고 작가가 감수한다는데 진짜 내 그림을 제대로 봐 주는 건지, 무료 결과랑 뭐가 그렇게 다른지 모르겠어요. 이메일이나 번호까지 남기는 것도 찜찜하고요.",
+  "would_change_my_mind": "무료 결과에서 내 그림 한 장을 실제로 짚어 준 샘플을 보거나, 가격이 5천 원 안쪽이면 한 번쯤 해 볼 수도 있어요.",
+  "price_too_cheap": 2000,
+  "price_cheap": 4000,
+  "price_expensive": 9000,
+  "price_too_expensive": 15000
+}

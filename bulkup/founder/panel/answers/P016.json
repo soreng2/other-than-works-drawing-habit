@@ -1,0 +1,15 @@
+{
+  "id": "P016",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "trust",
+  "reason": "무료 진단은 3분이면 하니까 해 볼 것 같은데, 내 그림을 AI가 제대로 보는지도 모르는데 먼저 돈부터 내라는 건 못 하겠어요. 후기나 샘플 리포트가 있어야 사요.",
+  "objection": "AI가 내 그림을 제대로 볼 수 있을까요? 샘플 결과물도 후기도 안 보이는데 19,000원이면 14장짜리가 그냥 템플릿에 내 이름만 끼운 거면 어쩌나 싶어요.",
+  "would_change_my_mind": "실제 수강생 후기와 14장짜리 리포트 샘플(익명 처리해도 됨)을 미리 볼 수 있으면 다시 생각해 볼게요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 12000,
+  "price_expensive": 25000,
+  "price_too_expensive": 40000
+}

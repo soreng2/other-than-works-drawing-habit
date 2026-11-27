@@ -1,0 +1,15 @@
+{
+  "id": "P052",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "trust",
+  "reason": "무료 진단은 3분이면 하니까 한번 해볼 거예요. 근데 29,000원 내고 내 그림 몇 장을 AI가 제대로 봐줄지 모르겠고, 이모티콘 제안이나 그림책 투고에 실제로 도움 되는지 확인이 안 돼서 아직은 안 살 것 같아요.",
+  "objection": "AI가 내 그림을 제대로 볼 수 있을까요? 점수랑 근거가 뻔한 소리면 3만 원 가까이 날리는 건데, 샘플도 없이 DM으로 '리포트'라고 보내라니 믿을 근거가 없어요.",
+  "would_change_my_mind": "실제 리포트 샘플 몇 장(점수 근거가 그림의 어느 부분을 보고 나온 건지 보이는 것)과, 이 리포트를 받고 이모티콘 제안이 통과됐다는 구체적인 후기가 있으면 살 수도 있어요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 12000,
+  "price_expensive": 25000,
+  "price_too_expensive": 45000
+}

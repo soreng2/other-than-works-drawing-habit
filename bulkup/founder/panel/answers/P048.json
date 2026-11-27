@@ -1,0 +1,15 @@
+{
+  "id": "P048",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "trust",
+  "reason": "무료 진단 3분이면 해 보겠지만 1만 9천 원 내고 내 그림 보내는 건 안 할 것 같아요. 브러시만 사 모으고 그림도 못 끝내는데, 리포트 받아도 또 안 읽고 쌓아 둘 거예요.",
+  "objection": "AI가 분석하고 대표 작가가 감수한다는데, 그 작가가 어떤 사람인지 실력이 있는지 알 수가 없어요. 14장짜리가 진짜 내 그림을 본 건지 아니면 비슷한 내용 복붙인지도 모르겠고요.",
+  "would_change_my_mind": "샘플 리포트를 몇 장이라도 먼저 공개해서 실제 내 그림 같은 수준의 그림에 어떻게 써 주는지 보여 주고, 대표 작가의 작품과 이력이 확인되면 생각해 볼게요.",
+  "price_too_cheap": 3000,
+  "price_cheap": 5000,
+  "price_expensive": 12000,
+  "price_too_expensive": 25000
+}

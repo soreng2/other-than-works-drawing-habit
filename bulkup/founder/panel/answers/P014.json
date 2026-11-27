@@ -1,0 +1,15 @@
+{
+  "id": "P014",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "habit",
+  "reason": "무료 진단은 3분이면 하니까 해 볼 것 같아요. 근데 1만 9천 원이면 클래스 하나 듣는 게 낫고, 이미 사놓고 안 들은 클래스가 산더미라 또 뭘 사고 싶지가 않아요.",
+  "objection": "AI 분석에 작가님이 감수해 준다는데 내 그림 3~5장을 보고 정말 내 얘기를 해 주는 건지, 진단 결과처럼 누구한테나 맞는 말인 건 아닌지 모르겠어요. 그리고 나는 끝까지 한 그림도 몇 장 없는데 리포트를 받아도 읽고 끝날 것 같아요.",
+  "would_change_my_mind": "무료 진단 결과가 소름 돋을 만큼 내 그림에 딱 맞아서, 유료 리포트 샘플(실제 다른 사람 사례)을 보고 '이건 내 얘기다' 싶을 때요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 19000,
+  "price_too_expensive": 35000
+}

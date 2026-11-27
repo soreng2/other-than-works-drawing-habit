@@ -1,0 +1,15 @@
+{
+  "id": "P024",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "habit",
+  "reason": "무료 테스트는 3분이면 하니까 일단 해 볼 것 같아요. 근데 만 구천 원 내고 내 그림을 보내는 건 잘 안 하게 돼요. 무료 결과 보고 '아 그렇구나' 하고 끝날 것 같아요.",
+  "objection": "AI가 내 그림을 제대로 볼 수 있을까? 21문항 답으로 나온 결과랑 크게 다를 게 없으면 돈 낸 게 아까울 것 같고, 그림 보내고 DM으로 신청하는 것도 좀 부담이에요.",
+  "would_change_my_mind": "무료 진단 결과에 내 그림 한 장짜리 샘플 분석이 같이 와서 '이 정도로 정확하게 짚어 주네' 싶으면 고민해 볼 것 같아요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 15000,
+  "price_too_expensive": 25000
+}

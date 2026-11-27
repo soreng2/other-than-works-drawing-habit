@@ -1,0 +1,15 @@
+{
+  "id": "P001",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "낮음",
+  "reason_code": "trust",
+  "reason": "무료 진단은 3분이면 하니까 해 보겠지만, 12,900원 내고 그림 보내는 건 결국 수업 팔려는 입구 같아서 안 살 것 같아요. 어차피 그림도 10개도 안 올리는 사람이라 2주 안에 끝낼 자신도 없고요.",
+  "objection": "결국 수업 팔려고 하는 거 아닌가. 결과 화면에서 바로 결제하라는 것도 그렇고, 리포트비를 수강료에서 빼준다는 말이 더 수업 쪽으로 끌고 가는 느낌이에요.",
+  "would_change_my_mind": "내가 팔로우하는 작가가 직접 이 리포트를 받았다고 올리거나, 무료 샘플 3장만 봐도 내 그림에 바로 쓸 수 있는 구체적인 내용이 보이면 살 수도 있어요.",
+  "price_too_cheap": 3000,
+  "price_cheap": 6000,
+  "price_expensive": 15000,
+  "price_too_expensive": 25000
+}

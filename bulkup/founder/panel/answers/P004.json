@@ -1,0 +1,15 @@
+{
+  "id": "P004",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "trust",
+  "reason": "무료 진단은 3분이면 하니까 일단 해 볼 것 같아요. 근데 내 그림을 3~5장 보내서 평가받는 건 아직 너무 부끄럽고, 그 돈이면 차라리 좋아하는 작가 굿즈나 클래스를 사요.",
+  "objection": "AI가 내 그림을 보고 점수 매긴다는 게 와닿지 않고, 아직 끝까지 마무리한 그림도 몇 장 없어서 보낼 게 없어요. 14장짜리 리포트가 내 얘기인지 아니면 누구에게나 맞는 말인지 모르겠어요.",
+  "would_change_my_mind": "내가 팔로우하는 작가가 직접 이걸 받고 후기를 올리거나, 샘플 리포트 한두 장을 미리 볼 수 있으면 생각해 볼 것 같아요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 19000,
+  "price_too_expensive": 35000
+}

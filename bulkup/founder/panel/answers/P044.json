@@ -1,0 +1,15 @@
+{
+  "id": "P044",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "trust",
+  "reason": "무료 진단은 3분이라 해 볼 것 같은데, 내 그림 몇 장을 AI가 보고 1만 9천 원짜리 14장 리포트를 준다는 건 아직 안 와닿아요. 게시물도 10개 안 되고 마무리한 그림도 별로 없어서 뭘 보내야 할지도 모르겠고요.",
+  "objection": "AI가 내 그림을 제대로 볼 수 있을까? 결국 누구한테나 맞는 말을 늘어놓은 리포트일 것 같아요. 샘플도 없이 돈부터 내는 게 걸려요.",
+  "would_change_my_mind": "내가 팔로우하는 작가가 직접 이걸 받아서 후기를 올리거나, 실제 리포트 샘플 몇 장을 미리 볼 수 있다면 생각해 볼게요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 19000,
+  "price_too_expensive": 35000
+}

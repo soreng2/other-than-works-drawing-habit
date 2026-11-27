@@ -1,0 +1,15 @@
+{
+  "id": "P019",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "trust",
+  "reason": "무료 진단 3분이면 해 볼 만한데, 내 그림 보내서 평가받는 건 아직 부끄럽고 AI가 쓴 14장 리포트가 내 그림을 제대로 볼지도 모르겠어요. 무료 결과에서 내 길이 대충 나오면 그걸로 일단 충분할 것 같아요.",
+  "objection": "아직 끝까지 마무리한 그림도 몇 장 없는데 3~5장 보내서 점수 받으면 민망하고, 29,000원 쓸 만큼 AI 분석이 내 그림에 딱 맞는지 확인할 방법이 없어요. 이메일이나 번호 남기면 수업 홍보가 계속 올 것 같은 것도 걸려요.",
+  "would_change_my_mind": "실제 리포트 샘플 몇 장(내 또래 초보 그림 기준)을 먼저 보고, 무료 진단 결과가 내 상황에 정확히 맞다고 느껴지면 살 수도 있어요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 12000,
+  "price_expensive": 25000,
+  "price_too_expensive": 40000
+}

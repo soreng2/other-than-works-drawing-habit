@@ -1,0 +1,15 @@
+{
+  "id": "P100",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "habit",
+  "reason": "무료 진단은 3분이면 하니까 해 볼 것 같은데, 유료 리포트는 받아도 14장 읽고 끝일 것 같아요. 클래스도 결제만 해 놓고 절반도 못 들었는데 12주 로드맵을 제가 실천할 리가 없어요.",
+  "objection": "AI가 내 그림 3~5장 보고 뭘 얼마나 정확히 알겠어요. 그리고 받아도 결국 실천을 안 할 것 같아요. 그림 끝까지 마무리한 것도 별로 없는데 점수만 받는 느낌일 것 같아요.",
+  "would_change_my_mind": "",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 19000,
+  "price_too_expensive": 35000
+}

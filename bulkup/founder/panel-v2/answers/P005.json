@@ -1,0 +1,15 @@
+{
+  "id": "P005",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "habit",
+  "reason": "무료 진단은 3분이면 하니까 해 보겠지만, 유료 리포트는 받아도 또 읽고 넘어갈 것 같아요. 아이 재우고 나면 그릴 시간이 거의 없어서 2주 안에 한 장 끝내는 것도 자신이 없어요.",
+  "objection": "리포트를 받아도 실천을 안 할 것 같아요. 할 일 3개를 정해 줘도 결국 내가 안 하면 12,900원이 그냥 사라지는 거잖아요.",
+  "would_change_my_mind": "이모티콘 제안 같은 내 목표에 맞춰, 2주 안에 실제로 끝낸 입문자의 전후 그림을 보여 주고 중간에 한 번 확인 메시지를 보내 주면 생각해 볼게요.",
+  "price_too_cheap": 3000,
+  "price_cheap": 6000,
+  "price_expensive": 15000,
+  "price_too_expensive": 25000
+}

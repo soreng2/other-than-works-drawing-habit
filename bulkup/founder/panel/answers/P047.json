@@ -1,0 +1,15 @@
+{
+  "id": "P047",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "price",
+  "reason": "무료 진단은 3분이면 하니까 해 보겠지만, 유료 리포트는 안 살 것 같아요. 저 지금 알바비로 버티는 취준생이라 그림 평가에 만 구천 원도 부담이고, 그림도 10개도 안 올렸는데 14장짜리 리포트까지 필요한가 싶어요.",
+  "objection": "결국 무료 진단으로 연락처 받아서 리포트 팔고, 그다음엔 55만 원짜리 수업 팔려는 깔때기 아닌가요? 그리고 AI 분석인데 작가 감수가 진짜 얼마나 들어가는지도 모르겠어요.",
+  "would_change_my_mind": "무료 진단 결과에 내 그림 기준의 구체적인 피드백이 충분히 들어 있고, 리포트 샘플 몇 장을 미리 볼 수 있으면 한 번쯤 생각해 볼 수도 있어요. 그래도 가격은 1만 원 아래여야 해요.",
+  "price_too_cheap": 3000,
+  "price_cheap": 5000,
+  "price_expensive": 10000,
+  "price_too_expensive": 19000
+}

@@ -1,0 +1,15 @@
+{
+  "id": "P098",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "habit",
+  "reason": "클래스 이미 여러 개 사 놓고 절반도 못 들었는데 또 결제하는 게 맞나 싶어요. 무료 진단은 3분이면 되니까 해 보겠지만, 내 그림을 3~5장 골라서 남한테 보내는 것부터가 부끄러워서 못 할 것 같아요.",
+  "objection": "내 그림 아직 남한테 보여 주기 부끄러운데, 그걸 보내서 점수까지 받으라니 부담이에요. 그리고 리포트 받아도 결국 안 읽고 쌓아 둘 것 같아요. 이메일이나 번호 남기면 수업 광고도 올 것 같고요.",
+  "would_change_my_mind": "",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 19000,
+  "price_too_expensive": 39000
+}

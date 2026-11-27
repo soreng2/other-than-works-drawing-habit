@@ -1,0 +1,15 @@
+{
+  "id": "P046",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "trust",
+  "reason": "내 그림을 남한테 보내는 것부터 아직 부끄럽고, 실제 후기나 리포트 샘플 없이 만 구천 원을 먼저 내긴 어려워요. 무료 진단은 3분이면 되니까 해 보고 결과가 괜찮은지만 볼래요.",
+  "objection": "AI가 분석하고 작가가 감수한다는데 실제로 어떤 리포트가 나오는지, 나 같은 초보가 받고 도움이 됐다는 후기가 하나도 안 보여요. 그리고 무료 진단 하려고 이메일이나 번호를 남기면 이후에 수업 홍보가 계속 올 것 같아요.",
+  "would_change_my_mind": "내 또래 초보가 받은 실제 리포트 샘플 한두 장과 솔직한 후기를 미리 볼 수 있다면 고민해 볼 것 같아요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 19000,
+  "price_too_expensive": 39000
+}

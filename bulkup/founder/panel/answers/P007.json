@@ -1,0 +1,15 @@
+{
+  "id": "P007",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "habit",
+  "reason": "무료 진단은 3분이면 하니까 해 볼 것 같은데, 유료 리포트는 받아도 14장 읽고 2주 처방대로 안 할 게 뻔해요. 안 들은 클래스가 이미 쌓여 있어서 또 하나 사는 느낌이에요.",
+  "objection": "리포트 받아 놓고 실천을 안 하면 1만 9천 원이 그냥 사라지는 건데, 그림 3~5장 보내고 DM으로 신청하는 것까지 귀찮고 AI가 한 분석이 정말 내 그림을 본 건지도 모르겠어요.",
+  "would_change_my_mind": "무료 진단 결과가 진짜 내 그림체를 콕 집어서 놀랄 만큼 맞고, 리포트가 장 수 많은 문서가 아니라 이번 주 할 일 한 가지만 딱 정해 주는 형태라면 만 원 아래에서는 생각해 볼게요.",
+  "price_too_cheap": 3000,
+  "price_cheap": 7000,
+  "price_expensive": 15000,
+  "price_too_expensive": 30000
+}

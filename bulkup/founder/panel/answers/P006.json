@@ -1,0 +1,15 @@
+{
+  "id": "P006",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "trust",
+  "reason": "무료 3분이면 해 볼 만한데, 유료 리포트는 결국 4주 클럽이랑 55만 원 워크숍으로 이어지는 입구 같아요. 이모티콘 제안이 목표인 저한텐 1만 9천 원 내고 AI 분석 받는 것보다 무료 결과로 방향 확인하고 직접 올려 보는 게 나아요.",
+  "objection": "결국 수업 팔려고 하는 거 아닌가. 14장짜리가 AI가 쓴 건지 작가가 진짜 본 건지 구분이 안 되고, 시장분석도 내 그림 얘기가 아니라 일반론일 것 같아요.",
+  "would_change_my_mind": "샘플 리포트 몇 장을 미리 보여주고, 수업 안내 없이 리포트만 보낸다는 걸 확실히 해 주면 1만 9천 원은 고민해 볼 것 같아요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 19000,
+  "price_too_expensive": 35000
+}

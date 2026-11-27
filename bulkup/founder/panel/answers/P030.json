@@ -1,0 +1,15 @@
+{
+  "id": "P030",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "need",
+  "reason": "무료 진단 3분이면 해 보겠는데, 그림 게시물이 10개도 안 되는데 19,000원 내고 12주 로드맵까지 받는 건 아직 좀 이른 것 같아요. 무료 결과로 어느 길인지 감만 잡아도 충분할 것 같고요.",
+  "objection": "AI가 분석하고 대표 작가가 감수한다는데 내 그림 3~5장을 진짜 얼마나 봐 주는지 모르겠고, 무료 결과랑 뭐가 그렇게 다른지 샘플 없이는 판단이 안 돼요. 이메일이나 번호 남기는 것도 살짝 찜찜하고요.",
+  "would_change_my_mind": "실제 리포트 샘플 몇 장을 미리 볼 수 있고, 무료 진단 결과가 확실히 도움이 됐다고 느끼면 만 원 안쪽이면 한 번 사 볼 수도 있어요.",
+  "price_too_cheap": 3000,
+  "price_cheap": 7000,
+  "price_expensive": 15000,
+  "price_too_expensive": 30000
+}

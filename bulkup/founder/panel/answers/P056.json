@@ -1,0 +1,15 @@
+{
+  "id": "P056",
+  "buys": false,
+  "purchases_first_month": 0,
+  "free_test": true,
+  "class_interest": "없음",
+  "reason_code": "habit",
+  "reason": "무료 진단은 3분이면 하니까 해 볼 거예요. 근데 결제는 거의 안 해서 1만 9천 원도 그림 보내고 돈 내는 건 부담이에요.",
+  "objection": "내 그림을 남한테, 그것도 AI랑 작가한테 보내서 점수 받는다는 게 부끄럽고, 이메일이나 번호 남기면 광고만 올 것 같아요.",
+  "would_change_my_mind": "무료 진단 결과가 진짜 내 얘기처럼 정확해서 놀라고, 리포트 샘플 몇 장을 미리 볼 수 있으면 생각해 볼 수도 있어요.",
+  "price_too_cheap": 5000,
+  "price_cheap": 9000,
+  "price_expensive": 19000,
+  "price_too_expensive": 35000
+}
