@@ -6,7 +6,7 @@
 |---|---|---|
 | `bulkup-blueprint.html` | 벌크업 설계도: 수익 구조, AI 서비스 기획안, 0원 트랙션 90일, 마케팅 퍼널, 2027 지원사업 로드맵 | https://claude.ai/artifact/EvGxVg3fmuizs4LVZii4DX |
 | `six-axis-studio.html` | 대표용 진단 스튜디오: 본인 체크 + 그림 AI 분석 합산, 대표 감수, 상업성 점수, 무료 카드 / 유료 장문 리포트(HTML 파일 저장·텍스트 복사), 검증 실험실, 기록 | https://claude.ai/artifact/EkFy31tQyaVgejNoEWCfy1 |
-| `free-diagnosis.html` | 공개 무료 진단: 17문항 → 연락처·궁금한 점·동의 → 그림체 유형 공개 + 잠긴 목차 → 유료 리포트·지금 신청 가능한 수업·문의 | https://claude.ai/artifact/4LNvvQNZnBUkNdfn5U3Je9 (미리보기) |
+| `free-diagnosis.html` | 공개 무료 진단: 21문항(6축 12 + 상업 신호 5 + 작업 습관 4) → 연락처·궁금한 점·동의 → 그림체 유형 공개 + 잠긴 목차 → 유료 리포트·지금 신청 가능한 수업·문의 | https://claude.ai/artifact/4LNvvQNZnBUkNdfn5U3Je9 (미리보기) |
 | `otw-core.js` | 두 페이지가 함께 쓰는 규칙·유형·리포트 문장·수업·링크. 대표 기준으로 바꾸는 곳 | – |
 | `lead-collector.gs` | 응답을 구글 시트에 쌓고, 방문자에게 결과 메일, 대표(mon.mut.friends@gmail.com)에게 알림, 버튼 클릭 기록 | – |
 | `assets/types/` | 그림체 유형 일러스트 8장 넣는 곳 (파일 이름·규격은 폴더 안 README) | – |
