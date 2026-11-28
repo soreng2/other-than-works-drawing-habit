@@ -86,6 +86,10 @@ function runCollector(payload) {
   check(await p.locator('#s-result').isVisible() && !posted,'연락처 제출 없이 결과 표시');
   check((await p.locator('#project-task').innerText()).includes('출시 알림'), '선택한 이모티콘 판매 실험');
   check(await p.locator('.deliverables li:visible').count() === 3, '결과 뒤 피드백 항목 공개');
+  check((await p.locator('#offer-question').innerText()).includes('표정'), '선택 분야에 맞는 피드백 안내');
+  await p.locator('#copy-request').tap();
+  check((await p.evaluate(() => navigator.clipboard.readText())).includes('이모티콘'), '신청 문장에 희망 분야 복사');
+  check(await p.locator('.class-link').isVisible(), '결과에 수업 안내 표시');
   await p.click('#contact-open');
   // 검증 규칙
   await p.click('#btn-submit');
