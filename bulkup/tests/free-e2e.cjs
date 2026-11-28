@@ -18,6 +18,7 @@ function runCollector(payload) {
   const ctx = {
     CacheService:{ getScriptCache:()=>({get:()=>null,put(){}}) },
     SpreadsheetApp: { getActiveSpreadsheet: () => ({ getSheetByName: n => sheets[n] || null, insertSheet: n => (sheets[n] = mkSheet(n)) }) },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: key => key === 'OWNER_EMAIL' ? 'owner@example.com' : null }) },
     MailApp: { sendEmail: (...a) => mails.push(a) },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
     ContentService: { createTextOutput: t => ({ text: t, setMimeType() { return this; } }), MimeType: { JSON: 'json' } },
@@ -128,7 +129,13 @@ function runCollector(payload) {
   check(O2.openProducts(Date.parse('2026-12-02T20:30:00+09:00')).every(o => o.key !== 'vintageClub') && O2.openProducts(Date.parse('2026-12-01T10:00:00+09:00'))[0].badge === '모집 중 · 내일 개강', '개강 시각이 지나면 클럽 자동 마감, 전날은 "내일 개강"');
   // 리포트 버튼 누르면 신청 문구 복사 + 클릭 기록
   check((await p.locator('#result-offer .report-link').getAttribute('href')).includes('instagram.com'),'DM 신청');
-  await p.locator('#result-offer .report-link').evaluate(a=>{a.addEventListener('click',e=>e.preventDefault(),{once:true});a.click()});
+  await bctx.route('https://www.instagram.com/**', route => route.fulfill({body: 'DM handoff'}));
+  const popupPromise = p.waitForEvent('popup');
+  await p.locator('#result-offer .report-link').tap();
+  const dm = await popupPromise;
+  await dm.waitForLoadState();
+  check(new URL(dm.url()).pathname === '/other.than.works/', '신청 버튼 터치로 소랭 프로필 열기');
+  await dm.close();
   await p.waitForTimeout(150);
   // 일러스트가 있으면 그림, 없으면 기본 캐릭터 (지금은 8장이 다 들어가 있어 그림 쪽을 본다)
   const artKey = await p.evaluate(() => window.OTW.typeOf(window.__free.state).key);
@@ -153,11 +160,11 @@ function runCollector(payload) {
   const sheet = r1.sheets['무료진단'], tallyS = r1.sheets['관심사 집계'];
   check(r1.res.ok && sheet.rows.length === 2 && sheet.rows[1][1] === '소랭' && sheet.rows[1][3] === "'01012345678", '시트에 헤더 + 응답 1줄 (전화번호 앞자리 0 보존)');
   check(tallyS.rows.length === 3 && tallyS.rows[1][1] === 1, '관심사 집계 시트 생성');
-  check(r1.mails.length === 2 && r1.mails[0][0].to === 'hello@example.com' && r1.mails[1][0] === 'mon.mut.friends@gmail.com', '방문자 결과 메일 + 대표(mon.mut.friends@gmail.com) 알림 메일');
+  check(r1.mails.length === 2 && r1.mails[0][0].to === 'hello@example.com' && r1.mails[1][0] === 'owner@example.com', '방문자 결과 메일 + 대표(owner@example.com) 알림 메일');
   check(sheet.rows[1][sheet.rows[0].indexOf('leadId')] === body.leadId && !!body.leadId, '응답 줄에 leadId 저장');
   const r2 = runCollector({ ...body, name: '=HYPERLINK("x")', email: '' , phone: '01099998888' });
   check(r2.sheets['무료진단'].rows[1][1].startsWith("'="), '수식 주입 방지');
-  check(r2.mails.length === 1 && r2.mails[0][0] === 'mon.mut.friends@gmail.com', '방문자 이메일 없으면 대표 알림만');
+  check(r2.mails.length === 1 && r2.mails[0][0] === 'owner@example.com', '방문자 이메일 없으면 대표 알림만');
   const clickEv = posts.find(x => x.kind === 'cta-click' && x.cta === 'report');
   const r3 = runCollector(clickEv || {});
   check(!!clickEv && r3.res.ok && r3.sheets['클릭'].rows[1][2] === '유료 리포트' && r3.sheets['클릭'].rows[1][3] === '인스타 DM' && r3.sheets['클릭'].rows[1][7] === body.leadId, '클릭 시트: 누른 버튼·연결·leadId 기록');

@@ -203,7 +203,7 @@ const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!o
   check(await p.evaluate(() => !document.getElementById('gapbox').hidden), '인식 차이 박스 표시');
   const gapTxt = await p.$eval('#gapbox', e => e.innerText);
   console.log('--- gap ---\n' + gapTxt + '\n---');
-  check(/일치도 \d+/.test(gapTxt) && (gapTxt.match(/의도한 방향|정도 차이|본인 생각보다|더 높게/g) || []).length >= 2, '일치도와 차이 항목·해석 표시');
+  check(/일치도 \d+/.test(gapTxt) && (gapTxt.match(/선택한 방향|정도 차이|본인 생각보다|더 높게/g) || []).length >= 2, '일치도와 차이 항목·해석 표시');
   check((await p.$eval('#src-line', e => e.textContent)).includes('합산'), '축마다 AI·본인·합산 출처 줄');
   check(st7.rx[0].how.includes('1순위'), '차이 가장 큰 축이 처방 1순위: ' + st7.rx[0].title);
   check((await p.$eval('#dm', e => e.value)).includes('일치도는'), '유료 DM에 일치도 포함');
