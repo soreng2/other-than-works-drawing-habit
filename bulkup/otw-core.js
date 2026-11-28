@@ -1040,7 +1040,14 @@ const PROJECTS = {
   instatoon: "오늘 있었던 한 사건을 세 컷으로 그려 보세요. 마지막 컷의 대사를 가린 뒤 앞선 두 컷만으로 상황이 전해지는지 확인해요.",
   portfolio: "그림 한 장을 잡지의 본문 삽화와 표지에 각각 배치해 보세요. 제목 자리를 남긴 뒤 어느 구도에서 그림의 특징이 더 잘 읽히는지 비교해요."
 };
-const OTW = { PROJECTS, HABITS, SIGNAL_NA, strengthWhy, CRAFT, CRAFT_W, STAGES, TIP_FOR, craftVal, craftIndex, stageOf, judgeItems, fmtScore, digitalTips, TYPE_PROFILE, freeInsights, FREE_VS_PAID, METHOD, axisFavors, bridge, CONFIG, LINKS, TUTORIAL, TUTORIAL_LINE, isHttps, linkFor, typeImage, openProducts, suggestOpen, AXES, SIGNALS, GENRES, MIX, EMOTICON_GATE, ROUTINE, GRADE_TXT, MARKET, RX_LIB, TYPES, MERGE, AGREE_TXT,
+const SALES_EXPERIMENTS = {
+  picturebook: "내 그림과 독자 연령이 맞고 투고를 받는 출판사 한 곳을 고르세요. 그림 한 장과 한 줄 줄거리를 투고 안내에 맞춰 보내며 ‘이 이야기의 더미북을 검토해 주실 수 있을까요?’라고 물어보세요. 추가 장면이나 원고를 요청하는지 기록하세요.",
+  goods: "메모지를 자주 쓰는 사람 세 명에게 내 그림을 넣은 메모지 시안을 보여 주세요. 인쇄비와 포장비를 고려해 정한 한 권 가격을 함께 적고 ‘이 가격으로 만들면 예약 안내를 받아 보실래요?’라고 물어보세요. 안내를 요청한 사람 수를 세고 제작 수량을 정하기 전에 실제 주문 의사를 다시 확인하세요.",
+  emoticon: "팀 채팅을 자주 쓰는 동료 세 명에게 내 캐릭터로 만든 ‘확인했어요’ 스티커와 예상 세트 가격을 보여 주세요. ‘이 가격이면 출시 알림을 받으실래요?’라고 물어보고 알림 요청 수와 가장 쓰고 싶다는 표현을 기록하세요.",
+  instatoon: "내 그림의 주제와 맞고 협업 문의를 받는 브랜드 한 곳을 고르세요. 기존 컷과 그 브랜드 고객에게 어울릴 세 컷 줄거리를 보내며 ‘이 주제로 유료 협업 견적을 보내 드릴까요?’라고 물어보세요. 예산이나 게시 일정을 묻는 답이 오는지 확인하세요.",
+  portfolio: "내 그림과 독자층이 맞는 독립 잡지 한 곳의 외주 문의 창구를 찾으세요. 기존 그림 한 장을 붙여 ‘다음 호에 이런 분위기의 본문 삽화 한 점이 필요하실까요?’라고 제안하세요. 단가·사용 범위·납기를 묻는 답이 오는지 기록하세요."
+};
+const OTW = { SALES_EXPERIMENTS, PROJECTS, HABITS, SIGNAL_NA, strengthWhy, CRAFT, CRAFT_W, STAGES, TIP_FOR, craftVal, craftIndex, stageOf, judgeItems, fmtScore, digitalTips, TYPE_PROFILE, freeInsights, FREE_VS_PAID, METHOD, axisFavors, bridge, CONFIG, LINKS, TUTORIAL, TUTORIAL_LINE, isHttps, linkFor, typeImage, openProducts, suggestOpen, AXES, SIGNALS, GENRES, MIX, EMOTICON_GATE, ROUTINE, GRADE_TXT, MARKET, RX_LIB, TYPES, MERGE, AGREE_TXT,
   AXIS_GUIDE, SIGNAL_GUIDE, PATH_GUIDE, CLASSES, CAL,
   clamp, avg, hasBatchim, josa, rng, gauss, scorePaths, recommendation, gapsFor, weakest, strongest, summarize, sideOf, typeOf,
   computeGaps, gapSentence, buildResult, buildReport, freeTeaser, reportBodyHTML, reportToHTMLDoc, reportToText, REPORT_CSS, esc, won };

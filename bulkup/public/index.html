@@ -63,10 +63,13 @@ p { margin: 0; }
 .row > * { flex: 1; }
 
 /* 훅 */
-.hero { background: var(--navy); color: #FFFFFF; padding: 26px 22px; display: grid; gap: 14px; }
-.hero h1 { color: #FFFFFF; }
-.hero h1 em { font-style: normal; color: #A8D96A; }
-.hero p { color: #C3D0F0; }
+.hero { background: #f0f1f3; color: #192337; padding: 24px; display: grid; gap: 12px; border-radius: 18px; }
+.hero-art { width: 112px; height: 112px; }
+.hero p { color: #465166; }
+#btn-start { background: #ff805b; color: #281810; border-radius: 12px; }
+.deliverables { list-style: none; padding: 0; margin: 0; }
+.deliverables li { padding: 12px 0; border-top: 1px solid var(--line); }
+.deliverables li::after { content: ""; display: block; margin: 8px 3px; width: 75%; height: 12px; border-radius: 4px; background: var(--muted); opacity: .28; filter: blur(3px); }
 .facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .facts div { border-top: 3px solid #A8D96A; padding-top: 6px; font-size: 13px; color: #C3D0F0; }
 .facts b { display: block; color: #FFFFFF; font-family: var(--font-display); font-weight: 400; font-size: 20px; }
@@ -197,7 +200,8 @@ fieldset { border: 0; padding: 0; margin: 0; }
 .foot { font-size: 12.5px; color: var(--muted); text-align: center; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 @media (prefers-reduced-motion: reduce) { .progress i { transition: none; } }
-.hero{position:relative;overflow:hidden}.hero-art{position:absolute;right:12px;top:13px;width:clamp(60px,18vw,96px);height:auto}.hero h1{padding-right:66px;font-size:clamp(26px,6.6vw,36px)}.demo {padding:14px;background:var(--ice)} summary{cursor:pointer;font-weight:700}.demo p{margin:10px 0}.demo figure{display:grid;grid-template-columns:1fr 1fr;align-items:center;margin:16px 0;gap:12px}.demo figure>img{width:86%}.memo{background:repeating-linear-gradient(#fffdf5 0 17px,#d8dddb 18px);border:1px solid #b7beb6;aspect-ratio:1;display:flex;align-items:flex-end;padding:6px}.memo img{width:32%}.class-link{color:var(--accent)}.offer{border-radius:12px} #f-goal{width:100%}
+summary { cursor: pointer; font-weight: 700; }
+.class-link{color:var(--accent)}.offer{border-radius:12px} #f-goal{width:100%}
 </style>
 
 <div class="app">
@@ -206,11 +210,12 @@ fieldset { border: 0; padding: 0; margin: 0; }
 
   <!-- 0. 훅 -->
   <section class="screen" id="s-intro">
-    <div class="hero"><img class="hero-art" src="assets/types/clean-deform-observe.png" width="96" height="96" alt=""><h1>그려 둔 그림 한 장,<br><em>뭘 만들어 볼까?</em></h1>
-    <p>소랭의 수업에서는 그림 한 장을 놓고 다음 작업을 정해요. 그림책의 첫 장면이 될 수도, 매일 쓰는 메모지가 될 수도 있어요.</p></div>
-    <button class="btn" id="btn-start">무료로 내 작업 성향 보기 · 21문항</button>
-    <p class="muted small">최근 작업을 떠올리며 답하면 6축 성향 카드와 첫 과제를 받아요. 연락처 없이 볼 수 있어요.</p>
-    <div id="intro-offer"></div>
+    <div class="hero"><img class="hero-art" src="assets/types/clean-deform-observe.png" width="96" height="96" alt="푸른 폴더 캐릭터">
+      <h1>내 그림, 누구에게<br>팔아 볼까?</h1>
+      <p>이미 그린 그림 한 장으로 시작해요. 누구에게 무엇을 제안할지, 답이 오면 무엇을 확인할지 정해 드려요.</p>
+      <button class="btn" id="btn-start">무료 진단 시작</button>
+      <small>21문항 · 연락처 없이 결과 보기</small>
+    </div>
   </section>
 
   <!-- 1. 질문 -->
@@ -309,12 +314,12 @@ fieldset { border: 0; padding: 0; margin: 0; }
 <template id="offer-template"><article class="offer">
 <h2>내 그림 한 장, 다음 프로젝트</h2>
 <p>17년 차 디자이너 소랭이 그림을 보고, 살릴 디테일 하나와 바꿔 볼 선택 하나를 짚어 드려요.</p>
-<details class="demo"><summary>피드백 샘플 보기 · 캐릭터를 메모지로</summary>
-<figure><img src="assets/types/clean-deform-observe.png" alt="붉은 컵과 초록 화분을 든 파란 폴더 캐릭터"><div class="memo"><img src="assets/types/clean-deform-observe.png" alt="필기 공간을 남기고 모서리에 작게 배치한 같은 캐릭터"></div></figure>
-<p><b>살릴 것</b>　파란 몸 양쪽에 든 빨간 컵과 초록 화분이 멀리서도 눈에 들어와요. 이 두 색은 유지해 보세요.</p>
-<p><b>바꿔 볼 것</b>　메모지 모서리에서는 손가락과 잎 안쪽 선이 가늘어져요. 잎 안쪽 선을 덜어낸 버전도 같은 크기로 출력해 보세요.</p>
-<p><b>첫 과제</b>　80mm 메모지에 캐릭터를 너비 18mm와 25mm로 각각 놓고, 글 다섯 줄을 쓴 뒤 하나를 고르세요.</p>
-<small>아더댄웍스 유형 일러스트로 만든 설명용 예시</small></details>
+<h3>피드백 파일에서 받을 항목</h3>
+<ul class="deliverables" aria-label="상세 내용은 내 그림을 보고 작성해요">
+  <li>작게 써도 알아볼 수 있는 내 그림의 특징</li>
+  <li>희망 분야에 맞춰 바꿔 볼 디테일 한 가지</li>
+  <li>다음 시안에서 바로 해 볼 첫 과제</li>
+</ul>
 <p><b>런칭가 <span class="offer-price"></span> · 피드백 1회</b><br>최근 그림 1~3장과 희망 분야를 보내 주세요. 러프도 가능해요. 결제와 자료 접수 후 영업일 2일 안에 소랭이 감수한 프로젝트 피드백 파일을 보내요.</p>
 <p class="small muted">AI가 관찰 초안을 만들고 소랭이 원본을 보며 수정해요. 미공개 작품은 보내기 전에 DM으로 작업 방식을 먼저 상의해 주세요.</p>
 <a class="btn report-link" target="_blank" rel="noopener"></a><p class="small offer-note"></p>
@@ -350,7 +355,7 @@ function mountOffer(id) {
   box.querySelector(".offer-note").textContent = link.via === "dm" ? "프로필의 메시지로 ‘그림 피드백 신청’과 희망 분야를 보내 주세요. 소랭이 결제와 그림 제출 방법을 안내해요." : "";
   button.addEventListener("click", () => sendEvent("report", link.via));
 }
-mountOffer("intro-offer"); mountOffer("result-offer");
+mountOffer("result-offer");
 $("back-result").onclick = () => show("s-result");
 $("contact-open").onclick = () => { show("s-lead"); $("f-name").focus(); };
 $("btn-start").addEventListener("click", () => { step = 0; renderStep(); show("s-quiz"); });
@@ -463,8 +468,8 @@ function renderResult() {
   const fi = O.freeInsights(state);
   const goal = paths.find(p => p.isGoal);
   const project = goal || paths[0];
-  $("project-title").textContent = (goal ? "내가 고른 프로젝트 · " : "먼저 시도해 볼 프로젝트 · ") + project.name;
-  $("project-task").textContent = O.PROJECTS[project.key];
+  $("project-title").textContent = (goal ? "내가 고른 판매 실험 · " : "첫 판매 실험 · ") + project.name;
+  $("project-task").textContent = O.SALES_EXPERIMENTS[project.key];
   $("contact-open").hidden = !C.leadEndpoint;
   $("r-rx").replaceChildren(...fi.sevenDay.map(([day,task]) => {
     const item = document.createElement("li"); item.textContent = day + " · " + task; return item;
@@ -564,7 +569,7 @@ function renderHistory(fi) {
 function resultText() {
   const ty = O.typeOf(state), tz = O.freeTeaser(state);
   const target = O.GENRES.find(g => g.key === state.goal) || tz.top;
-  return [ty.name, ty.hook, target.name, O.PROJECTS[target.key]].join("\n");
+  return [ty.name, ty.hook, target.name, O.SALES_EXPERIMENTS[target.key]].join("\n");
 
 }
 function sendEvent(cta, via) {

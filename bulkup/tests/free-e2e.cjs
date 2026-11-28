@@ -31,7 +31,7 @@ function runCollector(payload) {
 (async () => {
   const b = await chromium.launch({executablePath:process.env.CHROMIUM_PATH});
   const errors = [];
-  const bctx = await b.newContext({ viewport: { width: 390, height: 844 }, permissions: ['clipboard-read', 'clipboard-write'] });
+  const bctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, permissions: ['clipboard-read', 'clipboard-write'] });
   const p = await bctx.newPage();
   p.on('pageerror', e => errors.push('pageerror: ' + e.message));
   p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|ERR_/.test(m.text())) errors.push('console: ' + m.text()); });
@@ -51,9 +51,10 @@ function runCollector(payload) {
     return !(buf.slice(1, 4).toString() === 'PNG' && buf.readUInt32BE(16) === 800 && buf.readUInt32BE(20) === 800 && buf[25] === 6);
   });
   check(badArt.length === 0, '유형 일러스트 8개 규격 (800×800 RGBA PNG, 500KB 이하)' + (badArt.length ? ': ' + badArt.join(',') : ''));
-  check(await p.locator('#intro-offer .offer-price').innerText() === '19,000원','설문 시작 전 가격 표시');
-  await p.locator('#intro-offer summary').click();
-  check(await p.locator('#intro-offer .demo img').count() === 2,'가공 전후 시연');
+  check(await p.locator('.report-link:visible').count() === 0, '첫 방문 유료 신청 숨김');
+  const hero = await p.locator('.hero-art').evaluate(img => img.naturalWidth > 0);
+  const start = await p.locator('#btn-start').boundingBox();
+  check(hero && start.y + start.height <= 844, '첫 화면 캐릭터와 시작 버튼');
   await p.screenshot({ path: OUT + '/1-intro.png' });
   await p.evaluate(() => { window.OTW.CONFIG.leadEndpoint = 'https://script.google.com/macros/s/TEST/exec'; });
 
@@ -82,6 +83,8 @@ function runCollector(payload) {
   await p.selectOption('#f-goal','emoticon');
   await p.click('#btn-next');
   check(await p.locator('#s-result').isVisible() && !posted,'연락처 제출 없이 결과 표시');
+  check((await p.locator('#project-task').innerText()).includes('출시 알림'), '선택한 이모티콘 판매 실험');
+  check(await p.locator('.deliverables li:visible').count() === 3, '결과 뒤 피드백 항목 공개');
   await p.click('#contact-open');
   // 검증 규칙
   await p.click('#btn-submit');
