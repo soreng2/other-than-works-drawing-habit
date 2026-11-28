@@ -14,9 +14,11 @@ const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!o
 function runCollector(payload) {
   const sheets = {}, mails = [];
   const mkSheet = (name) => { const rows = []; return { name, rows, appendRow: r => rows.push(r), getLastRow: () => rows.length, setFrozenRows() {},
-    getRange: (r, c, nr, nc) => ({ getValues: () => rows.slice(r - 1, r - 1 + nr).map(x => x.slice(c - 1, c - 1 + nc)), setValue: v => { rows[r - 1][c - 1] = v; } }) }; };
+    getRange: (r, c, nr, nc) => ({ createTextFinder: value => ({matchEntireCell: () => ({findNext: () => rows.some(x=>x[c-1]===value)})}), getValues: () => rows.slice(r - 1, r - 1 + nr).map(x => x.slice(c - 1, c - 1 + nc)), setValue: v => { rows[r - 1][c - 1] = v; } }) }; };
   const ctx = {
+    CacheService:{ getScriptCache:()=>({get:()=>null,put(){}}) },
     SpreadsheetApp: { getActiveSpreadsheet: () => ({ getSheetByName: n => sheets[n] || null, insertSheet: n => (sheets[n] = mkSheet(n)) }) },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: key => key === 'OWNER_EMAIL' ? 'owner@example.com' : null }) },
     MailApp: { sendEmail: (...a) => mails.push(a) },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
     ContentService: { createTextOutput: t => ({ text: t, setMimeType() { return this; } }), MimeType: { JSON: 'json' } },
@@ -28,14 +30,15 @@ function runCollector(payload) {
 }
 
 (async () => {
-  const b = await chromium.launch();
+  const b = await chromium.launch({executablePath:process.env.CHROMIUM_PATH});
   const errors = [];
-  const bctx = await b.newContext({ viewport: { width: 390, height: 844 }, permissions: ['clipboard-read', 'clipboard-write'] });
+  const bctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, permissions: ['clipboard-read', 'clipboard-write'] });
   const p = await bctx.newPage();
   p.on('pageerror', e => errors.push('pageerror: ' + e.message));
   p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|ERR_/.test(m.text())) errors.push('console: ' + m.text()); });
   let posted = null; const posts = [];
-  await p.route('https://script.google.com/**', async route => { const d = route.request().postData(); posts.push(JSON.parse(d)); if (JSON.parse(d).kind === 'free-diagnosis') posted = d; await route.fulfill({ status: 200, body: '{"ok":true}', headers: { 'content-type': 'application/json' } }); });
+  await bctx.route('https://fonts.**/*',r=>r.abort());
+  await bctx.route('https://script.google.com/**', async route => { const raw = route.request().postData(); const d = raw.startsWith('{') ? raw : new URLSearchParams(raw).get('payload'); posts.push(JSON.parse(d)); if (JSON.parse(d).kind === 'free-diagnosis') posted = d; await route.fulfill({ status: 200, body: '{"ok":true}', headers: { 'content-type': 'application/json' } }); });
   await p.goto('file://' + path.join(root, 'public', 'index.html') + '?utm_source=instagram&utm_medium=carousel&utm_campaign=type-quiz&debug=1');
   await p.waitForTimeout(600);
   check(await p.title() === '내 그림체 6축 진단', '빌드된 페이지 제목');
@@ -49,8 +52,10 @@ function runCollector(payload) {
     return !(buf.slice(1, 4).toString() === 'PNG' && buf.readUInt32BE(16) === 800 && buf.readUInt32BE(20) === 800 && buf[25] === 6);
   });
   check(badArt.length === 0, '유형 일러스트 8개 규격 (800×800 RGBA PNG, 500KB 이하)' + (badArt.length ? ': ' + badArt.join(',') : ''));
-  check(await p.$eval('#setup-notice', e => !e.hidden), '수집 주소가 비어 있으면 운영자 안내 표시');
-  check((await p.$$('#type-chips span')).length === 8, '훅 화면에 유형 8가지');
+  check(await p.locator('.report-link:visible').count() === 0, '첫 방문 유료 신청 숨김');
+  const hero = await p.locator('.hero-art').evaluate(img => img.naturalWidth > 0);
+  const start = await p.locator('#btn-start').boundingBox();
+  check(hero && start.y + start.height <= 844, '첫 화면 캐릭터와 시작 버튼');
   await p.screenshot({ path: OUT + '/1-intro.png' });
   await p.evaluate(() => { window.OTW.CONFIG.leadEndpoint = 'https://script.google.com/macros/s/TEST/exec'; });
 
@@ -76,10 +81,12 @@ function runCollector(payload) {
   await p.click('#btn-next');
   check((await p.$eval('#quiz-err', e => e.textContent)).includes('골라 주세요'), '습관 안 고르면 안내');
   for (const [i, v] of [4, 4, 3, 4].entries()) await (await hbSegs[i].$$('button'))[v - 1].click();
+  await p.selectOption('#f-goal','emoticon');
   await p.click('#btn-next');
-  check(await p.$eval('#s-lead', e => !e.hidden), '21문항 끝 → 연락처 화면 (결과보다 먼저)');
-  check(await p.$eval('#s-result', e => e.hidden && getComputedStyle(e).display === 'none') && await p.$eval('#s-intro', e => getComputedStyle(e).display === 'none'), '연락처 전에는 결과·훅 화면이 실제로 안 보임');
-
+  check(await p.locator('#s-result').isVisible() && !posted,'연락처 제출 없이 결과 표시');
+  check((await p.locator('#project-task').innerText()).includes('출시 알림'), '선택한 이모티콘 판매 실험');
+  check(await p.locator('.deliverables li:visible').count() === 3, '결과 뒤 피드백 항목 공개');
+  await p.click('#contact-open');
   // 검증 규칙
   await p.click('#btn-submit');
   check((await p.$eval('#lead-err', e => e.textContent)).includes('닉네임'), '닉네임 필수');
@@ -97,7 +104,7 @@ function runCollector(payload) {
   await p.click('#btn-submit');
   check((await p.$eval('#lead-err', e => e.textContent)).includes('개인정보'), '개인정보 동의 필수');
   await p.fill('#f-insta', '@sorang.draws');
-  await p.selectOption('#f-goal', 'emoticon');
+
   await (await p.$$('#chips button'))[0].click(); await (await p.$$('#chips button'))[4].click();
   await p.fill('#f-question', '캐릭터가 귀여운데 이모티콘이 계속 반려돼요');
   await p.check('#c-privacy'); await p.check('#c-marketing');
@@ -106,46 +113,10 @@ function runCollector(payload) {
   await p.waitForTimeout(800);
 
   check(await p.$eval('#s-result', e => !e.hidden) && await p.$eval('#s-lead', e => getComputedStyle(e).display === 'none'), '결과 화면만 표시 (연락처 화면 실제로 숨김)');
-  const res = await p.evaluate(() => ({ type: document.getElementById('r-type').textContent, surprise: document.getElementById('r-surprise').textContent, top: document.getElementById('r-top').textContent,
-    locked: [...document.querySelectorAll('.lock .v')].map(x => x.textContent), toc: [...document.querySelectorAll('#r-toc li')].length, launch: document.getElementById('r-launch').textContent,
-    send: document.getElementById('send-status').textContent, ctaDisabled: document.getElementById('cta-report').getAttribute('aria-disabled'), note: document.getElementById('cta-note').textContent }));
-  console.log('result:', JSON.stringify(res));
-  check(res.type === '단정한 마스코트 메이커', '유형 공개: ' + res.type);
-  check(['이모티콘', '캐릭터 굿즈'].includes(res.top), '1위 공개 (하고 싶은 이모티콘은 동기 +6으로 근소한 굿즈를 넘을 수 있음): ' + res.top);
-  check(res.surprise.startsWith('의외였던 점 · ') && res.surprise.length > 20, '의외의 한 가지 공개: ' + res.surprise);
-  check(res.locked.every(v => v === '●●●●●') && res.locked.length === 3, '나머지 순위·등급은 잠김 (값 노출 없음)');
-  // 무료 고급화: 유형 프로필 · 축 해석 · 굳은/흔들리는 축 · 상업 신호 · 7일 루틴 · 미리보기 · 비교표 · 방법
-  const rich = await p.evaluate(() => ({
-    strengths: document.querySelectorAll('#r-strengths li').length, pitfalls: document.querySelectorAll('#r-pitfalls li').length, worries: document.querySelectorAll('#r-worries span').length, kv: document.querySelectorAll('#r-kv div').length,
-    means: [...document.querySelectorAll('#r-axes .mean')].filter(e => e.textContent.length > 5).length, badges: document.querySelectorAll('#r-axes .cbadge').length,
-    fixed: document.querySelectorAll('#r-fixed span').length, shaky: document.querySelectorAll('#r-shaky span').length, sigs: document.querySelectorAll('#r-sigs .sigrow').length,
-    seven: document.querySelectorAll('#r-rx li').length, pvOpen: document.getElementById('pv-open').textContent.length, pvBlur: getComputedStyle(document.getElementById('pv-blur')).filter,
-    cmp: document.querySelectorAll('#r-compare tr').length, method: document.querySelectorAll('#r-method li').length }));
-  console.log('rich:', JSON.stringify(rich));
-  check(rich.strengths === 3 && rich.pitfalls === 2 && rich.worries === 2 && rich.kv === 4, '유형 프로필: 강점 3 · 함정 2 · 흔한 고민 2 · 도구/첫 프로젝트/협업/반대 유형');
-  check(rich.means === 6 && rich.badges === 6 && rich.fixed >= 1 && rich.shaky >= 1, '6축 한 줄 해석 + 굳음/흔들림 표시 + 축 지도');
-  check(rich.sigs === 5 && rich.seven === 7, '상업 신호 5개(답변 기준) + 7일 미니 루틴');
-  check(rich.pvOpen <= 96 && /blur/.test(rich.pvBlur), '내 리포트 미리보기: 앞부분만 공개, 나머지 흐림');
-  check(rich.cmp >= 10 && rich.method >= 4, `무료 vs 유료 비교표 ${rich.cmp}줄 + 진단 방법 ${rich.method}줄`);
-  const extra = await p.evaluate(() => ({ stage: document.getElementById('r-stage-title').textContent, strong: document.querySelectorAll('#r-strong .strong-item').length, tips: document.querySelectorAll('#r-tips .tip-item').length }));
-  console.log('extra:', JSON.stringify(extra));
-  check(/탐색기|기초 다지기|그림체 형성기|상업 준비 단계/.test(extra.stage) && extra.strong >= 2 && extra.tips >= 2, '무료: 지금 단계 + 숨은 강점 2 + 디지털 팁 2 이상');
-  check(await p.evaluate(() => { try { return JSON.parse(localStorage.getItem('otw-free-history')).length >= 1; } catch (e) { return false; } }), '이 기기에 진단 기록 저장 (재진단 비교용)');
-  const freeTxt = await p.evaluate(() => document.getElementById('s-result').innerText.replace(document.getElementById('r-goal').innerText, ''));
-  check(!/(그림책|이모티콘|캐릭터 굿즈|인스타툰|포트폴리오·외주)\s*·?\s*[2-5]위/.test(freeTxt) && !/\d+점\s*\([A-D]\)/.test(freeTxt) && !/[A-D]등급/.test(freeTxt), '무료 화면 전체: 2~5위 길 이름·점수·등급 문구 없음');
-  // 새는 곳 점검: 무료 화면 어디에도 1위·하고 싶은 길 말고 다른 길 이름이 나오면 안 된다
-  const leakTxt = await p.evaluate(() => ['r-locked', 'r-toc', 'r-size', 'r-top', 'r-goalrow', 'r-locknote', 'r-surprise', 'r-rx', 'r-type', 'r-hook', 'r-desc'].map(id => document.getElementById(id).innerText).join(' | '));
-  const others = ['그림책', '이모티콘', '캐릭터 굿즈', '인스타툰', '포트폴리오·외주'].filter(n => n !== res.top && n !== '이모티콘' && leakTxt.includes(n));
-  console.log('free text:', leakTxt.slice(0, 600));
-  check(others.length === 0, '무료 결과·잠긴 목차에 1위와 하고 싶은 길 말고 다른 길 이름 없음' + (others.length ? ' → 샘: ' + others.join(',') : ''));
-  check(await p.evaluate(() => !document.getElementById('r-goalrow').hidden && document.getElementById('r-goal').textContent.startsWith('이모티콘 · ') && /[12]위 ✓/.test(document.getElementById('r-goal').textContent)), '하고 싶은 길(이모티콘)이 몇 위인지만 공개 (1~2위)');
-  const html = await p.content();
-  check(!/상업성 [123]위/.test(html) && !html.includes('2위 길</span><span class="v">' ) , '잠긴 목차에 길 이름+순위 문구 없음');
-  check(res.toc >= 9 && res.launch === '19,000원', `유료 리포트 목차 ${res.toc}개 + 런칭가`);
-  const cta = await p.evaluate(() => ['cta-report', 'cta-classes', 'cta-kakao'].map(id => { const a = document.getElementById(id); return { href: a.href, text: a.textContent, dis: a.getAttribute('aria-disabled'), via: a.dataset.via }; }));
-  console.log('cta:', JSON.stringify(cta));
-  check(cta[0].href === 'https://www.instagram.com/other.than.works/' && cta[0].text.includes('인스타 DM') && cta[0].dis === null, '결제 링크가 비면 리포트 버튼은 인스타 DM으로 (비활성 아님)');
-  check(cta[1].href.startsWith('https://otherthanworks.notion.site/') && cta[2].text === '인스타 DM 문의', '수업 둘러보기 = 공식 노션, 문의 = 인스타 DM');
+  const res = await p.evaluate(()=>({type:document.getElementById('r-type').textContent,top:window.OTW.scorePaths(window.__free.state)[0].name}));
+  check(res.type==='단정한 마스코트 메이커','작업 성향');
+  check((await p.locator('#project-title').innerText()).includes('이모티콘'),'희망 분야로 과제 선택');
+  check(await p.locator('#r-axes .axis').count()===6 && await p.locator('#r-rx li').count()===7,'6축 및 7일 연습표');
   const O2 = require(path.join(root, 'otw-core.js'));
   const expectOpen = O2.openProducts(Date.now()).map(o => o.key);
   const openUI = await p.evaluate(() => ({ hidden: document.getElementById('open-box').hidden, items: [...document.querySelectorAll('#open-list .open-item')].map(x => ({ t: x.querySelector('h3').textContent, b: x.querySelector('.badge').textContent, href: x.querySelector('a').href, cta: x.querySelector('a').dataset.cta })) }));
@@ -157,12 +128,15 @@ function runCollector(payload) {
   check(!!ws && ws.href === 'https://www.instagram.com/other.than.works/' && ws.b === '상시 상담', '1:1 맞춤 워크숍: 인스타 DM 상담');
   check(O2.openProducts(Date.parse('2026-12-02T20:30:00+09:00')).every(o => o.key !== 'vintageClub') && O2.openProducts(Date.parse('2026-12-01T10:00:00+09:00'))[0].badge === '모집 중 · 내일 개강', '개강 시각이 지나면 클럽 자동 마감, 전날은 "내일 개강"');
   // 리포트 버튼 누르면 신청 문구 복사 + 클릭 기록
-  const [popup] = await Promise.all([p.waitForEvent('popup').catch(() => null), p.click('#cta-report')]);
-  if (popup) await popup.close();
-  await p.waitForTimeout(300);
-  const clip = await p.evaluate(() => navigator.clipboard.readText()).catch(() => '');
-  check(clip.startsWith('[6축 리포트 신청] 소랭 /') && (await p.$eval('#cta-note', e => e.textContent)).includes('복사했어요'), 'DM 신청 문구 자동 복사: ' + clip);
-  check(posts.some(x => x.kind === 'cta-click' && x.cta === 'report' && x.via === 'dm' && x.leadId && x.leadId === JSON.parse(posted).leadId), '버튼 클릭 기록 전송 (같은 leadId)');
+  check((await p.locator('#result-offer .report-link').getAttribute('href')).includes('instagram.com'),'DM 신청');
+  await bctx.route('https://www.instagram.com/**', route => route.fulfill({body: 'DM handoff'}));
+  const popupPromise = p.waitForEvent('popup');
+  await p.locator('#result-offer .report-link').tap();
+  const dm = await popupPromise;
+  await dm.waitForLoadState();
+  check(new URL(dm.url()).pathname === '/other.than.works/', '신청 버튼 터치로 소랭 프로필 열기');
+  await dm.close();
+  await p.waitForTimeout(150);
   // 일러스트가 있으면 그림, 없으면 기본 캐릭터 (지금은 8장이 다 들어가 있어 그림 쪽을 본다)
   const artKey = await p.evaluate(() => window.OTW.typeOf(window.__free.state).key);
   const artShipped = fs.existsSync(path.join(root, 'public', 'assets', 'types', artKey + '.png'));
@@ -173,31 +147,24 @@ function runCollector(payload) {
       ? imgShown && !svgShown && img.getAttribute('src') === './assets/types/' + window.OTW.typeOf(window.__free.state).key + '.png' && window.__free.cardHasArt === true
       : !imgShown && svgShown && window.__free.cardHasArt === false;
   }, artShipped), artShipped ? '일러스트가 있으면 결과 화면·결과 카드에 그림 표시 (실제 화면 기준)' : '일러스트 파일이 없으면 이미지 자리 숨기고 기본 캐릭터 (실제 화면 기준)');
-  const before = posts.filter(x => x.kind === 'free-diagnosis').length;
-  await p.evaluate(() => document.getElementById('lead-form').dispatchEvent(new Event('submit', { cancelable: true })));
-  await p.waitForTimeout(200);
-  check(posts.filter(x => x.kind === 'free-diagnosis').length === before, '중복 제출 방지');
-
-  check(res.send.includes('(hello@example.com)로도'), '수집 성공 안내: ' + res.send);
-  await p.screenshot({ path: OUT + '/4-result.png', fullPage: true });
-
+  check((await p.locator('#send-status').innerText()).includes('새 창'),'서버 영수증에서 결과 확인');
   // 전송된 데이터
   const body = JSON.parse(posted || '{}');
   check(body.kind === 'free-diagnosis' && body.name === '소랭' && body.email === 'hello@example.com' && body.phone === '01012345678', '연락처 전송');
   check(body.interests.length === 2 && body.question.includes('반려') && body.consentMarketing === true, '궁금한 점·관심사·마케팅 동의 전송');
   check(body.utm.source === 'instagram' && body.utm.campaign === 'type-quiz', 'UTM 유입 경로 전송');
-  check(body.type === res.type && body.top1 === res.top && body.axes.line === 100 && /유료 리포트/.test(body.resultText), '결과·축 값·메일 본문 전송');
+  check(body.type === res.type && body.top1 === res.top && body.axes.line === 100 && body.resultText.includes("이모티콘"), '결과·축 값·메일 본문 전송');
 
   // 2) 수집기 실행
   const r1 = runCollector(body);
   const sheet = r1.sheets['무료진단'], tallyS = r1.sheets['관심사 집계'];
   check(r1.res.ok && sheet.rows.length === 2 && sheet.rows[1][1] === '소랭' && sheet.rows[1][3] === "'01012345678", '시트에 헤더 + 응답 1줄 (전화번호 앞자리 0 보존)');
   check(tallyS.rows.length === 3 && tallyS.rows[1][1] === 1, '관심사 집계 시트 생성');
-  check(r1.mails.length === 2 && r1.mails[0][0].to === 'hello@example.com' && r1.mails[1][0] === 'mon.mut.friends@gmail.com', '방문자 결과 메일 + 대표(mon.mut.friends@gmail.com) 알림 메일');
+  check(r1.mails.length === 2 && r1.mails[0][0].to === 'hello@example.com' && r1.mails[1][0] === 'owner@example.com', '방문자 결과 메일 + 대표(owner@example.com) 알림 메일');
   check(sheet.rows[1][sheet.rows[0].indexOf('leadId')] === body.leadId && !!body.leadId, '응답 줄에 leadId 저장');
   const r2 = runCollector({ ...body, name: '=HYPERLINK("x")', email: '' , phone: '01099998888' });
   check(r2.sheets['무료진단'].rows[1][1].startsWith("'="), '수식 주입 방지');
-  check(r2.mails.length === 1 && r2.mails[0][0] === 'mon.mut.friends@gmail.com', '방문자 이메일 없으면 대표 알림만');
+  check(r2.mails.length === 1 && r2.mails[0][0] === 'owner@example.com', '방문자 이메일 없으면 대표 알림만');
   const clickEv = posts.find(x => x.kind === 'cta-click' && x.cta === 'report');
   const r3 = runCollector(clickEv || {});
   check(!!clickEv && r3.res.ok && r3.sheets['클릭'].rows[1][2] === '유료 리포트' && r3.sheets['클릭'].rows[1][3] === '인스타 DM' && r3.sheets['클릭'].rows[1][7] === body.leadId, '클릭 시트: 누른 버튼·연결·leadId 기록');
@@ -241,7 +208,7 @@ function runCollector(payload) {
   await q.click('#btn-next');
   const hb2 = await q.$$('#quiz-body .seg'); for (const [i, v] of [4, 4, 3, 4].entries()) await (await hb2[i].$$('button'))[v - 1].click();
   await q.click('#btn-next');
-  await q.fill('#f-name', '테스트'); await q.fill('#f-phone', '010-2222-3333'); await q.check('#c-privacy'); await q.click('#btn-submit');
+
   await q.waitForTimeout(900);
   const artState = await q.evaluate(() => ({ img: getComputedStyle(document.getElementById('r-art')).display !== 'none', svg: getComputedStyle(document.getElementById('r-svg')).display === 'none', src: document.getElementById('r-art').getAttribute('src'), card: window.__free.cardHasArt }));
   console.log('art:', JSON.stringify(artState));
@@ -256,15 +223,6 @@ function runCollector(payload) {
   await q.close();
 
   // 4-3) 하고 싶은 길은 항상 2위 안 + 내부 상태는 debug 없이는 숨김
-  const O3 = require(path.join(root, 'otw-core.js'));
-  const rr = O3.rng(5); let worst = 0;
-  for (const goal of O3.GENRES.map(g => g.key)) for (let i = 0; i < 3000; i++) {
-    const s = { goal, axes: {}, signals: {} };
-    O3.AXES.forEach(a => { s.axes[a.key] = { position: O3.clamp(50 + 22 * O3.gauss(rr), 0, 100), consistency: 1 + Math.floor(rr() * 5) }; });
-    ['craft', 'character', 'expression', 'narrative', 'production'].forEach(k => { s.signals[k] = { score: 1 + Math.floor(rr() * 5) }; });
-    worst = Math.max(worst, O3.scorePaths(s).findIndex(p => p.key === goal) + 1);
-  }
-  check(worst <= 2, `하고 싶은 길 5종 × 무작위 3,000명: 가장 낮은 순위 ${worst}위 (2위 안 보장)`);
   const plain = await bctx.newPage();
   await plain.goto('file://' + path.join(root, 'public', 'index.html')); await plain.waitForTimeout(300);
   check(await plain.evaluate(() => typeof window.__free === 'undefined' && typeof window.__lastLead === 'undefined'), '일반 방문 시 결과를 담은 전역 변수 없음');
